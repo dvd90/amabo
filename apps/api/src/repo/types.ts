@@ -64,6 +64,30 @@ export interface OAuthUpsert {
   ageBand?: string | null;
 }
 
+// ── M9.5: sharing ────────────────────────────────────────────────────────────────
+export type ShareKind = 'visit' | 'meet' | 'postcard';
+
+export interface ShareLinkRecord {
+  id: string;
+  creatureId: string;
+  ownerId: string | null;
+  kind: ShareKind;
+  token: string;
+  expiresAt: number;
+  revokedAt: number | null;
+}
+
+export interface RehomeRecord {
+  id: string;
+  creatureId: string;
+  fromUserId: string;
+  toUserId: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  fromConfirmedAt: number | null;
+  toConfirmedAt: number | null;
+  at: number;
+}
+
 export interface Repository {
   createCreature(input: NewCreature): Promise<CreatureRecord>;
   /** Owner-scoped: returns null if it doesn't exist OR isn't owned by `ownerId`. */
@@ -92,4 +116,17 @@ export interface Repository {
   createSession(userId: string, csrfToken: string, expiresAt: number): Promise<SessionRecord>;
   getSession(id: string): Promise<{ session: SessionRecord; user: UserRecord } | null>;
   deleteSession(id: string): Promise<void>;
+
+  // Sharing (M9.5)
+  createShareLink(input: Omit<ShareLinkRecord, 'id' | 'revokedAt'>): Promise<ShareLinkRecord>;
+  getShareLink(token: string): Promise<ShareLinkRecord | null>;
+  revokeShareLink(token: string, ownerId: string | null, at: number): Promise<boolean>;
+  initiateRehome(
+    input: Omit<RehomeRecord, 'id' | 'status' | 'toConfirmedAt'>,
+  ): Promise<RehomeRecord>;
+  getRehome(id: string): Promise<RehomeRecord | null>;
+  /** Confirm one side; when both sides have confirmed, ownership transfers atomically. */
+  confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null>;
+  addBlock(userId: string, blockedUserId: string, at: number): Promise<void>;
+  addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
 }

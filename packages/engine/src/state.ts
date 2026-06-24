@@ -75,7 +75,10 @@ export type SimEventKind =
   | 'evolved'
   | 'graduation'
   // M9 — mortality (classic only)
-  | 'lightWentOut';
+  | 'lightWentOut'
+  // M9.5 — sharing
+  | 'resonance'
+  | 'visit';
 
 export interface SimEvent {
   at: number;

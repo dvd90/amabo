@@ -9,11 +9,15 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
 import {
+  blocks,
   creatures,
   events as eventsTable,
   interactions,
   memories as memoriesTable,
+  rehomes,
+  reports,
   sessions,
+  shareLinks,
   stars,
   users,
 } from '../db/schema.js';
@@ -22,8 +26,11 @@ import type {
   JournalEntry,
   NewCreature,
   OAuthUpsert,
+  RehomeRecord,
   Repository,
   SessionRecord,
+  ShareKind,
+  ShareLinkRecord,
   StarRecord,
   UserRecord,
 } from './types.js';
@@ -272,6 +279,103 @@ export class DrizzleRepository implements Repository {
   async deleteSession(id: string): Promise<void> {
     await this.db.delete(sessions).where(eq(sessions.id, id));
   }
+
+  async createShareLink(
+    input: Omit<ShareLinkRecord, 'id' | 'revokedAt'>,
+  ): Promise<ShareLinkRecord> {
+    const [row] = await this.db.insert(shareLinks).values(input).returning();
+    return toShareLink(row!);
+  }
+
+  async getShareLink(token: string): Promise<ShareLinkRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(shareLinks)
+      .where(eq(shareLinks.token, token))
+      .limit(1);
+    return row ? toShareLink(row) : null;
+  }
+
+  async revokeShareLink(token: string, ownerId: string | null, at: number): Promise<boolean> {
+    const link = await this.getShareLink(token);
+    if (!link || link.ownerId !== ownerId) return false;
+    await this.db.update(shareLinks).set({ revokedAt: at }).where(eq(shareLinks.token, token));
+    return true;
+  }
+
+  async initiateRehome(
+    input: Omit<RehomeRecord, 'id' | 'status' | 'toConfirmedAt'>,
+  ): Promise<RehomeRecord> {
+    const [row] = await this.db
+      .insert(rehomes)
+      .values({ ...input, status: 'pending', toConfirmedAt: null })
+      .returning();
+    return toRehome(row!);
+  }
+
+  async getRehome(id: string): Promise<RehomeRecord | null> {
+    const [row] = await this.db.select().from(rehomes).where(eq(rehomes.id, id)).limit(1);
+    return row ? toRehome(row) : null;
+  }
+
+  async confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null> {
+    const r = await this.getRehome(id);
+    if (!r || r.status !== 'pending') return null;
+    const patch: Partial<typeof rehomes.$inferInsert> = {};
+    if (userId === r.fromUserId) patch.fromConfirmedAt = at;
+    else if (userId === r.toUserId) patch.toConfirmedAt = at;
+    else return null;
+
+    const bothConfirmed =
+      (r.fromConfirmedAt ?? patch.fromConfirmedAt) && (r.toConfirmedAt ?? patch.toConfirmedAt);
+    if (bothConfirmed) {
+      patch.status = 'completed';
+      await this.db
+        .update(creatures)
+        .set({ ownerId: r.toUserId })
+        .where(eq(creatures.id, r.creatureId));
+    }
+    await this.db.update(rehomes).set(patch).where(eq(rehomes.id, id));
+    return (await this.getRehome(id))!;
+  }
+
+  async addBlock(userId: string, blockedUserId: string, at: number): Promise<void> {
+    await this.db.insert(blocks).values({ userId, blockedUserId, at });
+  }
+
+  async addReport(
+    reporterId: string,
+    subject: string,
+    reason: string | null,
+    at: number,
+  ): Promise<void> {
+    await this.db.insert(reports).values({ reporterId, subject, reason, at });
+  }
+}
+
+function toShareLink(row: typeof shareLinks.$inferSelect): ShareLinkRecord {
+  return {
+    id: row.id,
+    creatureId: row.creatureId,
+    ownerId: row.ownerId,
+    kind: row.kind as ShareKind,
+    token: row.token,
+    expiresAt: row.expiresAt,
+    revokedAt: row.revokedAt,
+  };
+}
+
+function toRehome(row: typeof rehomes.$inferSelect): RehomeRecord {
+  return {
+    id: row.id,
+    creatureId: row.creatureId,
+    fromUserId: row.fromUserId,
+    toUserId: row.toUserId,
+    status: row.status as RehomeRecord['status'],
+    fromConfirmedAt: row.fromConfirmedAt,
+    toConfirmedAt: row.toConfirmedAt,
+    at: row.at,
+  };
 }
 
 function toUser(row: typeof users.$inferSelect): UserRecord {

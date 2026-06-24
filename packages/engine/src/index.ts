@@ -16,4 +16,5 @@ export * from './state.js';
 export * from './events.js';
 export * from './interact.js';
 export * from './lifecycle.js';
+export * from './resonate.js';
 export * from './advance.js';

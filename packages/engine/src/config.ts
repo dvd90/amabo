@@ -144,3 +144,23 @@ export const MULTIPLY = {
   ambra: 95,
   minStageIndex: 2, // velveteen or beyond
 } as const;
+
+/**
+ * Resonance meetings — a duet, never a duel (STORY.md §7¾). Two creatures meet and
+ * their Ambra harmonizes (close temperaments) or gently clashes (far apart). Small,
+ * symmetric nudges; nothing is ever damaged.
+ */
+export const RESONANCE = {
+  harmonyGap: 40, // |dispositionA − dispositionB| at/below this harmonizes
+  harmonyAffection: 4,
+  harmonySecurity: 3,
+  harmonyDispositionPull: 2, // each drifts a little toward the other
+  clashSecurity: 2, // a small unsettling; no real harm
+  clashAffection: 1, // even a clash leaves a trace of warmth
+} as const;
+
+/** A visit — another Light shining in (read-mostly) gently warms the creature. */
+export const VISIT = {
+  affection: 3,
+  security: 2,
+} as const;

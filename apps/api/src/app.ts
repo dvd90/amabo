@@ -14,6 +14,7 @@ import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
 import { authRouter } from './routes/auth.js';
 import { creaturesRouter } from './routes/creatures.js';
+import { authedShareRouter, publicShareRouter } from './routes/share.js';
 
 export interface AppDeps {
   repo: Repository;
@@ -45,6 +46,14 @@ export function createApp(deps: AppDeps): Express {
     }),
   );
 
+  const getOwner = (req: import('express').Request) => req.user?.id ?? null;
+
+  // Public capability-token reads (visits warm the creature; postcards are read-only).
+  // Mounted BEFORE the auth gate so another Light can shine in without an account.
+  app.use(
+    publicShareRouter({ repo: deps.repo, clock: deps.clock, baseUrl: deps.baseUrl, getOwner }),
+  );
+
   // Everything below requires a session; mutations require a valid CSRF token.
   app.use(requireAuth);
   app.use(requireCsrf);
@@ -54,8 +63,11 @@ export function createApp(deps: AppDeps): Express {
       clock: deps.clock,
       seed: deps.seed,
       narrator: deps.narrator,
-      getOwner: (req) => req.user?.id ?? null,
+      getOwner,
     }),
+  );
+  app.use(
+    authedShareRouter({ repo: deps.repo, clock: deps.clock, baseUrl: deps.baseUrl, getOwner }),
   );
 
   const onError: ErrorRequestHandler = (_err, _req, res, _next) => {

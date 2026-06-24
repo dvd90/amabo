@@ -116,5 +116,49 @@ export const sessions = pgTable('sessions', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// ── M9.5: sharing & resonance (ARCHITECTURE.md §14) ─────────────────────────────
+export const shareLinks = pgTable(
+  'share_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    creatureId: uuid('creature_id')
+      .notNull()
+      .references(() => creatures.id, { onDelete: 'cascade' }),
+    ownerId: uuid('owner_id'),
+    kind: text('kind').notNull(), // 'visit' | 'meet' | 'postcard'
+    token: text('token').notNull().unique(),
+    expiresAt: doublePrecision('expires_at').notNull(),
+    revokedAt: doublePrecision('revoked_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('share_links_token_idx').on(t.token)],
+);
+
+export const rehomes = pgTable('rehomes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  creatureId: uuid('creature_id').notNull(),
+  fromUserId: uuid('from_user_id').notNull(),
+  toUserId: uuid('to_user_id').notNull(),
+  status: text('status').notNull(), // 'pending' | 'completed' | 'cancelled'
+  fromConfirmedAt: doublePrecision('from_confirmed_at'),
+  toConfirmedAt: doublePrecision('to_confirmed_at'),
+  at: doublePrecision('at').notNull(),
+});
+
+export const blocks = pgTable('blocks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  blockedUserId: uuid('blocked_user_id').notNull(),
+  at: doublePrecision('at').notNull(),
+});
+
+export const reports = pgTable('reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  reporterId: uuid('reporter_id').notNull(),
+  subject: text('subject').notNull(),
+  reason: text('reason'),
+  at: doublePrecision('at').notNull(),
+});
+
 export type EventRow = typeof events.$inferSelect;
 export type SimEventForDb = SimEvent;

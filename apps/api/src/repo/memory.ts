@@ -11,8 +11,10 @@ import type {
   JournalEntry,
   NewCreature,
   OAuthUpsert,
+  RehomeRecord,
   Repository,
   SessionRecord,
+  ShareLinkRecord,
   StarRecord,
   UserRecord,
 } from './types.js';
@@ -31,6 +33,11 @@ export class InMemoryRepository implements Repository {
   private users = new Map<string, UserRecord>();
   private sessions = new Map<string, SessionRecord>();
   private memories: { creatureId: string; at: number; text: string; salience: number }[] = [];
+  private shareLinks = new Map<string, ShareLinkRecord>();
+  private rehomes = new Map<string, RehomeRecord>();
+  private blocks: { userId: string; blockedUserId: string; at: number }[] = [];
+  private reports: { reporterId: string; subject: string; reason: string | null; at: number }[] =
+    [];
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -158,5 +165,71 @@ export class InMemoryRepository implements Repository {
 
   async deleteSession(id: string): Promise<void> {
     this.sessions.delete(id);
+  }
+
+  async createShareLink(
+    input: Omit<ShareLinkRecord, 'id' | 'revokedAt'>,
+  ): Promise<ShareLinkRecord> {
+    const link: ShareLinkRecord = { ...input, id: randomUUID(), revokedAt: null };
+    this.shareLinks.set(link.token, link);
+    return structuredClone(link);
+  }
+
+  async getShareLink(token: string): Promise<ShareLinkRecord | null> {
+    const link = this.shareLinks.get(token);
+    return link ? structuredClone(link) : null;
+  }
+
+  async revokeShareLink(token: string, ownerId: string | null, at: number): Promise<boolean> {
+    const link = this.shareLinks.get(token);
+    if (!link || link.ownerId !== ownerId) return false; // owner-scoped
+    link.revokedAt = at;
+    return true;
+  }
+
+  async initiateRehome(
+    input: Omit<RehomeRecord, 'id' | 'status' | 'toConfirmedAt'>,
+  ): Promise<RehomeRecord> {
+    const rehome: RehomeRecord = {
+      ...input,
+      id: randomUUID(),
+      status: 'pending',
+      toConfirmedAt: null,
+    };
+    this.rehomes.set(rehome.id, rehome);
+    return structuredClone(rehome);
+  }
+
+  async getRehome(id: string): Promise<RehomeRecord | null> {
+    const r = this.rehomes.get(id);
+    return r ? structuredClone(r) : null;
+  }
+
+  async confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null> {
+    const r = this.rehomes.get(id);
+    if (!r || r.status !== 'pending') return null;
+    if (userId === r.fromUserId) r.fromConfirmedAt = at;
+    else if (userId === r.toUserId) r.toConfirmedAt = at;
+    else return null; // a third party cannot confirm
+    // Ownership moves ONLY after BOTH sides have confirmed.
+    if (r.fromConfirmedAt && r.toConfirmedAt) {
+      const creature = this.creatures.get(r.creatureId);
+      if (creature) creature.ownerId = r.toUserId;
+      r.status = 'completed';
+    }
+    return structuredClone(r);
+  }
+
+  async addBlock(userId: string, blockedUserId: string, at: number): Promise<void> {
+    this.blocks.push({ userId, blockedUserId, at });
+  }
+
+  async addReport(
+    reporterId: string,
+    subject: string,
+    reason: string | null,
+    at: number,
+  ): Promise<void> {
+    this.reports.push({ reporterId, subject, reason, at });
   }
 }
