@@ -35,6 +35,9 @@ const CARE_BY_SCREEN: Partial<Record<Screen, CareAction>> = {
   comfort: 'comfort',
 };
 
+/** Debounce peeks: a model call at most once per few minutes; show the cached line between. */
+export const PEEK_DEBOUNCE_MS = 2 * 60 * 1000;
+
 export interface GameState {
   client: ApiClient;
   creature: CreatureViewT | null;
@@ -45,8 +48,13 @@ export interface GameState {
   mood: string | null;
   busy: boolean;
   error: string | null;
+  lastPeekAt: number;
+  muted: boolean;
+  highContrast: boolean;
 
   setClient(client: ApiClient): void;
+  toggleMute(): void;
+  toggleContrast(): void;
   start(name?: string): Promise<void>;
   refresh(): Promise<void>;
   peek(): Promise<void>;
@@ -68,8 +76,13 @@ export const useGame = create<GameState>((set, get) => ({
   mood: null,
   busy: false,
   error: null,
+  lastPeekAt: 0,
+  muted: false,
+  highContrast: false,
 
   setClient: (client) => set({ client }),
+  toggleMute: () => set((s) => ({ muted: !s.muted })),
+  toggleContrast: () => set((s) => ({ highContrast: !s.highContrast })),
 
   start: async (name = 'Mote') => {
     set({ busy: true, error: null });
@@ -90,12 +103,14 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   peek: async () => {
-    const { creature, client } = get();
+    const { creature, client, lastPeekAt, lastJournal } = get();
     if (!creature) return;
+    // Debounce: between peeks, keep showing the cached "while you were away" line.
+    if (lastJournal && Date.now() - lastPeekAt < PEEK_DEBOUNCE_MS) return;
     set({ busy: true });
     try {
       const r = await client.peek(creature.id);
-      set({ creature: r.creature, lastJournal: r.journal, mood: r.mood });
+      set({ creature: r.creature, lastJournal: r.journal, mood: r.mood, lastPeekAt: Date.now() });
     } finally {
       set({ busy: false });
     }

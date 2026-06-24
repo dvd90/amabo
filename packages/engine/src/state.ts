@@ -73,7 +73,9 @@ export type SimEventKind =
   | 'ambient'
   // M4 — lifecycle milestones
   | 'evolved'
-  | 'graduation';
+  | 'graduation'
+  // M9 — mortality (classic only)
+  | 'lightWentOut';
 
 export interface SimEvent {
   at: number;

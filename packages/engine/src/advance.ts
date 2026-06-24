@@ -90,6 +90,7 @@ export function advance(
   let stage = state.stage;
   let ageMinutes = state.ageMinutes;
   let lastTickAt = state.lastTickAt;
+  let died = false;
   const events: SimEvent[] = [];
   const stageMult = STAGE_DECAY_MULTIPLIER[state.stage];
 
@@ -181,6 +182,20 @@ export function advance(
       );
     }
 
+    // Mortality (classic only): extreme sustained neglect (health gone) puts the
+    // light out — it returns to Ambra (STORY.md §4). Soft creatures never die.
+    if (state.mortality === 'classic' && stats.health <= STAT_MIN) {
+      events.push({
+        at: stepEndTs,
+        kind: 'lightWentOut',
+        statDeltas: {},
+        dispositionDelta: 0,
+        salience: 5,
+      });
+      died = true;
+      break;
+    }
+
     // Disposition drift (the moral engine, STORY.md §4): love that landed pulls
     // toward radiant Amabo, neglect sours toward Yim, illness drags down a little.
     const wellbeing = (stats.ambra + stats.affection + stats.security) / 3;
@@ -246,6 +261,7 @@ export function advance(
     stage,
     ageMinutes,
     lastTickAt,
+    alive: state.alive && !died,
     uncanny: deriveUncanny(disposition),
   };
   return { state: next, events };

@@ -35,12 +35,40 @@ body {
     0 18px 40px rgba(0, 0, 0, 0.5);
   color: #2a2118;
 }
+.device-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
 .device-brand {
-  text-align: center;
   letter-spacing: 0.5em;
   font-size: 0.7rem;
   opacity: 0.6;
-  margin-bottom: 8px;
+}
+.toggle {
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0.7;
+}
+.toggle:focus-visible {
+  outline: 2px solid hsl(var(--amber));
+}
+
+/* High-contrast text mode: drop the LCD aesthetic for legible plain text. */
+.device.hc .amarium {
+  background: #000;
+}
+.device.hc .device-readout {
+  color: #000;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.device.hc .amarium-scanlines {
+  display: none;
 }
 .device-bezel {
   border-radius: 16px;

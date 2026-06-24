@@ -8,10 +8,27 @@
 import { useEffect } from 'react';
 import { Amarium } from './Amarium.js';
 import { Screen } from './Screen.js';
+import { blip } from '../audio.js';
 import { useGame, type Screen as ScreenName } from '../store/useGame.js';
 
 export function Device() {
-  const { creature, screen, next, confirm, back, busy } = useGame();
+  const {
+    creature,
+    screen,
+    next,
+    confirm,
+    back,
+    busy,
+    muted,
+    toggleMute,
+    highContrast,
+    toggleContrast,
+  } = useGame();
+
+  const withBlip = (fn: () => void | Promise<void>) => () => {
+    blip(muted);
+    void fn();
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -25,8 +42,23 @@ export function Device() {
   }, [next, confirm, back]);
 
   return (
-    <div className="device" data-screen={screen}>
-      <div className="device-brand">amabo</div>
+    <div className={`device${highContrast ? ' hc' : ''}`} data-screen={screen}>
+      <div className="device-topbar">
+        <span className="device-brand">amabo</span>
+        <span className="device-toggles">
+          <button className="toggle" onClick={() => toggleMute()} aria-pressed={muted}>
+            {muted ? '🔇' : '🔊'}
+          </button>
+          <button
+            className="toggle"
+            onClick={() => toggleContrast()}
+            aria-pressed={highContrast}
+            aria-label="Toggle high-contrast text mode"
+          >
+            Aa
+          </button>
+        </span>
+      </div>
       <div className="device-bezel">
         <Amarium creature={creature} />
       </div>
@@ -37,13 +69,13 @@ export function Device() {
         {labelFor(screen)} {busy ? '⏳' : ''}
       </div>
       <div className="device-buttons">
-        <button className="btn btn-a" onClick={() => next()} aria-label="A: next screen">
+        <button className="btn btn-a" onClick={withBlip(next)} aria-label="A: next screen">
           A ▸
         </button>
-        <button className="btn btn-b" onClick={() => void confirm()} aria-label="B: confirm">
+        <button className="btn btn-b" onClick={withBlip(confirm)} aria-label="B: confirm">
           ●
         </button>
-        <button className="btn btn-c" onClick={() => back()} aria-label="C: back">
+        <button className="btn btn-c" onClick={withBlip(back)} aria-label="C: back">
           ◂ C
         </button>
       </div>

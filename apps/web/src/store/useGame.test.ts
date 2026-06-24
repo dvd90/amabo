@@ -107,4 +107,20 @@ describe('useGame store (M8)', () => {
     await useGame.getState().confirm();
     expect(client.interact).toHaveBeenCalledWith('c1', 'sleep');
   });
+
+  it('debounces peek — a second call within the window keeps the cached line (M9)', async () => {
+    const client = fakeClient();
+    useGame.setState({ client, creature: creature(), lastPeekAt: 0, lastJournal: null });
+    await useGame.getState().peek();
+    await useGame.getState().peek();
+    expect(client.peek).toHaveBeenCalledTimes(1);
+    expect(useGame.getState().lastJournal).toBe('soft gold day');
+  });
+
+  it('mute and high-contrast toggles flip state (M9 a11y)', () => {
+    useGame.getState().toggleMute();
+    expect(useGame.getState().muted).toBe(true);
+    useGame.getState().toggleContrast();
+    expect(useGame.getState().highContrast).toBe(true);
+  });
 });
