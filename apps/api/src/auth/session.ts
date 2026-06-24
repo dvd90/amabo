@@ -31,15 +31,23 @@ export function parseCookies(req: Request): Record<string, string> {
   return out;
 }
 
+/**
+ * SameSite policy. `lax` is right for a single-origin deploy; a two-service deploy
+ * (web and API on different domains) needs `none` so the cookie rides cross-site XHR —
+ * which the browser only accepts together with `Secure`.
+ */
+export type SameSite = 'lax' | 'none';
+
 export function setSessionCookies(
   res: Response,
   sessionId: string,
   csrfToken: string,
   secure: boolean,
+  sameSite: SameSite = 'lax',
 ): void {
   res.cookie(SESSION_COOKIE, sessionId, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite,
     secure,
     path: '/',
     maxAge: SESSION_TTL_MS,
@@ -47,7 +55,7 @@ export function setSessionCookies(
   // Readable by the client so it can echo it back as a header (double-submit CSRF).
   res.cookie(CSRF_COOKIE, csrfToken, {
     httpOnly: false,
-    sameSite: 'lax',
+    sameSite,
     secure,
     path: '/',
     maxAge: SESSION_TTL_MS,
