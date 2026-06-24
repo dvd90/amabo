@@ -6,6 +6,9 @@
  */
 
 import { makeAnthropicClient } from '@amabo/ai';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
 import { randomSeed, systemClock } from './clock.js';
@@ -16,6 +19,14 @@ import type { Narrator } from './narrate/port.js';
 import { DrizzleRepository } from './repo/drizzle.js';
 import { InMemoryRepository } from './repo/memory.js';
 import type { Repository } from './repo/types.js';
+
+/** Auto-detect the built PWA for a single-origin deploy (set WEB_DIST to override). */
+function webDistDir(): string | undefined {
+  const explicit = process.env.WEB_DIST;
+  if (explicit) return existsSync(explicit) ? explicit : undefined;
+  const guess = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../web/dist');
+  return existsSync(guess) ? guess : undefined;
+}
 
 function buildNarrator(): Narrator {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -50,6 +61,7 @@ if (process.env.NODE_ENV !== 'test') {
     authProvider: buildAuthProvider(),
     cookieSecure: process.env.NODE_ENV === 'production',
     baseUrl: process.env.BASE_URL ?? 'http://localhost:3000',
+    staticDir: webDistDir(),
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

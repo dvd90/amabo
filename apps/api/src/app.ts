@@ -7,6 +7,7 @@
  */
 
 import express, { type ErrorRequestHandler, type Express } from 'express';
+import path from 'node:path';
 import type { Clock, SeedSource } from './clock.js';
 import type { AuthProvider } from './auth/provider.js';
 import { attachUser, requireAuth, requireCsrf } from './auth/middleware.js';
@@ -24,10 +25,30 @@ export interface AppDeps {
   authProvider: AuthProvider;
   cookieSecure: boolean;
   baseUrl: string;
+  /** If set, serve the built PWA from this dir (single-origin deploy). Omitted = API only. */
+  staticDir?: string;
 }
+
+/** URL prefixes owned by the API — everything else is a client (SPA) route. */
+const API_PREFIXES = [
+  '/health',
+  '/me',
+  '/auth',
+  '/creatures',
+  '/visit',
+  '/postcard',
+  '/share',
+  '/rehome',
+  '/meet',
+  '/report',
+  '/block',
+];
+const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 
 export function createApp(deps: AppDeps): Express {
   const app = express();
+  // Behind Railway's TLS proxy, trust X-Forwarded-* so Secure cookies behave.
+  if (deps.cookieSecure) app.set('trust proxy', 1);
   app.use(express.json());
 
   app.get('/health', (_req, res) => {
@@ -53,6 +74,17 @@ export function createApp(deps: AppDeps): Express {
   app.use(
     publicShareRouter({ repo: deps.repo, clock: deps.clock, baseUrl: deps.baseUrl, getOwner }),
   );
+
+  // Single-origin deploy: serve the built PWA + SPA fallback for non-API GETs, BEFORE
+  // the auth gate (so visiting `/sky` etc. returns the app, not a 401).
+  if (deps.staticDir) {
+    const dir = deps.staticDir;
+    app.use(express.static(dir));
+    app.get(/.*/, (req, res, next) => {
+      if (req.method !== 'GET' || isApiPath(req.path)) return next();
+      return res.sendFile(path.join(dir, 'index.html'));
+    });
+  }
 
   // Everything below requires a session; mutations require a valid CSRF token.
   app.use(requireAuth);
