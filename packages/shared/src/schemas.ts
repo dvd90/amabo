@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { DISPOSITION_MAX, DISPOSITION_MIN, MORTALITIES, STAGES } from './index.js';
+import { DISPOSITION_MAX, DISPOSITION_MIN, MORTALITIES, STAGES } from './consts.js';
 
 const stat = z.number().min(0).max(100);
 
