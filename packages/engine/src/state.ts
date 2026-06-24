@@ -5,6 +5,12 @@
  */
 
 import type { Mortality, Stage } from '@amabo/shared';
+import { UNCANNY_THRESHOLD } from './config.js';
+
+/** Derived presentation: a soured creature (low disposition) shows as a Yim (STORY.md §4). */
+export function deriveUncanny(disposition: number): boolean {
+  return disposition < UNCANNY_THRESHOLD;
+}
 
 export interface Stats {
   /** Inner love-light — the creature is *made of* Ambra; its glow is this showing through. */

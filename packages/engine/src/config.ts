@@ -87,9 +87,25 @@ export const ILLNESS_HEALTH_DRAIN_PER_MIN = 0.08;
 export const RECOVERY_CLEANLINESS = 60; // clean enough to mend
 export const RECOVERY_CHANCE_PER_STEP = 0.08;
 
-/**
- * Ambient event rolls (ARCHITECTURE.md §4.2 step 5). Each step has a small chance of
- * a flavor moment. The Amabo- and Yim-leaning tables are split by disposition in M3;
- * M2 ships the neutral table and the weighted-roll machinery.
- */
+/** Ambient event rolls (ARCHITECTURE.md §4.2 step 5). Chance of a flavor moment per step. */
 export const AMBIENT_EVENT_CHANCE_PER_STEP = 0.06;
+
+/**
+ * Disposition drift — the moral engine (STORY.md §4, ARCHITECTURE.md §4.2 step 4).
+ * Care that lands (high ambra/affection/security) pulls toward radiant Amabo (+);
+ * neglect sours toward Yim (−). Illness drags it down a touch too. Bounded [−100,100].
+ */
+export const WELLBEING_NEUTRAL = 50; // the balance point: above drifts +, below drifts −
+export const DISPOSITION_DRIFT_PER_MIN = 0.02;
+export const ILLNESS_DISPOSITION_DRAIN_PER_MIN = 0.015;
+
+/** The disposition bands that pick which way the creature *presents* and which events fire. */
+export const AMABO_THRESHOLD = 30; // at/above → Amabo-leaning (warm finds)
+// (UNCANNY_THRESHOLD above: at/below → Yim-leaning, stopped-clock motifs.)
+
+/** How a single act of care moves disposition. comfort is the redemption lever. */
+export const DISPOSITION_NUDGE = {
+  care: 1, // feed / clean / play: love that lands
+  comfort: 6, // the Beauty-and-the-Beast pull back toward the light
+  refused: -3, // over-care sours, just like neglect
+} as const;

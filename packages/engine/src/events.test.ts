@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { AMBIENT_NEUTRAL, pickWeighted, type AmbientDef } from './events.js';
+import {
+  AMBIENT_AMABO,
+  AMBIENT_NEUTRAL,
+  AMBIENT_YIM,
+  ambientTableFor,
+  pickWeighted,
+  type AmbientDef,
+} from './events.js';
 
 describe('pickWeighted (M2)', () => {
   const table: readonly AmbientDef[] = [
@@ -24,5 +31,13 @@ describe('pickWeighted (M2)', () => {
 
   it('the neutral table is non-empty', () => {
     expect(AMBIENT_NEUTRAL.length).toBeGreaterThan(0);
+  });
+});
+
+describe('ambientTableFor (M3)', () => {
+  it('a soured creature lives among stopped clocks; a radiant one among warm finds', () => {
+    expect(ambientTableFor(-40, -30, 30)).toBe(AMBIENT_YIM);
+    expect(ambientTableFor(50, -30, 30)).toBe(AMBIENT_AMABO);
+    expect(ambientTableFor(0, -30, 30)).toBe(AMBIENT_NEUTRAL);
   });
 });

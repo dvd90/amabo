@@ -16,10 +16,13 @@
  */
 
 import {
+  AMABO_THRESHOLD,
   AMBIENT_EVENT_CHANCE_PER_STEP,
   DECAY_PER_MIN,
+  DISPOSITION_DRIFT_PER_MIN,
   ENERGY_RECOVERY_PER_MIN,
   ILLNESS_CLEANLINESS_THRESHOLD,
+  ILLNESS_DISPOSITION_DRAIN_PER_MIN,
   ILLNESS_HEALTH_DRAIN_PER_MIN,
   ILLNESS_ONSET_CHANCE_PER_STEP,
   LOW_AMBRA_AFFECTION_DRAIN_PER_MIN,
@@ -38,11 +41,12 @@ import {
   STAT_MIN,
   UNCANNY_THRESHOLD,
   WAKE_ENERGY,
+  WELLBEING_NEUTRAL,
 } from './config.js';
-import { AMBIENT_NEUTRAL, pickWeighted } from './events.js';
-import { clamp } from './math.js';
+import { ambientTableFor, pickWeighted } from './events.js';
+import { clamp, clampDisposition } from './math.js';
 import { deriveSeed, mulberry32 } from './rng.js';
-import type { CreatureState, SimEvent, Stats } from './state.js';
+import { deriveUncanny, type CreatureState, type SimEvent, type Stats } from './state.js';
 
 /** UTC hour-of-day for an instant. Pure (no Date): derived straight from the ms epoch. */
 export function hourOfDay(ts: number): number {
@@ -81,6 +85,7 @@ export function advance(
   const stats: Stats = { ...state.stats };
   let asleep = state.asleep;
   let ill = state.ill;
+  let disposition = state.disposition;
   let ageMinutes = state.ageMinutes;
   let lastTickAt = state.lastTickAt;
   const events: SimEvent[] = [];
@@ -174,9 +179,21 @@ export function advance(
       );
     }
 
-    // Ambient flavor: a small, narratable moment now and then.
+    // Disposition drift (the moral engine, STORY.md §4): love that landed pulls
+    // toward radiant Amabo, neglect sours toward Yim, illness drags down a little.
+    const wellbeing = (stats.ambra + stats.affection + stats.security) / 3;
+    let dispDrift =
+      ((wellbeing - WELLBEING_NEUTRAL) / WELLBEING_NEUTRAL) *
+      DISPOSITION_DRIFT_PER_MIN *
+      SIM_STEP_MINUTES;
+    if (ill) dispDrift -= ILLNESS_DISPOSITION_DRAIN_PER_MIN * SIM_STEP_MINUTES;
+    disposition = clampDisposition(disposition + dispDrift);
+
+    // Ambient flavor: a small, narratable moment — the table leans by disposition
+    // (warm finds for an Amabo, stopped clocks for a Yim).
     if (stepRng() < AMBIENT_EVENT_CHANCE_PER_STEP) {
-      const a = pickWeighted(AMBIENT_NEUTRAL, stepRng());
+      const table = ambientTableFor(disposition, UNCANNY_THRESHOLD, AMABO_THRESHOLD);
+      const a = pickWeighted(table, stepRng());
       events.push({
         at: stepEndTs,
         kind: 'ambient',
@@ -196,9 +213,10 @@ export function advance(
     stats,
     asleep,
     ill,
+    disposition,
     ageMinutes,
     lastTickAt,
-    uncanny: state.disposition < UNCANNY_THRESHOLD,
+    uncanny: deriveUncanny(disposition),
   };
   return { state: next, events };
 }
