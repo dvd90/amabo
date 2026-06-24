@@ -6,6 +6,7 @@
  * output falls back to a local templated line so the device never shows an error.
  */
 
+import { selectMemories, type Memory } from './memories.js';
 import { MODEL_MILESTONE, MODEL_PEEK } from './models.js';
 import { NarrateOutputSchema, RECORD_LIFE_TOOL, type NarrateOutput } from './schema.js';
 import { systemPrompt, type Register } from './voice.js';
@@ -30,6 +31,8 @@ export interface NarrateInput {
   context: CreatureContext;
   newEvents: NarrateEvent[];
   mode: 'peek' | 'milestone';
+  /** Distilled long-term memories; only the top-N by salience are sent (M7). */
+  memories?: Memory[];
 }
 
 /** The slice of the Anthropic SDK we use — structural, so a mock satisfies it. */
@@ -70,7 +73,9 @@ export async function narrate(input: NarrateInput, client: AnthropicLike): Promi
   const model = mode === 'milestone' ? MODEL_MILESTONE : MODEL_PEEK;
 
   // Creature data travels as DATA in the user turn, never in the system prompt.
-  const userPayload = JSON.stringify({ creature: context, events: newEvents });
+  // Only the top-N memories are sent, so the prompt stays flat as the creature ages.
+  const memories = selectMemories(input.memories ?? []);
+  const userPayload = JSON.stringify({ creature: context, events: newEvents, memories });
 
   try {
     const res = await client.messages.create({

@@ -7,6 +7,7 @@
  */
 
 export * from './models.js';
+export * from './memories.js';
 export * from './schema.js';
 export * from './voice.js';
 export * from './narrate.js';

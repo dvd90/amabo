@@ -30,6 +30,7 @@ export class InMemoryRepository implements Repository {
   private interactions: { creatureId: string; action: string; at: number }[] = [];
   private users = new Map<string, UserRecord>();
   private sessions = new Map<string, SessionRecord>();
+  private memories: { creatureId: string; at: number; text: string; salience: number }[] = [];
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -88,6 +89,24 @@ export class InMemoryRepository implements Repository {
 
   async listStars(ownerId: string | null): Promise<StarRecord[]> {
     return this.stars.filter((s) => s.ownerId === ownerId).map((s) => structuredClone(s));
+  }
+
+  async addMemories(
+    creatureId: string,
+    memories: { at: number; text: string; salience: number }[],
+  ): Promise<void> {
+    for (const m of memories) this.memories.push({ creatureId, ...m });
+  }
+
+  async topMemories(
+    creatureId: string,
+    limit: number,
+  ): Promise<{ text: string; salience: number }[]> {
+    return this.memories
+      .filter((m) => m.creatureId === creatureId)
+      .sort((a, b) => b.salience - a.salience)
+      .slice(0, limit)
+      .map((m) => ({ text: m.text, salience: m.salience }));
   }
 
   async upsertUser(input: OAuthUpsert): Promise<UserRecord> {

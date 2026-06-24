@@ -10,6 +10,8 @@ import type { CreatureState, SimEvent } from '@amabo/engine';
 export interface NarrateContext {
   name: string;
   state: CreatureState;
+  /** Distilled top-N memories to give the narrator continuity (M7). */
+  memories?: { text: string; salience: number }[];
 }
 
 export interface NarrateOutput {

@@ -5,6 +5,7 @@
  * or cross-owner creature returns 404 (never 403 — don't leak existence).
  */
 
+import { MAX_MEMORIES } from '@amabo/ai';
 import { condenseMote, interact, type InteractAction } from '@amabo/engine';
 import {
   CreateCreatureRequest,
@@ -80,16 +81,19 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       if (!rec) return res.status(404).json({ error: 'not found' });
       const { record, events, graduated } = await catchUp(repo, rec, clock());
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
+      // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
+      const memories = await repo.topMemories(record.id, MAX_MEMORIES);
       const narration = await narrator.narrate(
-        { name: record.name, state: record.state },
+        { name: record.name, state: record.state, memories },
         events,
         mode,
       );
-      await repo.appendEvents(
-        record.id,
-        [{ at: clock(), kind: 'ambient', statDeltas: {}, dispositionDelta: 0, salience: 1 }],
-        'ai',
-      );
+      if (narration.newMemories && narration.newMemories.length > 0) {
+        await repo.addMemories(
+          record.id,
+          narration.newMemories.map((m) => ({ at: clock(), text: m.text, salience: m.salience })),
+        );
+      }
       return res.json({ ...narration, creature: toView(record), graduated });
     }),
   );

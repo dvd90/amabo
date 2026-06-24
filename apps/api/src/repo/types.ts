@@ -79,6 +79,13 @@ export interface Repository {
   addStar(input: Omit<StarRecord, 'id'>): Promise<StarRecord>;
   listStars(ownerId: string | null): Promise<StarRecord[]>;
 
+  // Memory distillation (M7)
+  addMemories(
+    creatureId: string,
+    memories: { at: number; text: string; salience: number }[],
+  ): Promise<void>;
+  topMemories(creatureId: string, limit: number): Promise<{ text: string; salience: number }[]>;
+
   // Auth (M5.5)
   upsertUser(input: OAuthUpsert): Promise<UserRecord>;
   getUserById(id: string): Promise<UserRecord | null>;

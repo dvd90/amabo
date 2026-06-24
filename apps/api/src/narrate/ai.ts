@@ -22,6 +22,7 @@ export function aiNarrator(client: AnthropicLike): Narrator {
           },
           newEvents: events.map((e) => ({ kind: e.kind, tag: e.tag, salience: e.salience })),
           mode,
+          memories: ctx.memories,
         },
         client,
       );

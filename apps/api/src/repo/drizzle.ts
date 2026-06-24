@@ -12,6 +12,7 @@ import {
   creatures,
   events as eventsTable,
   interactions,
+  memories as memoriesTable,
   sessions,
   stars,
   users,
@@ -182,6 +183,27 @@ export class DrizzleRepository implements Repository {
       finalTraits: row.finalTraits,
       constellationPos: row.constellationPos,
     }));
+  }
+
+  async addMemories(
+    creatureId: string,
+    memories: { at: number; text: string; salience: number }[],
+  ): Promise<void> {
+    if (memories.length === 0) return;
+    await this.db.insert(memoriesTable).values(memories.map((m) => ({ creatureId, ...m })));
+  }
+
+  async topMemories(
+    creatureId: string,
+    limit: number,
+  ): Promise<{ text: string; salience: number }[]> {
+    const rows = await this.db
+      .select()
+      .from(memoriesTable)
+      .where(eq(memoriesTable.creatureId, creatureId))
+      .orderBy(desc(memoriesTable.salience))
+      .limit(limit);
+    return rows.map((m) => ({ text: m.text, salience: m.salience }));
   }
 
   async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
