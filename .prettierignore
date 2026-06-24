@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+*.tsbuildinfo
+pnpm-lock.yaml
+
+# Authored docs are the spec (the lore bible especially) — keep them verbatim,
+# don't let a formatter reflow their tables and prose.
+CLAUDE.md
+docs/
