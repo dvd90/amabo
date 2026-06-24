@@ -61,6 +61,9 @@ if (process.env.NODE_ENV !== 'test') {
     authProvider: buildAuthProvider(),
     cookieSecure: process.env.NODE_ENV === 'production',
     baseUrl: process.env.BASE_URL ?? 'http://localhost:3000',
+    // Two-service deploy: set WEB_ORIGIN to the web app's URL (enables CORS +
+    // SameSite=None cookies + post-login redirect back to the web app).
+    webOrigin: process.env.WEB_ORIGIN,
     staticDir: webDistDir(),
   });
   const port = Number(process.env.PORT ?? 3000);

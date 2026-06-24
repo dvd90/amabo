@@ -13,6 +13,7 @@ import {
   newToken,
   parseCookies,
   setSessionCookies,
+  type SameSite,
 } from '../auth/session.js';
 import { requireAuth, requireCsrf } from '../auth/middleware.js';
 import type { Repository } from '../repo/types.js';
@@ -22,13 +23,16 @@ export interface AuthDeps {
   authProvider: AuthProvider;
   clock: Clock;
   cookieSecure: boolean;
-  baseUrl: string; // used to build the OAuth redirect URI
+  sameSite: SameSite;
+  baseUrl: string; // used to build the OAuth redirect URI (the API's own origin)
+  /** Where to send the browser after login (the web origin in a two-service deploy). */
+  postLoginRedirect: string;
 }
 
 const STATE_COOKIE = 'amabo_oauth_state';
 
 export function authRouter(deps: AuthDeps): Router {
-  const { repo, authProvider, clock, cookieSecure, baseUrl } = deps;
+  const { repo, authProvider, clock, cookieSecure, sameSite, baseUrl, postLoginRedirect } = deps;
   const router = Router();
   const redirectUri = `${baseUrl}/auth/callback`;
 
@@ -37,7 +41,7 @@ export function authRouter(deps: AuthDeps): Router {
     const state = newToken();
     res.cookie(STATE_COOKIE, state, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite,
       secure: cookieSecure,
       path: '/',
       maxAge: 10 * 60 * 1000,
@@ -66,8 +70,8 @@ export function authRouter(deps: AuthDeps): Router {
         const csrf = newToken();
         const session = await repo.createSession(user.id, csrf, clock() + SESSION_TTL_MS);
         res.clearCookie(STATE_COOKIE, { path: '/' });
-        setSessionCookies(res, session.id, csrf, cookieSecure);
-        res.redirect('/');
+        setSessionCookies(res, session.id, csrf, cookieSecure, sameSite);
+        res.redirect(postLoginRedirect);
       } catch (err) {
         next(err);
       }

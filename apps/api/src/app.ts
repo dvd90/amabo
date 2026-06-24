@@ -11,6 +11,8 @@ import path from 'node:path';
 import type { Clock, SeedSource } from './clock.js';
 import type { AuthProvider } from './auth/provider.js';
 import { attachUser, requireAuth, requireCsrf } from './auth/middleware.js';
+import { cors } from './cors.js';
+import type { SameSite } from './auth/session.js';
 import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
 import { authRouter } from './routes/auth.js';
@@ -27,6 +29,8 @@ export interface AppDeps {
   baseUrl: string;
   /** If set, serve the built PWA from this dir (single-origin deploy). Omitted = API only. */
   staticDir?: string;
+  /** Two-service deploy: the web origin to allow via CORS + redirect to after login. */
+  webOrigin?: string;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -49,7 +53,12 @@ export function createApp(deps: AppDeps): Express {
   const app = express();
   // Behind Railway's TLS proxy, trust X-Forwarded-* so Secure cookies behave.
   if (deps.cookieSecure) app.set('trust proxy', 1);
+  // Credentialed CORS only matters in the two-service deploy (a web origin is set).
+  app.use(cors(deps.webOrigin));
   app.use(express.json());
+
+  // Cross-site cookies require SameSite=None (+ Secure); same-origin uses Lax.
+  const sameSite: SameSite = deps.webOrigin ? 'none' : 'lax';
 
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
@@ -63,7 +72,9 @@ export function createApp(deps: AppDeps): Express {
       authProvider: deps.authProvider,
       clock: deps.clock,
       cookieSecure: deps.cookieSecure,
+      sameSite,
       baseUrl: deps.baseUrl,
+      postLoginRedirect: deps.webOrigin ?? '/',
     }),
   );
 

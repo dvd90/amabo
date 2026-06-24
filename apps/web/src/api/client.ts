@@ -45,8 +45,14 @@ function readCookie(name: string): string {
   return m ? decodeURIComponent(m[1]!) : '';
 }
 
+/**
+ * The API base URL. Empty for a single-origin deploy (API serves the web); set
+ * `VITE_API_BASE` at build time to the API's URL for a two-service deploy.
+ */
+export const API_BASE: string = import.meta.env.VITE_API_BASE ?? '';
+
 export class HttpApiClient implements ApiClient {
-  constructor(private base = '') {}
+  constructor(private base = API_BASE) {}
 
   private async req<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
     const headers: Record<string, string> = {};
@@ -89,5 +95,5 @@ export class HttpApiClient implements ApiClient {
   }
 }
 
-/** The login entry point (full-page redirect to Google OAuth). */
-export const LOGIN_URL = '/auth/google';
+/** The login entry point (full-page redirect to Google OAuth on the API origin). */
+export const LOGIN_URL = `${API_BASE}/auth/google`;
