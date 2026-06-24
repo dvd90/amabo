@@ -60,3 +60,36 @@ export const LOW_AMBRA_AFFECTION_DRAIN_PER_MIN = 0.03;
 
 /** Below this disposition the creature presents as a Yim (uncanny). STORY.md §4. */
 export const UNCANNY_THRESHOLD = -30;
+
+/**
+ * Interactions (ARCHITECTURE.md §4.3). Care raises stats; OVER-care is punished like
+ * neglect — feeding a full creature is `refused` and costs affection — which is what
+ * makes disposition branch instead of climbing forever.
+ */
+export const FULL_AMBRA = 90; // feeding at/above this is refused
+export const REFUSED_AFFECTION_PENALTY = 4;
+export const PLAY_ENERGY_FLOOR = 20; // too tired to play below this
+
+export const INTERACTION_EFFECTS = {
+  feed: { ambra: 18, energy: 4, affection: 2 },
+  clean: { cleanliness: 60, affection: 1 },
+  play: { energy: -12, affection: 6, ambra: 3, security: 2 },
+  comfort: { security: 10, affection: 5, ambra: 2 },
+} as const;
+
+/**
+ * Illness from neglect (ARCHITECTURE.md §4.2 step 3). Low cleanliness risks illness;
+ * illness drains health; restored cleanliness lets the creature recover.
+ */
+export const ILLNESS_CLEANLINESS_THRESHOLD = 30;
+export const ILLNESS_ONSET_CHANCE_PER_STEP = 0.05;
+export const ILLNESS_HEALTH_DRAIN_PER_MIN = 0.08;
+export const RECOVERY_CLEANLINESS = 60; // clean enough to mend
+export const RECOVERY_CHANCE_PER_STEP = 0.08;
+
+/**
+ * Ambient event rolls (ARCHITECTURE.md §4.2 step 5). Each step has a small chance of
+ * a flavor moment. The Amabo- and Yim-leaning tables are split by disposition in M3;
+ * M2 ships the neutral table and the weighted-roll machinery.
+ */
+export const AMBIENT_EVENT_CHANCE_PER_STEP = 0.06;

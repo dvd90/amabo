@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`advance — fixed seed → fixed event sequence (M2) > matches the recorded snapshot of event kinds 1`] = `
+[
+  "fellAsleep",
+  "ambient:warmSpot",
+  "ambient:triedAShape",
+  "woke",
+  "ambient:warmSpot",
+  "ambient:driftingLight",
+  "ambient:warmSpot",
+  "ambient:driftingLight",
+  "ambient:warmSpot",
+  "ambient:driftingLight",
+  "ambient:warmSpot",
+  "fellAsleep",
+  "ambient:warmSpot",
+]
+`;

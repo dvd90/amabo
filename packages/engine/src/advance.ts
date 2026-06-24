@@ -9,19 +9,26 @@
  * call equals 200 single-step calls (§4.5). We achieve this by stepping on absolute
  * multiples of SIM_STEP_MS and leaving any sub-step remainder for next time.
  *
- * M1 covers Ambra & decay (step 1) and the sleep cycle (step 2), plus the first
- * derived effect (low Ambra starves affection). Disposition drift (M3), event rolls
- * & illness (M2), stage/graduation (M4) slot into this same loop later.
+ * Steps so far: Ambra & decay (M1), the sleep cycle (M1), illness from neglect and
+ * weighted ambient event rolls (M2). Disposition drift (M3) and stage/graduation
+ * (M4) slot into this same loop later. Randomness is derived per step from the
+ * creature's immutable seed, so rolls stay frame-rate independent.
  */
 
 import {
+  AMBIENT_EVENT_CHANCE_PER_STEP,
   DECAY_PER_MIN,
   ENERGY_RECOVERY_PER_MIN,
+  ILLNESS_CLEANLINESS_THRESHOLD,
+  ILLNESS_HEALTH_DRAIN_PER_MIN,
+  ILLNESS_ONSET_CHANCE_PER_STEP,
   LOW_AMBRA_AFFECTION_DRAIN_PER_MIN,
   LOW_AMBRA_THRESHOLD,
   MS_PER_HOUR,
   NIGHT_END_HOUR,
   NIGHT_START_HOUR,
+  RECOVERY_CHANCE_PER_STEP,
+  RECOVERY_CLEANLINESS,
   SIM_STEP_MINUTES,
   SIM_STEP_MS,
   SLEEP_DECAY_MULTIPLIER,
@@ -32,7 +39,9 @@ import {
   UNCANNY_THRESHOLD,
   WAKE_ENERGY,
 } from './config.js';
+import { AMBIENT_NEUTRAL, pickWeighted } from './events.js';
 import { clamp } from './math.js';
+import { deriveSeed, mulberry32 } from './rng.js';
 import type { CreatureState, SimEvent, Stats } from './state.js';
 
 /** UTC hour-of-day for an instant. Pure (no Date): derived straight from the ms epoch. */
@@ -71,6 +80,7 @@ export function advance(
 
   const stats: Stats = { ...state.stats };
   let asleep = state.asleep;
+  let ill = state.ill;
   let ageMinutes = state.ageMinutes;
   let lastTickAt = state.lastTickAt;
   const events: SimEvent[] = [];
@@ -79,6 +89,10 @@ export function advance(
   for (let i = 0; i < steps; i++) {
     const stepEndTs = lastTickAt + SIM_STEP_MS;
     const hour = hourOfDay(stepEndTs);
+
+    // A fresh generator per step, seeded from (creature seed, absolute step index),
+    // keeps rolls identical no matter how the catch-up is chunked (frame-rate safe).
+    const stepRng = mulberry32(deriveSeed(state.seed, Math.floor(stepEndTs / SIM_STEP_MS)));
 
     const nextAsleep = decideAsleep(asleep, stats.energy, hour);
     if (nextAsleep !== asleep) {
@@ -127,6 +141,52 @@ export function advance(
       );
     }
 
+    // Illness from neglect: low cleanliness risks it; restored cleanliness mends it.
+    if (ill) {
+      if (stats.cleanliness >= RECOVERY_CLEANLINESS && stepRng() < RECOVERY_CHANCE_PER_STEP) {
+        ill = false;
+        events.push({
+          at: stepEndTs,
+          kind: 'recovered',
+          statDeltas: {},
+          dispositionDelta: 0,
+          salience: 3,
+        });
+      }
+    } else if (
+      stats.cleanliness < ILLNESS_CLEANLINESS_THRESHOLD &&
+      stepRng() < ILLNESS_ONSET_CHANCE_PER_STEP
+    ) {
+      ill = true;
+      events.push({
+        at: stepEndTs,
+        kind: 'fellIll',
+        statDeltas: {},
+        dispositionDelta: 0,
+        salience: 3,
+      });
+    }
+    if (ill) {
+      stats.health = clamp(
+        stats.health - ILLNESS_HEALTH_DRAIN_PER_MIN * restMult * stageMult * SIM_STEP_MINUTES,
+        STAT_MIN,
+        STAT_MAX,
+      );
+    }
+
+    // Ambient flavor: a small, narratable moment now and then.
+    if (stepRng() < AMBIENT_EVENT_CHANCE_PER_STEP) {
+      const a = pickWeighted(AMBIENT_NEUTRAL, stepRng());
+      events.push({
+        at: stepEndTs,
+        kind: 'ambient',
+        tag: a.tag,
+        statDeltas: {},
+        dispositionDelta: 0,
+        salience: a.salience,
+      });
+    }
+
     ageMinutes += SIM_STEP_MINUTES;
     lastTickAt = stepEndTs;
   }
@@ -135,6 +195,7 @@ export function advance(
     ...state,
     stats,
     asleep,
+    ill,
     ageMinutes,
     lastTickAt,
     uncanny: state.disposition < UNCANNY_THRESHOLD,

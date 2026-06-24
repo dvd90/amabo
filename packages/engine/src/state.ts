@@ -36,6 +36,8 @@ export interface CreatureState {
   ageMinutes: number;
   stats: Stats;
   asleep: boolean;
+  /** Sick from sustained neglect (low cleanliness); drains health until it mends. */
+  ill: boolean;
   /** Derived: disposition below the uncanny threshold → Yim presentation. */
   uncanny: boolean;
   alive: boolean;
@@ -46,8 +48,23 @@ export interface CreatureState {
   lastTickAt: number;
 }
 
-/** Sim-event kinds grow per milestone; M1 emits only the sleep transitions. */
-export type SimEventKind = 'fellAsleep' | 'woke';
+/** Sim-event kinds, growing per milestone. */
+export type SimEventKind =
+  // M1 — sleep transitions
+  | 'fellAsleep'
+  | 'woke'
+  // M2 — interactions
+  | 'fed'
+  | 'cleaned'
+  | 'played'
+  | 'comforted'
+  | 'refused'
+  | 'tooTired'
+  // M2 — illness
+  | 'fellIll'
+  | 'recovered'
+  // M2 — ambient flavor
+  | 'ambient';
 
 export interface SimEvent {
   at: number;
@@ -56,6 +73,8 @@ export interface SimEvent {
   dispositionDelta: number;
   /** How noteworthy — narration (M6) sorts/keeps by this. */
   salience: number;
+  /** Optional ambient motif (e.g. 'warmSpot', 'stoppedClock') for the narration layer. */
+  tag?: string;
 }
 
 /**
@@ -78,6 +97,7 @@ export function condenseMote(seed: number, now: number): CreatureState {
       security: 50,
     },
     asleep: false,
+    ill: false,
     uncanny: false,
     alive: true,
     mortality: 'soft',
