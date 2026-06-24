@@ -38,6 +38,32 @@ export interface NewCreature {
   state: CreatureState;
 }
 
+// ── M5.5: accounts & auth ────────────────────────────────────────────────────────
+export interface UserRecord {
+  id: string;
+  email: string;
+  displayName: string;
+  oauthProvider: string;
+  oauthSubject: string;
+  ageBand: string | null;
+  createdAt: number;
+}
+
+export interface SessionRecord {
+  id: string;
+  userId: string;
+  csrfToken: string;
+  expiresAt: number;
+}
+
+export interface OAuthUpsert {
+  provider: string;
+  subject: string;
+  email: string;
+  displayName: string;
+  ageBand?: string | null;
+}
+
 export interface Repository {
   createCreature(input: NewCreature): Promise<CreatureRecord>;
   /** Owner-scoped: returns null if it doesn't exist OR isn't owned by `ownerId`. */
@@ -52,4 +78,11 @@ export interface Repository {
   recordInteraction(creatureId: string, action: string, at: number): Promise<void>;
   addStar(input: Omit<StarRecord, 'id'>): Promise<StarRecord>;
   listStars(ownerId: string | null): Promise<StarRecord[]>;
+
+  // Auth (M5.5)
+  upsertUser(input: OAuthUpsert): Promise<UserRecord>;
+  getUserById(id: string): Promise<UserRecord | null>;
+  createSession(userId: string, csrfToken: string, expiresAt: number): Promise<SessionRecord>;
+  getSession(id: string): Promise<{ session: SessionRecord; user: UserRecord } | null>;
+  deleteSession(id: string): Promise<void>;
 }

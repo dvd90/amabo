@@ -91,5 +91,30 @@ export const interactions = pgTable('interactions', {
   action: text('action').notNull(),
 });
 
+// ── M5.5: accounts & auth (ARCHITECTURE.md §14) ─────────────────────────────────
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: text('email').notNull(),
+    displayName: text('display_name').notNull(),
+    oauthProvider: text('oauth_provider').notNull(),
+    oauthSubject: text('oauth_subject').notNull(),
+    ageBand: text('age_band'), // captured for the child-safety + optional-crypto gates
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('users_oauth_idx').on(t.oauthProvider, t.oauthSubject)],
+);
+
+export const sessions = pgTable('sessions', {
+  id: text('id').primaryKey(), // opaque random token (the cookie value)
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  csrfToken: text('csrf_token').notNull(),
+  expiresAt: doublePrecision('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type EventRow = typeof events.$inferSelect;
 export type SimEventForDb = SimEvent;

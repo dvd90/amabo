@@ -6,7 +6,16 @@
 
 import type { SimEvent } from '@amabo/engine';
 import { randomUUID } from 'node:crypto';
-import type { CreatureRecord, JournalEntry, NewCreature, Repository, StarRecord } from './types.js';
+import type {
+  CreatureRecord,
+  JournalEntry,
+  NewCreature,
+  OAuthUpsert,
+  Repository,
+  SessionRecord,
+  StarRecord,
+  UserRecord,
+} from './types.js';
 
 interface StoredEvent extends SimEvent {
   creatureId: string;
@@ -19,6 +28,8 @@ export class InMemoryRepository implements Repository {
   private events: StoredEvent[] = [];
   private stars: StarRecord[] = [];
   private interactions: { creatureId: string; action: string; at: number }[] = [];
+  private users = new Map<string, UserRecord>();
+  private sessions = new Map<string, SessionRecord>();
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -77,5 +88,56 @@ export class InMemoryRepository implements Repository {
 
   async listStars(ownerId: string | null): Promise<StarRecord[]> {
     return this.stars.filter((s) => s.ownerId === ownerId).map((s) => structuredClone(s));
+  }
+
+  async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
+    for (const u of this.users.values()) {
+      if (u.oauthProvider === input.provider && u.oauthSubject === input.subject) {
+        return structuredClone(u);
+      }
+    }
+    const user: UserRecord = {
+      id: randomUUID(),
+      email: input.email,
+      displayName: input.displayName,
+      oauthProvider: input.provider,
+      oauthSubject: input.subject,
+      ageBand: input.ageBand ?? null,
+      createdAt: Date.now(),
+    };
+    this.users.set(user.id, user);
+    return structuredClone(user);
+  }
+
+  async getUserById(id: string): Promise<UserRecord | null> {
+    const u = this.users.get(id);
+    return u ? structuredClone(u) : null;
+  }
+
+  async createSession(
+    userId: string,
+    csrfToken: string,
+    expiresAt: number,
+  ): Promise<SessionRecord> {
+    const session: SessionRecord = {
+      id: randomUUID() + randomUUID(),
+      userId,
+      csrfToken,
+      expiresAt,
+    };
+    this.sessions.set(session.id, session);
+    return structuredClone(session);
+  }
+
+  async getSession(id: string): Promise<{ session: SessionRecord; user: UserRecord } | null> {
+    const session = this.sessions.get(id);
+    if (!session) return null;
+    const user = this.users.get(session.userId);
+    if (!user) return null;
+    return { session: structuredClone(session), user: structuredClone(user) };
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    this.sessions.delete(id);
   }
 }

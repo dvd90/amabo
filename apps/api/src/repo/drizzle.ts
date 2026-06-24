@@ -6,9 +6,26 @@
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
 import { and, desc, eq, isNull } from 'drizzle-orm';
+import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
-import { creatures, events as eventsTable, interactions, stars } from '../db/schema.js';
-import type { CreatureRecord, JournalEntry, NewCreature, Repository, StarRecord } from './types.js';
+import {
+  creatures,
+  events as eventsTable,
+  interactions,
+  sessions,
+  stars,
+  users,
+} from '../db/schema.js';
+import type {
+  CreatureRecord,
+  JournalEntry,
+  NewCreature,
+  OAuthUpsert,
+  Repository,
+  SessionRecord,
+  StarRecord,
+  UserRecord,
+} from './types.js';
 
 type Row = typeof creatures.$inferSelect;
 
@@ -166,4 +183,83 @@ export class DrizzleRepository implements Repository {
       constellationPos: row.constellationPos,
     }));
   }
+
+  async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
+    const existing = await this.db
+      .select()
+      .from(users)
+      .where(and(eq(users.oauthProvider, input.provider), eq(users.oauthSubject, input.subject)))
+      .limit(1);
+    if (existing[0]) return toUser(existing[0]);
+
+    const [row] = await this.db
+      .insert(users)
+      .values({
+        email: input.email,
+        displayName: input.displayName,
+        oauthProvider: input.provider,
+        oauthSubject: input.subject,
+        ageBand: input.ageBand ?? null,
+      })
+      .returning();
+    return toUser(row!);
+  }
+
+  async getUserById(id: string): Promise<UserRecord | null> {
+    const [row] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return row ? toUser(row) : null;
+  }
+
+  async createSession(
+    userId: string,
+    csrfToken: string,
+    expiresAt: number,
+  ): Promise<SessionRecord> {
+    const id = randomBytes(32).toString('hex');
+    const [row] = await this.db
+      .insert(sessions)
+      .values({ id, userId, csrfToken, expiresAt })
+      .returning();
+    return {
+      id: row!.id,
+      userId: row!.userId,
+      csrfToken: row!.csrfToken,
+      expiresAt: row!.expiresAt,
+    };
+  }
+
+  async getSession(id: string): Promise<{ session: SessionRecord; user: UserRecord } | null> {
+    const [row] = await this.db
+      .select()
+      .from(sessions)
+      .innerJoin(users, eq(sessions.userId, users.id))
+      .where(eq(sessions.id, id))
+      .limit(1);
+    if (!row) return null;
+    return {
+      session: {
+        id: row.sessions.id,
+        userId: row.sessions.userId,
+        csrfToken: row.sessions.csrfToken,
+        expiresAt: row.sessions.expiresAt,
+      },
+      user: toUser(row.users),
+    };
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    await this.db.delete(sessions).where(eq(sessions.id, id));
+  }
+}
+
+function toUser(row: typeof users.$inferSelect): UserRecord {
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.displayName,
+    oauthProvider: row.oauthProvider,
+    oauthSubject: row.oauthSubject,
+    ageBand: row.ageBand,
+    createdAt: row.createdAt.getTime(),
+  };
 }
