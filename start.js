@@ -1,16 +1,22 @@
-// ponytail: single dispatcher so Railpack can auto-detect a start command from root
-// RAILWAY_SERVICE_NAME is injected at runtime — "web" → static serve, else → API
+// ponytail: dispatcher — DATABASE_URL present = API, absent = web
 import { execFileSync, spawn } from 'child_process';
 
-const isWeb = (process.env.RAILWAY_SERVICE_NAME ?? '').toLowerCase().includes('web');
+const hasDb = !!process.env.DATABASE_URL;
+const svc = process.env.RAILWAY_SERVICE_NAME ?? '(unknown)';
 
-if (!isWeb) {
-  // Run migrations before starting the API (Railway preDeployCommand equivalent)
+// If this looks like the API service but DATABASE_URL is missing, fail loudly
+if (!hasDb && !svc.toLowerCase().includes('web')) {
+  console.error(`[start] DATABASE_URL is not set on service "${svc}".`);
+  console.error('[start] In Railway: add a Postgres plugin, then set DATABASE_URL=${{ Postgres.DATABASE_URL }} on this service.');
+  process.exit(1);
+}
+
+if (hasDb) {
   execFileSync('pnpm', ['--filter', '@amabo/api', 'db:migrate'], { stdio: 'inherit' });
 }
 
-const [cmd, ...args] = isWeb
-  ? ['pnpm', '--filter', '@amabo/web', 'start']
-  : ['node', 'apps/api/dist/index.js'];
+const [cmd, ...args] = hasDb
+  ? ['node', 'apps/api/dist/index.js']
+  : ['pnpm', '--filter', '@amabo/web', 'start'];
 
 spawn(cmd, args, { stdio: 'inherit' }).on('exit', code => process.exit(code ?? 0));
