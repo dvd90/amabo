@@ -8,12 +8,12 @@ env vars below).
 ```
 Railway project "amabo"
 ├── Postgres            (managed plugin → injects DATABASE_URL)
-├── amabo-api           (config: railway.api.json)   → https://amabo-api.up.railway.app
-└── amabo-web           (config: railway.web.json)   → https://amabo-web.up.railway.app
+├── amabo-api           (Root Directory: apps/api  →  apps/api/railway.json)
+└── amabo-web           (Root Directory: apps/web  →  apps/web/railway.json)
 ```
 
-Each service reads its **own config file** (`railway.api.json` / `railway.web.json`)
-already in the repo — Railway uses one config file per service.
+Each service has its own `railway.json` inside its app directory. Set **Root Directory**
+(not Config Path) per service so Railpack auto-discovers the config.
 
 ---
 
@@ -31,7 +31,7 @@ already in the repo — Railway uses one config file per service.
 ## Step 2 — Configure the **API** service (`amabo-api`)
 
 1. Open the service Railway created from the repo → **Settings**.
-2. **Config-as-code → Config Path:** set to `railway.api.json`.
+2. **Source → Root Directory:** set to `apps/api` (this is how Railpack finds `apps/api/railway.json`).
 3. **Settings → Networking → Generate Domain** (note the URL, e.g. `https://amabo-api.up.railway.app`).
 4. **Variables** → add:
 
@@ -52,13 +52,13 @@ already in the repo — Railway uses one config file per service.
    > first to get its domain (Step 3), or set a placeholder now and update `WEB_ORIGIN`
    > after Step 3, then redeploy the API.
 
-5. Deploy. On build Railway runs `pnpm build`, the **release step** `drizzle-kit migrate`,
-   then starts the API. Check `GET https://<api-url>/health` → `{ "ok": true }`.
+5. Deploy. Railpack builds from the monorepo root, the **release step** runs `drizzle-kit migrate`,
+   then starts `node dist/index.js`. Check `GET https://<api-url>/health` → `{ "ok": true }`.
 
 ## Step 3 — Add the **web** service (`amabo-web`)
 
 1. Project → **New → GitHub Repo** → same repo `dvd90/amabo` (branch `main`).
-2. The new service → **Settings → Config-as-code → Config Path:** `railway.web.json`.
+2. The new service → **Settings → Source → Root Directory:** `apps/web`.
 3. **Settings → Networking → Generate Domain** (e.g. `https://amabo-web.up.railway.app`).
 4. **Variables** → add (note: this is a **build-time** var — Vite inlines it):
 

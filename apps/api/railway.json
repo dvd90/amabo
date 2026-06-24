@@ -1,11 +1,11 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "buildCommand": "pnpm build"
+    "buildCommand": "cd ../../ && pnpm install --frozen-lockfile && pnpm build"
   },
   "deploy": {
-    "preDeployCommand": "pnpm --filter @amabo/api db:migrate",
-    "startCommand": "pnpm --filter @amabo/api start",
+    "preDeployCommand": "drizzle-kit migrate",
+    "startCommand": "pnpm start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",
