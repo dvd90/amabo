@@ -70,7 +70,10 @@ export type SimEventKind =
   | 'fellIll'
   | 'recovered'
   // M2 — ambient flavor
-  | 'ambient';
+  | 'ambient'
+  // M4 — lifecycle milestones
+  | 'evolved'
+  | 'graduation';
 
 export interface SimEvent {
   at: number;

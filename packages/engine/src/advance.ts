@@ -44,6 +44,7 @@ import {
   WELLBEING_NEUTRAL,
 } from './config.js';
 import { ambientTableFor, pickWeighted } from './events.js';
+import { canGraduate, careTotal, nextStageFor } from './lifecycle.js';
 import { clamp, clampDisposition } from './math.js';
 import { deriveSeed, mulberry32 } from './rng.js';
 import { deriveUncanny, type CreatureState, type SimEvent, type Stats } from './state.js';
@@ -86,6 +87,7 @@ export function advance(
   let asleep = state.asleep;
   let ill = state.ill;
   let disposition = state.disposition;
+  let stage = state.stage;
   let ageMinutes = state.ageMinutes;
   let lastTickAt = state.lastTickAt;
   const events: SimEvent[] = [];
@@ -206,6 +208,33 @@ export function advance(
 
     ageMinutes += SIM_STEP_MINUTES;
     lastTickAt = stepEndTs;
+
+    // Stage check (the ladder of love): climb when age AND care allow it.
+    const climbTo = nextStageFor(stage, ageMinutes, careTotal(state));
+    if (climbTo) {
+      stage = climbTo;
+      events.push({
+        at: stepEndTs,
+        kind: 'evolved',
+        statDeltas: {},
+        dispositionDelta: 0,
+        salience: 4,
+        tag: climbTo,
+      });
+    }
+
+    // Graduation check: a high-Amabo Bloom too bright for the glass. We emit the
+    // milestone once and stop — the API then calls engine.graduate (ARCHITECTURE §8).
+    if (canGraduate({ ...state, stage, disposition, ageMinutes, stats })) {
+      events.push({
+        at: stepEndTs,
+        kind: 'graduation',
+        statDeltas: {},
+        dispositionDelta: 0,
+        salience: 5,
+      });
+      break;
+    }
   }
 
   const next: CreatureState = {
@@ -214,6 +243,7 @@ export function advance(
     asleep,
     ill,
     disposition,
+    stage,
     ageMinutes,
     lastTickAt,
     uncanny: deriveUncanny(disposition),

@@ -109,3 +109,38 @@ export const DISPOSITION_NUDGE = {
   comfort: 6, // the Beauty-and-the-Beast pull back toward the light
   refused: -3, // over-care sours, just like neglect
 } as const;
+
+/**
+ * Stage gates — Plato's ladder of love (STORY.md §5). A stage opens on age AND care:
+ * a creature becomes Real by being loved a long time (the Velveteen arc), not by the
+ * clock alone. `care` is the total of all care acts (fed + cleaned + played + comforted).
+ */
+export const STAGE_GATES: Record<
+  'spark' | 'velveteen' | 'bloom',
+  { ageMinutes: number; care: number }
+> = {
+  spark: { ageMinutes: 60, care: 3 },
+  velveteen: { ageMinutes: 360, care: 12 },
+  bloom: { ageMinutes: 1440, care: 30 },
+};
+
+/**
+ * Graduation (STORY.md §7): only a high-Amabo Bloom, radiant and secure and old
+ * enough, becomes "too bright for the glass" and ascends into Elysium. A Yim cannot
+ * graduate — its arc is to be loved back toward the light first.
+ */
+export const GRADUATION = {
+  disposition: 80,
+  ageMinutes: 2880, // two days settled as a Bloom
+  ambra: 90,
+  security: 80,
+} as const;
+
+/**
+ * Multiplying — the Symposium split (STORY.md §6). When a settled creature overflows
+ * with Ambra it divides, sharing the surplus without either half losing anything.
+ */
+export const MULTIPLY = {
+  ambra: 95,
+  minStageIndex: 2, // velveteen or beyond
+} as const;

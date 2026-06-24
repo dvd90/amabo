@@ -15,4 +15,5 @@ export * from './rng.js';
 export * from './state.js';
 export * from './events.js';
 export * from './interact.js';
+export * from './lifecycle.js';
 export * from './advance.js';
