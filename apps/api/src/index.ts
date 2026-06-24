@@ -5,14 +5,24 @@
  * secrets are absent (local dev only). The AI narrator lands in M6.
  */
 
+import { makeAnthropicClient } from '@amabo/ai';
 import { createApp } from './app.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
 import { randomSeed, systemClock } from './clock.js';
 import { makeDb } from './db/client.js';
+import { aiNarrator } from './narrate/ai.js';
 import { localNarrator } from './narrate/port.js';
+import type { Narrator } from './narrate/port.js';
 import { DrizzleRepository } from './repo/drizzle.js';
 import { InMemoryRepository } from './repo/memory.js';
 import type { Repository } from './repo/types.js';
+
+function buildNarrator(): Narrator {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (key) return aiNarrator(makeAnthropicClient(key));
+  console.warn('[amabo] ANTHROPIC_API_KEY not set — using local templated narrator');
+  return localNarrator;
+}
 
 function buildRepo(): Repository {
   const url = process.env.DATABASE_URL;
@@ -36,7 +46,7 @@ if (process.env.NODE_ENV !== 'test') {
     repo: buildRepo(),
     clock: systemClock,
     seed: randomSeed,
-    narrator: localNarrator,
+    narrator: buildNarrator(),
     authProvider: buildAuthProvider(),
     cookieSecure: process.env.NODE_ENV === 'production',
     baseUrl: process.env.BASE_URL ?? 'http://localhost:3000',
