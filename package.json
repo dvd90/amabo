@@ -9,7 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && pnpm --filter @amabo/web build",
+    "start": "node start.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
