@@ -1,34 +1,37 @@
 /**
- * @amabo/api — Express endpoints, persistence, and the engine host
- * (docs/ARCHITECTURE.md §7).
- *
- * The wall clock is injected HERE, at the edge — never inside packages/engine.
- * Handlers will zod-validate in → call engine/ai → persist → zod-validate out, and
- * every creature query will be owner-scoped once auth lands at M5.5. M0 is just a
- * compiling placeholder with a health check.
+ * index.ts — the composition root. Build dependencies from the environment (12-factor)
+ * and start the server. With DATABASE_URL set we use Postgres; without it we fall back
+ * to an in-memory repo for a zero-setup local run. The AI narrator lands in M6; M5
+ * ships the local fallback so `peek` always returns a line.
  */
 
-import express, { type Express } from 'express';
+import { createApp } from './app.js';
+import { randomSeed, systemClock } from './clock.js';
+import { makeDb } from './db/client.js';
+import { localNarrator } from './narrate/port.js';
+import { DrizzleRepository } from './repo/drizzle.js';
+import { InMemoryRepository } from './repo/memory.js';
+import type { Repository } from './repo/types.js';
 
-/** A clock the engine never sees; the API supplies `now` at the boundary. */
-export type Clock = () => number;
-export const systemClock: Clock = () => Date.now();
-
-export function createApp(clock: Clock = systemClock): Express {
-  const app = express();
-  app.use(express.json());
-
-  app.get('/health', (_req, res) => {
-    res.json({ ok: true, now: clock() });
-  });
-
-  return app;
+function buildRepo(): Repository {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.warn('[amabo] DATABASE_URL not set — using in-memory repository (data not persisted)');
+    return new InMemoryRepository();
+  }
+  return new DrizzleRepository(makeDb(url));
 }
 
-// Only listen when run directly, not when imported by tests.
 if (process.env.NODE_ENV !== 'test') {
+  const app = createApp({
+    repo: buildRepo(),
+    clock: systemClock,
+    seed: randomSeed,
+    narrator: localNarrator,
+    getOwner: () => null, // single-user until M5.5 wires sessions
+  });
   const port = Number(process.env.PORT ?? 3000);
-  createApp().listen(port, () => {
+  app.listen(port, () => {
     console.log(`amabo api listening on :${port}`);
   });
 }
