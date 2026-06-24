@@ -1,0 +1,265 @@
+/**
+ * routes/share.ts — sharing & resonance, off-chain (STORY.md §7¾, ARCHITECTURE.md §14).
+ * Visits and postcards are PUBLIC capability-token reads (mounted before the auth gate);
+ * minting/revoking links, resonance meetings, rehoming, and report/block are owner
+ * actions (mounted after auth + CSRF). Share links are scoped, revocable, expiring.
+ */
+
+import {
+  clamp,
+  clampDisposition,
+  deriveSeed,
+  deriveUncanny,
+  mulberry32,
+  resonate,
+  visitDelta,
+  type CreatureState,
+  type ResonanceDelta,
+} from '@amabo/engine';
+import { Router, type Request } from 'express';
+import type { Clock } from '../clock.js';
+import { newToken } from '../auth/session.js';
+import type { CreatureRecord, Repository, ShareKind } from '../repo/types.js';
+import { catchUp } from '../service/catchup.js';
+
+export interface ShareDeps {
+  repo: Repository;
+  clock: Clock;
+  baseUrl: string;
+  getOwner: (req: Request) => string | null;
+}
+
+const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function applyDelta(state: CreatureState, delta: ResonanceDelta): CreatureState {
+  const stats = { ...state.stats };
+  for (const key of Object.keys(delta.stats) as (keyof typeof stats)[]) {
+    stats[key] = clamp(stats[key] + (delta.stats[key] ?? 0), 0, 100);
+  }
+  const disposition = clampDisposition(state.disposition + delta.disposition);
+  return { ...state, stats, disposition, uncanny: deriveUncanny(disposition) };
+}
+
+function isLive(link: { revokedAt: number | null; expiresAt: number }, now: number): boolean {
+  return link.revokedAt === null && link.expiresAt > now;
+}
+
+/** Public, capability-token reads — no session required. */
+export function publicShareRouter(deps: ShareDeps): Router {
+  const { repo, clock } = deps;
+  const router = Router();
+
+  // A visit: another Light looks in (read-mostly) and gently warms the creature.
+  router.post('/visit/:token', (req, res, next) => {
+    void (async () => {
+      try {
+        const link = await repo.getShareLink(req.params.token!);
+        if (!link || link.kind !== 'visit' || !isLive(link, clock())) {
+          return res.status(404).json({ error: 'not found' });
+        }
+        const rec = await repo.getCreature(link.creatureId, link.ownerId);
+        if (!rec) return res.status(404).json({ error: 'not found' });
+
+        const { record } = await catchUp(repo, rec, clock());
+        const warmed: CreatureRecord = { ...record, state: applyDelta(record.state, visitDelta()) };
+        await repo.saveCreature(warmed);
+        await repo.appendEvents(
+          warmed.id,
+          [{ at: clock(), kind: 'visit', statDeltas: {}, dispositionDelta: 0, salience: 2 }],
+          'user',
+        );
+        // A single optional kind word becomes part of the creature's inner life.
+        const word = typeof req.body?.word === 'string' ? req.body.word.slice(0, 140) : null;
+        if (word) await repo.addMemories(warmed.id, [{ at: clock(), text: word, salience: 5 }]);
+
+        return res.json({
+          creature: {
+            name: warmed.name,
+            stage: warmed.state.stage,
+            uncanny: warmed.state.uncanny,
+            ambra: warmed.state.stats.ambra,
+          },
+          warmed: true,
+        });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // A postcard: a public, read-only moment. Never exposes account data.
+  router.get('/postcard/:token', (req, res, next) => {
+    void (async () => {
+      try {
+        const link = await repo.getShareLink(req.params.token!);
+        if (!link || link.kind !== 'postcard' || !isLive(link, clock())) {
+          return res.status(404).json({ error: 'not found' });
+        }
+        const rec = await repo.getCreature(link.creatureId, link.ownerId);
+        if (!rec) return res.status(404).json({ error: 'not found' });
+        return res.json({
+          name: rec.name,
+          stage: rec.state.stage,
+          uncanny: rec.state.uncanny,
+          graduated: rec.graduatedAt !== null,
+        });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  return router;
+}
+
+/** Owner actions — require a session + CSRF (applied by the app before mounting). */
+export function authedShareRouter(deps: ShareDeps): Router {
+  const { repo, clock, baseUrl, getOwner } = deps;
+  const router = Router();
+
+  // Mint a scoped, revocable, expiring share link.
+  router.post('/creatures/:id/share', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        const rec = await repo.getCreature(req.params.id!, owner);
+        if (!rec) return res.status(404).json({ error: 'not found' });
+        const kind = req.body?.kind as ShareKind;
+        if (kind !== 'visit' && kind !== 'meet' && kind !== 'postcard') {
+          return res.status(400).json({ error: 'invalid share kind' });
+        }
+        const ttl =
+          Number(req.body?.ttlMinutes) > 0 ? Number(req.body.ttlMinutes) * 60_000 : DEFAULT_TTL_MS;
+        const link = await repo.createShareLink({
+          creatureId: rec.id,
+          ownerId: owner,
+          kind,
+          token: newToken(),
+          expiresAt: clock() + ttl,
+        });
+        const path = kind === 'postcard' ? `/postcard/${link.token}` : `/${kind}/${link.token}`;
+        return res
+          .status(201)
+          .json({ token: link.token, kind, expiresAt: link.expiresAt, url: `${baseUrl}${path}` });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  router.delete('/share/:token', (req, res, next) => {
+    void (async () => {
+      try {
+        const ok = await repo.revokeShareLink(req.params.token!, getOwner(req), clock());
+        if (!ok) return res.status(404).json({ error: 'not found' });
+        return res.json({ revoked: true });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // A resonance meeting: my creature meets another via its owner's 'meet' token.
+  router.post('/creatures/:id/meet', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        const mine = await repo.getCreature(req.params.id!, owner);
+        if (!mine) return res.status(404).json({ error: 'not found' });
+        const link = await repo.getShareLink(String(req.body?.token ?? ''));
+        if (!link || link.kind !== 'meet' || !isLive(link, clock())) {
+          return res.status(404).json({ error: 'meeting not found' });
+        }
+        const other = await repo.getCreature(link.creatureId, link.ownerId);
+        if (!other) return res.status(404).json({ error: 'meeting not found' });
+        if (other.id === mine.id)
+          return res.status(400).json({ error: 'a creature cannot meet itself' });
+
+        const now = clock();
+        const a = (await catchUp(repo, mine, now)).record;
+        const b = (await catchUp(repo, other, now)).record;
+        const rng = mulberry32(deriveSeed(a.state.seed, b.state.seed));
+        const { events, deltasA, deltasB } = resonate(a.state, b.state, rng);
+
+        await repo.saveCreature({ ...a, state: applyDelta(a.state, deltasA) });
+        await repo.saveCreature({ ...b, state: applyDelta(b.state, deltasB) });
+        await repo.appendEvents(a.id, events, 'sim');
+        await repo.appendEvents(b.id, events, 'sim');
+        return res.json({ result: events[0]?.tag, events });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // Rehoming: a deliberate, two-sided act of entrusting.
+  router.post('/creatures/:id/rehome', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        const rec = await repo.getCreature(req.params.id!, owner);
+        if (!rec || !owner) return res.status(404).json({ error: 'not found' });
+        const toUserId = String(req.body?.toUserId ?? '');
+        if (!toUserId || toUserId === owner)
+          return res.status(400).json({ error: 'invalid recipient' });
+        const rehome = await repo.initiateRehome({
+          creatureId: rec.id,
+          fromUserId: owner,
+          toUserId,
+          fromConfirmedAt: clock(),
+          at: clock(),
+        });
+        return res.status(201).json({ rehome });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  router.post('/rehome/:id/confirm', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        if (!owner) return res.status(404).json({ error: 'not found' });
+        const rehome = await repo.confirmRehome(req.params.id!, owner, clock());
+        if (!rehome) return res.status(404).json({ error: 'not found' });
+        return res.json({ rehome });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // Safety surfaces.
+  router.post('/report', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        await repo.addReport(
+          owner ?? 'anon',
+          String(req.body?.subject ?? ''),
+          req.body?.reason ?? null,
+          clock(),
+        );
+        return res.status(201).json({ reported: true });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  router.post('/block', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        if (!owner) return res.status(401).json({ error: 'authentication required' });
+        await repo.addBlock(owner, String(req.body?.blockedUserId ?? ''), clock());
+        return res.status(201).json({ blocked: true });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  return router;
+}

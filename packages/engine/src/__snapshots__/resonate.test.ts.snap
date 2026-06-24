@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`resonate — a duet, never a duel (M9.5) > matches the recorded snapshot 1`] = `
+{
+  "deltasA": {
+    "disposition": -2,
+    "stats": {
+      "affection": 3.623524747788906,
+      "security": 2.7176435608416796,
+    },
+  },
+  "deltasB": {
+    "disposition": 2,
+    "stats": {
+      "affection": 3.623524747788906,
+      "security": 2.7176435608416796,
+    },
+  },
+  "events": [
+    {
+      "at": 1000,
+      "dispositionDelta": 0,
+      "kind": "resonance",
+      "salience": 3,
+      "statDeltas": {},
+      "tag": "harmony",
+    },
+  ],
+}
+`;

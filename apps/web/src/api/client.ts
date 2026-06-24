@@ -1,0 +1,93 @@
+/**
+ * api/client.ts — the device's thin window onto the API. Sends the session cookie
+ * (credentials: 'include') and echoes the CSRF cookie back as a header on mutations.
+ * Defined behind an interface so the store can be tested with a fake.
+ */
+
+import type { CreatureViewT } from '@amabo/shared';
+
+export type { CreatureViewT };
+
+export interface JournalEntry {
+  at: number;
+  kind: string;
+  tag: string | null;
+  text: string | null;
+  salience: number;
+}
+
+export interface StarView {
+  id: string;
+  name: string;
+  constellationPos: { x: number; y: number };
+}
+
+export interface PeekResult {
+  journal: string;
+  mood: string;
+  creature: CreatureViewT;
+}
+
+export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';
+
+export interface ApiClient {
+  me(): Promise<{ user: { id: string; displayName: string } } | null>;
+  createCreature(name: string): Promise<CreatureViewT>;
+  getCreature(id: string): Promise<CreatureViewT>;
+  peek(id: string): Promise<PeekResult>;
+  interact(id: string, action: CareAction): Promise<{ creature: CreatureViewT }>;
+  journal(id: string): Promise<JournalEntry[]>;
+  stars(id: string): Promise<StarView[]>;
+}
+
+function readCookie(name: string): string {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]!) : '';
+}
+
+export class HttpApiClient implements ApiClient {
+  constructor(private base = '') {}
+
+  private async req<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (body !== undefined) headers['content-type'] = 'application/json';
+    if (method !== 'GET') headers['x-csrf-token'] = readCookie('amabo_csrf');
+    const res = await fetch(`${this.base}${path}`, {
+      method,
+      headers,
+      credentials: 'include',
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`${method} ${path} → ${res.status}`);
+    return (await res.json()) as T;
+  }
+
+  async me() {
+    try {
+      return await this.req<{ user: { id: string; displayName: string } }>('/me');
+    } catch {
+      return null;
+    }
+  }
+  createCreature(name: string) {
+    return this.req<CreatureViewT>('/creatures', 'POST', { name });
+  }
+  getCreature(id: string) {
+    return this.req<CreatureViewT>(`/creatures/${id}`);
+  }
+  peek(id: string) {
+    return this.req<PeekResult>(`/creatures/${id}/peek`, 'POST', {});
+  }
+  interact(id: string, action: CareAction) {
+    return this.req<{ creature: CreatureViewT }>(`/creatures/${id}/interact`, 'POST', { action });
+  }
+  async journal(id: string) {
+    return (await this.req<{ entries: JournalEntry[] }>(`/creatures/${id}/journal`)).entries;
+  }
+  async stars(id: string) {
+    return (await this.req<{ stars: StarView[] }>(`/creatures/${id}/stars`)).stars;
+  }
+}
+
+/** The login entry point (full-page redirect to Google OAuth). */
+export const LOGIN_URL = '/auth/google';

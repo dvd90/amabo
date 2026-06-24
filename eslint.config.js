@@ -11,6 +11,16 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
+    // Allow intentionally-unused names prefixed with _ (e.g. Express's 4-arg error
+    // handler, which must keep `next` in its signature to be recognized).
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     // Law 1: packages/engine is PURE. No I/O, no wall-clock, no global RNG.
     // Time and randomness are injected. This lint makes a purity violation
     // fail CI instead of silently corrupting determinism.

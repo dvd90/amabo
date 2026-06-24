@@ -9,3 +9,6 @@ pnpm-lock.yaml
 # don't let a formatter reflow their tables and prose.
 CLAUDE.md
 docs/
+
+# Generated Drizzle migration artifacts — owned by drizzle-kit, not the formatter.
+apps/api/drizzle/

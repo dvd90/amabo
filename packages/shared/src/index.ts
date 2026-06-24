@@ -21,3 +21,5 @@ export const DISPOSITION_MAX = 100;
 /** Mortality modes: `soft` is the gentle default; `classic` allows the light to go out. */
 export const MORTALITIES = ['soft', 'classic'] as const;
 export type Mortality = (typeof MORTALITIES)[number];
+
+export * from './schemas.js';
