@@ -107,6 +107,8 @@ export interface GameState {
   mood: string | null;
   /** The "while you were away" recap shown when a creature is opened; null = dismissed. */
   reveal: GapSummary | null;
+  /** Set the moment a creature ascends — drives the full-screen graduation ceremony. */
+  graduation: StarView | null;
   /** Short "what just changed" feedback after a care action. */
   lastResult: string | null;
   /** The creature's current reaction; `emoteNonce` bumps so the same emote re-fires. */
@@ -131,6 +133,8 @@ export interface GameState {
   openCreature(id: string): Promise<void>;
   /** Dismiss the "while you were away" recap. */
   dismissReveal(): void;
+  /** Dismiss the graduation ceremony and return to the roster. */
+  dismissGraduation(): Promise<void>;
   /** The Symposium split — let an overflowing creature share its light into a sibling. */
   multiply(): Promise<void>;
   /** Return to the roster. */
@@ -161,6 +165,7 @@ export const useGame = create<GameState>((set, get) => ({
   lastJournal: null,
   mood: null,
   reveal: null,
+  graduation: null,
   lastResult: null,
   emote: null,
   emoteNonce: 0,
@@ -213,6 +218,7 @@ export const useGame = create<GameState>((set, get) => ({
         lastJournal: r.journal,
         mood: r.mood,
         reveal: r.away ?? null,
+        graduation: r.graduated ?? null,
         emote: 'peek',
         emoteNonce: st.emoteNonce + 1,
         lastPeekAt: Date.now(),
@@ -233,6 +239,11 @@ export const useGame = create<GameState>((set, get) => ({
 
   dismissReveal: () => set({ reveal: null }),
 
+  dismissGraduation: async () => {
+    set({ graduation: null });
+    await get().openDashboard(); // the creature has ascended; back to the roster
+  },
+
   multiply: async () => {
     const { creature, client } = get();
     if (!creature) return;
@@ -249,7 +260,7 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   openDashboard: async () => {
-    set({ route: 'dashboard', creature: null, screen: 'home', reveal: null });
+    set({ route: 'dashboard', creature: null, screen: 'home', reveal: null, graduation: null });
     saveCreatureId(null);
     await get().loadDashboard();
   },
@@ -300,8 +311,10 @@ export const useGame = create<GameState>((set, get) => ({
       const r = await client.peek(creature.id);
       set((st) => ({
         creature: r.creature,
+        creatureNeeds: r.needs ?? st.creatureNeeds,
         lastJournal: r.journal,
         mood: r.mood,
+        graduation: r.graduated ?? st.graduation,
         lastPeekAt: Date.now(),
         emote: 'peek',
         emoteNonce: st.emoteNonce + 1,

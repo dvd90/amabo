@@ -1010,3 +1010,93 @@ body {
 .overflow-banner:focus-visible {
   outline: 3px solid hsl(var(--amber));
 }
+
+/* Sky: tappable named stars (M-G) */
+.sky-stars button.star {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: hsl(var(--amber));
+}
+.sky-stars button.star:focus-visible {
+  outline: 2px solid hsl(var(--amber));
+}
+.star-detail {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: hsl(var(--amber) / 0.95);
+}
+
+/* "Into the West" graduation ceremony (M-G) */
+.ascend {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1.5rem;
+  color: #f3ece0;
+  background:
+    radial-gradient(120% 80% at 50% 120%, rgba(214, 150, 54, 0.25), transparent 60%), #0b0907;
+  overflow: hidden;
+}
+.ascend-rise {
+  position: absolute;
+  left: 50%;
+  bottom: -20%;
+  width: 6px;
+  height: 140%;
+  transform: translateX(-50%);
+  background: linear-gradient(to top, hsl(var(--amber) / 0.6), transparent);
+  filter: blur(6px);
+  animation: ascendRise 3.2s ease-in-out infinite;
+}
+@keyframes ascendRise {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.ascend-body {
+  position: relative;
+  z-index: 1;
+  max-width: 420px;
+}
+.ascend-kicker {
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+.ascend-star {
+  font-size: 3rem;
+  color: hsl(var(--amber));
+  text-shadow: 0 0 24px hsl(var(--amber) / 0.8);
+  animation: pulse 2.6s ease-in-out infinite;
+}
+.ascend-name {
+  font-size: 1.6rem;
+  color: hsl(var(--amber));
+  margin: 0.3rem 0 0.8rem;
+}
+.ascend-line {
+  font-style: italic;
+  line-height: 1.6;
+  opacity: 0.92;
+  margin: 0 0 1rem;
+}
+.ascend-dates {
+  font-size: 0.8rem;
+  opacity: 0.65;
+  margin: 0 0 1.4rem;
+}
+.ascend-done {
+  width: 100%;
+}

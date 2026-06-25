@@ -89,6 +89,7 @@ describe('useGame store (M8)', () => {
       lastJournal: null,
       mood: null,
       reveal: null,
+      graduation: null,
       journalEntries: [],
       stars: [],
       busy: false,
@@ -187,6 +188,29 @@ describe('useGame store (M8)', () => {
     await useGame.getState().start('Pip');
     expect(useGame.getState().creatures.map((c) => c.name)).toContain('Pip');
     expect(useGame.getState().route).toBe('device');
+  });
+
+  it('a peek that returns an ascension triggers the graduation ceremony', async () => {
+    const client = fakeClient();
+    (client.peek as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      journal: 'into the light',
+      mood: 'valedictory',
+      creature: creature(),
+      graduated: {
+        id: 's1',
+        name: 'Lumen',
+        bornAt: 0,
+        graduatedAt: 2 * 86_400_000,
+        constellationPos: { x: 0.1, y: 0.2 },
+      },
+    });
+    useGame.setState({ client, creature: creature(), screen: 'home', lastPeekAt: 0 });
+    await useGame.getState().peek();
+    expect(useGame.getState().graduation?.name).toBe('Lumen');
+
+    await useGame.getState().dismissGraduation();
+    expect(useGame.getState().graduation).toBeNull();
+    expect(useGame.getState().route).toBe('dashboard');
   });
 
   it('multiply splits the creature and adds the new half to the roster', async () => {
