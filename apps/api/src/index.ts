@@ -72,6 +72,17 @@ if (process.env.NODE_ENV !== 'test') {
   // browsers unless also Secure — so force Secure in that case even if NODE_ENV wasn't
   // set. Railway is always HTTPS. This prevents a silent "logged out forever" failure.
   const cookieSecure = process.env.NODE_ENV === 'production' || Boolean(webOrigin);
+  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000';
+
+  // Print the exact OAuth redirect URI so it can be copied verbatim into the Google
+  // console's "Authorized redirect URIs" — the cure for `redirect_uri_mismatch`.
+  if (googleConfigured()) {
+    const cb = process.env.GOOGLE_CALLBACK_URL ?? `${baseUrl}/auth/callback`;
+    console.log(
+      `[amabo] Google OAuth enabled. Register this EXACT redirect URI in the Google console:\n         ${cb}`,
+    );
+  }
+
   const app = createApp({
     repo: buildRepo(),
     clock: systemClock,
@@ -79,7 +90,7 @@ if (process.env.NODE_ENV !== 'test') {
     narrator: buildNarrator(),
     authProvider: buildAuthProvider(),
     cookieSecure,
-    baseUrl: process.env.BASE_URL ?? 'http://localhost:3000',
+    baseUrl,
     // Two-service deploy: set WEB_ORIGIN to the web app's URL (enables CORS +
     // SameSite=None cookies + post-login redirect back to the web app).
     webOrigin,
