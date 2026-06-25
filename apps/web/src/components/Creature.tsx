@@ -1,20 +1,40 @@
 /**
- * Creature.tsx — the polymorphic creature, drawn as SVG so it looks like *someone*
- * instead of a stray Unicode glyph (STORY.md §10: love has no shape; stage × disposition).
- * Amabo presentations are warm, round, and smiling; Yim presentations are pale and
- * uncanny (oversized eyes, a flat mouth). Size grows by stage; illness tints it; sleep
- * closes the eyes. Fully deterministic — no randomness.
+ * Creature.tsx — the polymorphic creature (STORY.md §1, §10: love has no shape; the
+ * sprite is stage × disposition). Drawn as deterministic SVG so it reads as *someone*:
+ *  - Stage sculpts the silhouette: a Mote is a bare glowing orb; a Spark grows an
+ *    antenna; a Velveteen fills out and grows soft ears; a Bloom is fully itself.
+ *  - Disposition sculpts the feeling: an Amabo is round, warm and smiling; a Yim is
+ *    taller, paler and uncanny (oversized eyes, a flat longing mouth).
+ *  - A per-seed variation (deterministic, no randomness) gives each one its own tilt,
+ *    hue and ears, so two creatures of the same stage still look like different souls.
+ * Illness tints; sleep closes the eyes; ambra drives the glow.
  */
 
-import type { CreatureViewT } from '@amabo/shared';
+import { STAGES, type CreatureViewT } from '@amabo/shared';
 import type { Emote } from '../store/useGame.js';
 
 const STAGE_SCALE: Record<string, number> = {
-  mote: 0.55,
-  spark: 0.7,
+  mote: 0.5,
+  spark: 0.68,
   velveteen: 0.85,
   bloom: 1,
 };
+
+/** Deterministic per-creature variation from the seed (pure: no Math.random). */
+function variation(seed: number) {
+  let x = (Math.abs(Math.trunc(seed)) * 2654435761 + 12345) >>> 0;
+  const next = () => {
+    x = (x * 1664525 + 1013904223) >>> 0;
+    return x / 4294967296;
+  };
+  const earRoll = next();
+  return {
+    hueShift: Math.round((next() * 2 - 1) * 8), // ±8°
+    tilt: (next() * 2 - 1) * 3, // ±3° personality lean
+    earsSeed: earRoll < 0.5 ? 1 : 2, // 1–2 ears once they grow in
+    tuft: 0.85 + next() * 0.4, // antenna length factor
+  };
+}
 
 /** Small floating particles per reaction (motes/sparkles/hearts), drawn in SVG space. */
 function Particles({ emote }: { emote: Emote }) {
@@ -31,8 +51,8 @@ function Particles({ emote }: { emote: Emote }) {
   if (emote === 'clean') {
     return (
       <g className="fx-particles">
-        {[18, 50, 82].map((x, i) => (
-          <text key={i} className="p-spark" x={x} y={30 + (i % 2) * 10}>
+        {[18, 50, 82].map((px, i) => (
+          <text key={i} className="p-spark" x={px} y={30 + (i % 2) * 10}>
             ✦
           </text>
         ))}
@@ -74,24 +94,42 @@ export function Creature({
   emote?: Emote | null;
   emoteNonce?: number;
 }) {
-  const { stage, uncanny, asleep, ill, alive } = creature.state;
+  const { stage, uncanny, asleep, ill, alive, seed, traits } = creature.state;
   const ambra = Math.max(0, Math.min(100, creature.state.stats.ambra)) / 100;
   const scale = STAGE_SCALE[stage] ?? 1;
+  const stageIdx = STAGES.indexOf(stage);
+  const v = variation(seed);
+
+  // Stage gates the anatomy.
+  const showAntenna = stageIdx >= 1; // Spark and up
+  const showMouth = stageIdx >= 1;
+  const showEars = stageIdx >= 2; // Velveteen and up
+  const ears = showEars ? v.earsSeed : 0;
+  const trait = Object.keys(traits ?? {}).length > 0; // a distinguishing mark, if any
 
   // Palette: warm amber for an Amabo, pale lavender-grey for a Yim, dim when gone.
-  const hue = uncanny ? 254 : 36;
+  const hue = (uncanny ? 254 : 36) + v.hueShift;
   const sat = alive ? (uncanny ? 16 : 92) : 6;
   const light = !alive ? 32 : ill ? 52 : 60;
   const body = `hsl(${hue} ${sat}% ${light}%)`;
   const shade = `hsl(${hue} ${sat}% ${Math.max(20, light - 18)}%)`;
-  const eyeR = uncanny ? 7.5 : 4.2; // Yim's enormous, quiet wanting
+  const tuftTip = `hsl(${hue} 95% 72%)`;
+
+  const eyeR = uncanny ? 7.6 : 4.2; // a Yim's enormous, quiet wanting
   const cx = 50;
   const cy = 52;
   const bodyR = 30 * scale;
+  // Disposition sculpts the silhouette: Amabo round; Yim taller and narrower (uncanny).
+  const rx = bodyR * (uncanny ? 0.8 : 1);
+  const ry = bodyR * (uncanny ? 1.12 : 0.92);
+  const bodyCy = cy + ry * 0.5;
+  const eyeDx = 9 * (uncanny ? 0.85 : 1);
+  const eyeY = bodyCy - ry * 0.45;
 
   return (
     <svg
       className={`creature${asleep ? ' is-asleep' : ''}${uncanny ? ' is-yim' : ''}`}
+      data-stage={stage}
       viewBox="0 0 100 100"
       width="100%"
       height="100%"
@@ -104,63 +142,111 @@ export function Creature({
     >
       {/* key on the nonce so the same reaction replays each time it fires */}
       <g className={`creature-float${emote ? ` fx-${emote}` : ''}`} key={emoteNonce}>
-        {/* body */}
-        <ellipse cx={cx} cy={cy + bodyR * 0.55} rx={bodyR} ry={bodyR * 0.9} fill={body} />
-        {/* a soft tuft / antenna of light */}
-        <line
-          x1={cx}
-          y1={cy - bodyR * 0.4}
-          x2={cx}
-          y2={cy - bodyR * 0.95}
-          stroke={shade}
-          strokeWidth={2}
-          strokeLinecap="round"
-        />
-        <circle cx={cx} cy={cy - bodyR * 1.0} r={2.6} fill={`hsl(${hue} 95% 72%)`} />
-
-        {/* eyes */}
-        {asleep ? (
-          <>
-            <path d={eyeArc(cx - 9, cy + 4)} stroke={shade} strokeWidth={2} fill="none" />
-            <path d={eyeArc(cx + 9, cy + 4)} stroke={shade} strokeWidth={2} fill="none" />
-            <text x={cx + bodyR * 0.7} y={cy - bodyR * 0.5} className="creature-z">
-              z
-            </text>
-          </>
-        ) : (
-          <>
-            <circle cx={cx - 9} cy={cy + 2} r={eyeR} fill="#241a12" />
-            <circle cx={cx + 9} cy={cy + 2} r={eyeR} fill="#241a12" />
-            {/* catchlights — a Yim's are tiny and cold */}
-            <circle cx={cx - 9 + eyeR * 0.3} cy={cy + 2 - eyeR * 0.3} r={eyeR * 0.3} fill="#fff" />
-            <circle cx={cx + 9 + eyeR * 0.3} cy={cy + 2 - eyeR * 0.3} r={eyeR * 0.3} fill="#fff" />
-          </>
-        )}
-
-        {/* mouth: Amabo smiles; Yim is a flat, longing line; sleeping is a tiny rest */}
-        {!asleep &&
-          (uncanny ? (
-            <line
-              x1={cx - 6}
-              y1={cy + 16}
-              x2={cx + 6}
-              y2={cy + 16}
-              stroke={shade}
-              strokeWidth={1.8}
-              strokeLinecap="round"
+        {/* a static personality lean (kept off the float group so emotes still animate) */}
+        <g transform={`rotate(${v.tilt.toFixed(2)} ${cx} ${bodyCy})`}>
+          {/* soft ears (Velveteen and up) */}
+          {ears >= 1 ? (
+            <ellipse
+              className="creature-ear"
+              cx={cx - rx * 0.55}
+              cy={bodyCy - ry * 0.55}
+              rx={rx * 0.22}
+              ry={ry * 0.3}
+              fill={shade}
             />
+          ) : null}
+          {ears >= 2 ? (
+            <ellipse
+              className="creature-ear"
+              cx={cx + rx * 0.55}
+              cy={bodyCy - ry * 0.55}
+              rx={rx * 0.22}
+              ry={ry * 0.3}
+              fill={shade}
+            />
+          ) : null}
+
+          {/* body */}
+          <ellipse cx={cx} cy={bodyCy} rx={rx} ry={ry} fill={body} />
+
+          {/* antenna / tuft of light (Spark and up) */}
+          {showAntenna ? (
+            <>
+              <line
+                className="creature-antenna"
+                x1={cx}
+                y1={cy - ry * 0.25}
+                x2={cx}
+                y2={cy - ry * 0.7 * v.tuft}
+                stroke={shade}
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+              <circle cx={cx} cy={cy - ry * 0.7 * v.tuft - 2} r={2.6} fill={tuftTip} />
+            </>
+          ) : null}
+
+          {/* eyes */}
+          {asleep ? (
+            <>
+              <path d={eyeArc(cx - eyeDx, eyeY)} stroke={shade} strokeWidth={2} fill="none" />
+              <path d={eyeArc(cx + eyeDx, eyeY)} stroke={shade} strokeWidth={2} fill="none" />
+              <text x={cx + rx * 0.7} y={cy - ry * 0.3} className="creature-z">
+                z
+              </text>
+            </>
           ) : (
-            <path
-              d={`M ${cx - 7} ${cy + 13} Q ${cx} ${cy + 19} ${cx + 7} ${cy + 13}`}
-              stroke={shade}
-              strokeWidth={1.8}
-              fill="none"
-              strokeLinecap="round"
-            />
-          ))}
+            <>
+              <circle cx={cx - eyeDx} cy={eyeY} r={eyeR} fill="#241a12" />
+              <circle cx={cx + eyeDx} cy={eyeY} r={eyeR} fill="#241a12" />
+              <circle
+                cx={cx - eyeDx + eyeR * 0.3}
+                cy={eyeY - eyeR * 0.3}
+                r={eyeR * 0.3}
+                fill="#fff"
+              />
+              <circle
+                cx={cx + eyeDx + eyeR * 0.3}
+                cy={eyeY - eyeR * 0.3}
+                r={eyeR * 0.3}
+                fill="#fff"
+              />
+            </>
+          )}
 
-        {/* illness: a small bead of sweat */}
-        {ill && alive ? <circle cx={cx + bodyR * 0.6} cy={cy} r={2.2} fill="#7fd1a0" /> : null}
+          {/* mouth: Amabo smiles; Yim is a flat, longing line (a Mote has none yet) */}
+          {!asleep && showMouth ? (
+            uncanny ? (
+              <line
+                x1={cx - 6}
+                y1={eyeY + 14}
+                x2={cx + 6}
+                y2={eyeY + 14}
+                stroke={shade}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+              />
+            ) : (
+              <path
+                d={`M ${cx - 7} ${eyeY + 11} Q ${cx} ${eyeY + 17} ${cx + 7} ${eyeY + 11}`}
+                stroke={shade}
+                strokeWidth={1.8}
+                fill="none"
+                strokeLinecap="round"
+              />
+            )
+          ) : null}
+
+          {/* a distinguishing trait mark, if the creature has earned any */}
+          {trait && alive ? (
+            <text className="creature-trait" x={cx - rx * 0.62} y={bodyCy + ry * 0.2}>
+              ✦
+            </text>
+          ) : null}
+
+          {/* illness: a small bead */}
+          {ill && alive ? <circle cx={cx + rx * 0.6} cy={bodyCy} r={2.2} fill="#7fd1a0" /> : null}
+        </g>
 
         {/* reaction particles */}
         {emote ? <Particles emote={emote} /> : null}
