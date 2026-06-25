@@ -1,26 +1,50 @@
 /**
  * Login.tsx — the threshold. Passwordless email sign-in is the primary path (one field,
- * works everywhere); Google is offered alongside for those who prefer it. On success we
- * hand control back to <App> so it can load the roster.
+ * works everywhere); "Continue with Google" appears only when the server has Google
+ * configured. If an OAuth round-trip failed, the API redirects back here with an
+ * `?auth_error=…` flag, which we show instead of leaving the user on a blank page.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LOGIN_URL } from '../api/client.js';
 import { useGame } from '../store/useGame.js';
 
-export function Login({ onSignedIn }: { onSignedIn: () => void }) {
+const AUTH_ERRORS: Record<string, string> = {
+  google: 'Google sign-in failed. Please try again, or continue with email.',
+  state: 'That sign-in link expired. Please try again.',
+  access_denied: 'Google sign-in was cancelled.',
+};
+
+function readAuthError(): string | null {
+  if (typeof window === 'undefined') return null;
+  const code = new URLSearchParams(window.location.search).get('auth_error');
+  if (!code) return null;
+  // Clean the flag out of the URL so a refresh doesn't keep showing it.
+  window.history.replaceState({}, '', window.location.pathname);
+  return AUTH_ERRORS[code] ?? 'Sign-in failed. Please try again.';
+}
+
+export function Login() {
   const client = useGame((s) => s.client);
+  const signInWithEmail = useGame((s) => s.signInWithEmail);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [error, setError] = useState<string | null>(() => readAuthError());
+
+  useEffect(() => {
+    void client
+      .authConfig()
+      .then((c) => setGoogleEnabled(c.google))
+      .catch(() => setGoogleEnabled(false));
+  }, [client]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await client.loginWithEmail(email.trim());
-      onSignedIn();
+      await signInWithEmail(email);
     } catch {
       setError('Could not sign in — check the email and try again.');
     } finally {
@@ -54,12 +78,16 @@ export function Login({ onSignedIn }: { onSignedIn: () => void }) {
         </p>
       ) : null}
 
-      <div className="login-or" aria-hidden="true">
-        or
-      </div>
-      <a className="btn btn-ghost" href={LOGIN_URL}>
-        Continue with Google
-      </a>
+      {googleEnabled ? (
+        <>
+          <div className="login-or" aria-hidden="true">
+            or
+          </div>
+          <a className="btn btn-ghost" href={LOGIN_URL}>
+            Continue with Google
+          </a>
+        </>
+      ) : null}
     </main>
   );
 }

@@ -88,6 +88,8 @@ export type Route = 'dashboard' | 'device';
 
 export interface GameState {
   client: ApiClient;
+  /** Session state: null while the first check is in flight, then true/false. */
+  authed: boolean | null;
   /** The signed-in Light's whole roster (the dashboard). */
   creatures: CreatureViewT[];
   /** The currently-open creature (null on the dashboard). */
@@ -112,6 +114,10 @@ export interface GameState {
   setClient(client: ApiClient): void;
   toggleMute(): void;
   toggleContrast(): void;
+  /** On boot: check for an existing session and load the roster if signed in. */
+  checkSession(): Promise<void>;
+  /** Passwordless sign-in; on success loads the roster and flips `authed` true. */
+  signInWithEmail(email: string): Promise<void>;
   /** Load the roster from the server (call after auth, and when returning to it). */
   loadDashboard(): Promise<void>;
   /** Open one creature into the device view (catches it up to now). */
@@ -133,6 +139,7 @@ export interface GameState {
 
 export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
+  authed: null,
   creatures: [],
   creature: null,
   route: 'dashboard',
@@ -153,6 +160,22 @@ export const useGame = create<GameState>((set, get) => ({
   setClient: (client) => set({ client }),
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   toggleContrast: () => set((s) => ({ highContrast: !s.highContrast })),
+
+  checkSession: async () => {
+    const me = await get().client.me();
+    if (me) {
+      await get().loadDashboard();
+      set({ authed: true });
+    } else {
+      set({ authed: false });
+    }
+  },
+
+  signInWithEmail: async (email) => {
+    await get().client.loginWithEmail(email.trim());
+    await get().loadDashboard();
+    set({ authed: true, route: 'dashboard' });
+  },
 
   loadDashboard: async () => {
     try {
@@ -194,7 +217,9 @@ export const useGame = create<GameState>((set, get) => ({
       await get().client.logout();
     } finally {
       saveCreatureId(null);
-      set({ creatures: [], creature: null, route: 'dashboard', screen: 'home' });
+      // Flip `authed` false so the app routes back to the sign-in screen (not an empty
+      // dashboard) — auth state lives here, not in a component's local state.
+      set({ authed: false, creatures: [], creature: null, route: 'dashboard', screen: 'home' });
     }
   },
 

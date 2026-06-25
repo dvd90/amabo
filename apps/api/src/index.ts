@@ -44,6 +44,10 @@ function buildRepo(): Repository {
   return new DrizzleRepository(makeDb(url));
 }
 
+function googleConfigured(): boolean {
+  return Boolean(process.env.GOOGLE_OAUTH_ID && process.env.GOOGLE_OAUTH_SECRET);
+}
+
 function buildAuthProvider(): AuthProvider {
   const id = process.env.GOOGLE_OAUTH_ID;
   const secret = process.env.GOOGLE_OAUTH_SECRET;
@@ -70,6 +74,7 @@ if (process.env.NODE_ENV !== 'test') {
     // SameSite=None cookies + post-login redirect back to the web app).
     webOrigin,
     staticDir: webDistDir(),
+    googleEnabled: googleConfigured(),
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

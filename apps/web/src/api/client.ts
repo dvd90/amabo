@@ -48,8 +48,15 @@ export interface InteractResult {
   events: EventLite[];
 }
 
+export interface AuthConfig {
+  email: boolean;
+  google: boolean;
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
+  /** Which sign-in methods the server offers (Google only when configured). */
+  authConfig(): Promise<AuthConfig>;
   /** Passwordless sign-in; resolves to the session (and caches the CSRF token). */
   loginWithEmail(email: string): Promise<MeResult>;
   logout(): Promise<void>;
@@ -102,6 +109,9 @@ export class HttpApiClient implements ApiClient {
     } catch {
       return null;
     }
+  }
+  authConfig() {
+    return this.req<AuthConfig>('/auth/config');
   }
   async loginWithEmail(email: string) {
     const r = await this.req<MeResult>('/auth/email', 'POST', { email });

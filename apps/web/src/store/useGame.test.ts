@@ -31,6 +31,7 @@ function creature(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
 function fakeClient(): ApiClient {
   return {
     me: vi.fn().mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
+    authConfig: vi.fn().mockResolvedValue({ email: true, google: false }),
     loginWithEmail: vi
       .fn()
       .mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
@@ -64,6 +65,7 @@ function fakeClient(): ApiClient {
 describe('useGame store (M8)', () => {
   beforeEach(() => {
     useGame.setState({
+      authed: null,
       creatures: [],
       creature: null,
       route: 'dashboard',
@@ -164,13 +166,29 @@ describe('useGame store (M8)', () => {
     expect(useGame.getState().route).toBe('device');
   });
 
-  it('sign out clears the session and returns to the dashboard', async () => {
+  it('sign out clears the session and routes back to the login screen', async () => {
     const client = fakeClient();
-    useGame.setState({ client, creatures: [creature()], creature: creature(), route: 'device' });
+    useGame.setState({
+      client,
+      authed: true,
+      creatures: [creature()],
+      creature: creature(),
+      route: 'device',
+    });
     await useGame.getState().signOut();
     expect(client.logout).toHaveBeenCalled();
     expect(useGame.getState().creature).toBeNull();
     expect(useGame.getState().route).toBe('dashboard');
+    // The routing fix: authed flips false so <App> shows <Login>, not an empty dashboard.
+    expect(useGame.getState().authed).toBe(false);
+  });
+
+  it('checkSession marks authed from an existing session and loads the roster', async () => {
+    const client = fakeClient();
+    useGame.setState({ client, authed: null });
+    await useGame.getState().checkSession();
+    expect(useGame.getState().authed).toBe(true);
+    expect(useGame.getState().creatures).toHaveLength(1);
   });
 
   it('mute and high-contrast toggles flip state (M9 a11y)', () => {

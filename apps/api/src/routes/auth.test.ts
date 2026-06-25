@@ -39,12 +39,22 @@ describe('auth (M5.5)', () => {
     expect(me.body.csrfToken).toBeTruthy();
   });
 
-  it('rejects a callback whose state does not match (CSRF on the OAuth flow)', async () => {
+  it('a callback whose state does not match bounces back to login flagged (no session)', async () => {
     const { app } = setup();
     const agent = request.agent(app);
     await agent.get('/auth/google');
     const res = await agent.get('/auth/callback').query({ code: 'pip', state: 'forged' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toContain('auth_error=state');
+    expect((await agent.get('/me')).status).toBe(401); // and we are NOT signed in
+  });
+
+  it('advertises available sign-in methods via /auth/config', async () => {
+    const { app } = setup();
+    const res = await request(app).get('/auth/config');
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe(true);
+    expect(res.body.google).toBe(false); // fake provider → Google button hidden
   });
 
   it('email sign-in establishes a session and is idempotent per email', async () => {
