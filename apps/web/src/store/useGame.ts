@@ -11,6 +11,7 @@ import {
   type CareAction,
   type CreatureViewT,
   type GapSummary,
+  type IncomingRehome,
   type JournalEntry,
   type NeedFlag,
   type RosterItem,
@@ -95,6 +96,8 @@ export interface GameState {
   authed: boolean | null;
   /** The signed-in Light's whole roster (the dashboard), each with its urgency signals. */
   creatures: RosterItem[];
+  /** Pending rehomes addressed to me — the accept inbox on the dashboard. */
+  incoming: IncomingRehome[];
   /** The currently-open creature (null on the dashboard). */
   creature: CreatureViewT | null;
   /** The open creature's urgency signals (so the device can offer e.g. "share its light"). */
@@ -141,6 +144,10 @@ export interface GameState {
   meet(aId: string, bId: string): Promise<string>;
   /** Mint a shareable postcard link for the open creature; returns the URL (or null). */
   shareCreature(): Promise<string | null>;
+  /** Entrust the open creature to another Light by email; returns a status line. */
+  rehome(email: string): Promise<string>;
+  /** Accept an incoming rehome, then refresh the roster (the creature is now mine). */
+  acceptRehome(id: string): Promise<void>;
   /** Return to the roster. */
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
@@ -160,6 +167,7 @@ export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
   authed: null,
   creatures: [],
+  incoming: [],
   creature: null,
   creatureNeeds: [],
   route: 'dashboard',
@@ -201,7 +209,13 @@ export const useGame = create<GameState>((set, get) => ({
 
   loadDashboard: async () => {
     try {
-      set({ creatures: await get().client.listCreatures() });
+      const [creatures, incoming] = await Promise.all([
+        get().client.listCreatures(),
+        get()
+          .client.incomingRehomes()
+          .catch(() => []),
+      ]);
+      set({ creatures, incoming });
     } catch (e) {
       set({ error: friendlyError(e) });
     }
@@ -273,6 +287,29 @@ export const useGame = create<GameState>((set, get) => ({
     } catch (e) {
       set({ error: friendlyError(e) });
       return null;
+    }
+  },
+
+  rehome: async (email) => {
+    const { creature, client } = get();
+    if (!creature) return 'no creature open';
+    const to = email.trim();
+    try {
+      await client.rehome(creature.id, to);
+      return `entrusted to ${to} — they’ll be asked to accept`;
+    } catch (e) {
+      return (e as Error).message.includes('404')
+        ? 'no Light with that email yet'
+        : 'could not entrust just now';
+    }
+  },
+
+  acceptRehome: async (id) => {
+    try {
+      await get().client.acceptRehome(id);
+      await get().openDashboard(); // it's mine now — refresh the roster
+    } catch (e) {
+      set({ error: friendlyError(e) });
     }
   },
 

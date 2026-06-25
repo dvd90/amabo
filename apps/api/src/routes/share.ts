@@ -223,20 +223,37 @@ export function authedShareRouter(deps: ShareDeps): Router {
     })();
   });
 
-  // Rehoming: a deliberate, two-sided act of entrusting.
+  // The accept inbox: pending rehomes addressed to me.
+  router.get('/rehomes/incoming', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        if (!owner) return res.status(401).json({ error: 'authentication required' });
+        return res.json({ incoming: await repo.listIncomingRehomes(owner) });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // Rehoming: a deliberate, two-sided act of entrusting — addressed by email. The sender
+  // confirms by initiating; ownership only moves once the recipient accepts (confirm).
   router.post('/creatures/:id/rehome', (req, res, next) => {
     void (async () => {
       try {
         const owner = getOwner(req);
         const rec = await repo.getCreature(req.params.id!, owner);
         if (!rec || !owner) return res.status(404).json({ error: 'not found' });
-        const toUserId = String(req.body?.toUserId ?? '');
-        if (!toUserId || toUserId === owner)
-          return res.status(400).json({ error: 'invalid recipient' });
+        const toEmail = String(req.body?.toEmail ?? '').trim();
+        if (!toEmail) return res.status(400).json({ error: 'a recipient email is required' });
+        const recipient = await repo.getUserByEmail(toEmail);
+        if (!recipient) return res.status(404).json({ error: 'no Light with that email yet' });
+        if (recipient.id === owner)
+          return res.status(400).json({ error: 'you already keep this one' });
         const rehome = await repo.initiateRehome({
           creatureId: rec.id,
           fromUserId: owner,
-          toUserId,
+          toUserId: recipient.id,
           fromConfirmedAt: clock(),
           at: clock(),
         });

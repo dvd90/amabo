@@ -53,6 +53,9 @@ function fakeClient(): ApiClient {
     postcard: vi
       .fn()
       .mockResolvedValue({ name: 'Pip', stage: 'mote', uncanny: false, graduated: false }),
+    rehome: vi.fn().mockResolvedValue(undefined),
+    incomingRehomes: vi.fn().mockResolvedValue([]),
+    acceptRehome: vi.fn().mockResolvedValue(undefined),
     peek: vi.fn().mockResolvedValue({
       journal: 'soft gold day',
       mood: 'content',
@@ -91,6 +94,7 @@ describe('useGame store (M8)', () => {
     useGame.setState({
       authed: null,
       creatures: [],
+      incoming: [],
       creature: null,
       creatureNeeds: [],
       route: 'dashboard',
@@ -250,6 +254,22 @@ describe('useGame store (M8)', () => {
     const url = await useGame.getState().shareCreature();
     expect(client.share).toHaveBeenCalledWith('c1', 'postcard');
     expect(url).toMatch(/\/look\//);
+  });
+
+  it('rehome entrusts the open creature to an email', async () => {
+    const client = fakeClient();
+    useGame.setState({ client, creature: creature() });
+    const line = await useGame.getState().rehome('friend@example.com');
+    expect(client.rehome).toHaveBeenCalledWith('c1', 'friend@example.com');
+    expect(line).toMatch(/entrusted to friend@example.com/);
+  });
+
+  it('accepting an incoming rehome confirms it and reloads the roster', async () => {
+    const client = fakeClient();
+    useGame.setState({ client });
+    await useGame.getState().acceptRehome('r1');
+    expect(client.acceptRehome).toHaveBeenCalledWith('r1');
+    expect(client.listCreatures).toHaveBeenCalled(); // roster refreshed
   });
 
   it('sign out clears the session and routes back to the login screen', async () => {

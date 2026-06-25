@@ -90,6 +90,15 @@ export interface RehomeRecord {
   at: number;
 }
 
+/** A pending rehome shown in the recipient's inbox (with display fields joined in). */
+export interface IncomingRehome {
+  id: string;
+  creatureId: string;
+  creatureName: string;
+  fromEmail: string;
+  at: number;
+}
+
 // ── M-C: web-push notifications ──────────────────────────────────────────────────
 export interface PushSubscriptionRecord {
   id: string;
@@ -131,6 +140,8 @@ export interface Repository {
   // Auth (M5.5)
   upsertUser(input: OAuthUpsert): Promise<UserRecord>;
   getUserById(id: string): Promise<UserRecord | null>;
+  /** Find a Light by email (case-insensitive) — used to rehome to someone by address. */
+  getUserByEmail(email: string): Promise<UserRecord | null>;
   createSession(userId: string, csrfToken: string, expiresAt: number): Promise<SessionRecord>;
   getSession(id: string): Promise<{ session: SessionRecord; user: UserRecord } | null>;
   deleteSession(id: string): Promise<void>;
@@ -143,6 +154,8 @@ export interface Repository {
     input: Omit<RehomeRecord, 'id' | 'status' | 'toConfirmedAt'>,
   ): Promise<RehomeRecord>;
   getRehome(id: string): Promise<RehomeRecord | null>;
+  /** Pending rehomes addressed to this user (the accept inbox). */
+  listIncomingRehomes(userId: string): Promise<IncomingRehome[]>;
   /** Confirm one side; when both sides have confirmed, ownership transfers atomically. */
   confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null>;
   addBlock(userId: string, blockedUserId: string, at: number): Promise<void>;

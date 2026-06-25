@@ -39,6 +39,57 @@ async function makeCreature(app: Express) {
   return { ...u, id: created.body.id as string };
 }
 
+describe('rehoming by email + accept inbox (M-K)', () => {
+  it('entrusts a creature to another Light, who accepts and gains ownership', async () => {
+    const { app } = setup();
+    const alice = await login(app, 'alice');
+    const created = await alice.agent
+      .post('/creatures')
+      .set('x-csrf-token', alice.csrf)
+      .send({ name: 'Pip' });
+
+    // Bob signs in so his account (bob@example.com) exists to receive the creature.
+    const bob = await login(app, 'bob');
+    const bobEmail = (await bob.agent.get('/me')).body.user.email as string;
+
+    // Alice entrusts Pip to Bob by email.
+    const sent = await alice.agent
+      .post(`/creatures/${created.body.id}/rehome`)
+      .set('x-csrf-token', alice.csrf)
+      .send({ toEmail: bobEmail });
+    expect(sent.status).toBe(201);
+
+    // It shows up in Bob's inbox…
+    const inbox = await bob.agent.get('/rehomes/incoming');
+    expect(inbox.body.incoming).toHaveLength(1);
+    expect(inbox.body.incoming[0].creatureName).toBe('Pip');
+
+    // …Bob accepts, and Pip is now in Bob's roster (and gone from Alice's).
+    await bob.agent
+      .post(`/rehome/${inbox.body.incoming[0].id}/confirm`)
+      .set('x-csrf-token', bob.csrf)
+      .send({});
+    expect(
+      (await bob.agent.get('/creatures')).body.creatures.map((c: { name: string }) => c.name),
+    ).toContain('Pip');
+    expect((await alice.agent.get('/creatures')).body.creatures).toHaveLength(0);
+  });
+
+  it('rejects an unknown recipient email (404)', async () => {
+    const { app } = setup();
+    const alice = await login(app, 'alice');
+    const created = await alice.agent
+      .post('/creatures')
+      .set('x-csrf-token', alice.csrf)
+      .send({ name: 'Pip' });
+    const res = await alice.agent
+      .post(`/creatures/${created.body.id}/rehome`)
+      .set('x-csrf-token', alice.csrf)
+      .send({ toEmail: 'nobody@nowhere.test' });
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('share links open the web viewer (M-J)', () => {
   it('mints a postcard link pointing at /look/:token', async () => {
     const { app } = setup();
@@ -164,10 +215,11 @@ describe('rehoming (M9.5)', () => {
     const host = await makeCreature(app);
     const recipient = await login(app, 'recipient');
 
+    expect(recipient.userId).toBeTruthy(); // recipient must exist to receive
     const initiate = await host.agent
       .post(`/creatures/${host.id}/rehome`)
       .set('x-csrf-token', host.csrf)
-      .send({ toUserId: recipient.userId });
+      .send({ toEmail: 'recipient@example.com' });
     const rehomeId = initiate.body.rehome.id;
     expect(initiate.body.rehome.status).toBe('pending');
 
