@@ -1122,3 +1122,14 @@ body {
   border-color: hsl(var(--amber));
   box-shadow: 0 0 0 2px hsl(var(--amber) / 0.5);
 }
+
+/* Home flavor lines (M-I) */
+.today-line {
+  font-style: italic;
+  opacity: 0.9;
+}
+.elder-line {
+  font-size: 0.72rem;
+  opacity: 0.7;
+  margin-top: 4px;
+}

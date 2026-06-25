@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import type { CreatureViewT } from '@amabo/shared';
 import type { StarView } from '../api/client.js';
+import { elderLine, todayLine } from '../flavor.js';
 import { useGame } from '../store/useGame.js';
 
 /** A graduated soul's plaque: name + how long it shone (Mnemosyne). */
@@ -64,7 +65,9 @@ export function Screen() {
   ) : null;
 
   switch (screen) {
-    case 'home':
+    case 'home': {
+      const now = Date.now();
+      const elder = elderLine(creature, now);
       return (
         <div className="screen-text">
           <p>
@@ -77,11 +80,18 @@ export function Screen() {
               “{lastJournal}” — {mood}
             </p>
           ) : (
-            <p>Press ● to look in on {creature.name}.</p>
+            <>
+              <p className="today-line">
+                Today, {creature.name} {todayLine(creature, now)}.
+              </p>
+              {elder ? <p className="elder-line">{elder}</p> : null}
+              <p>Press ● to look in on {creature.name}.</p>
+            </>
           )}
           {feedback}
         </div>
       );
+    }
     case 'status':
       return (
         <div className="screen-text stats">
