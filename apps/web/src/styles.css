@@ -1100,3 +1100,25 @@ body {
 .ascend-done {
   width: 100%;
 }
+
+/* Meetings: "introduce two" selection (M-H) */
+.dash-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.dash-hint,
+.dash-note {
+  font-size: 0.8rem;
+  margin: 0 0 1rem;
+}
+.dash-hint {
+  opacity: 0.7;
+}
+.dash-note {
+  color: hsl(var(--amber));
+}
+.amabo-card.is-selected {
+  border-color: hsl(var(--amber));
+  box-shadow: 0 0 0 2px hsl(var(--amber) / 0.5);
+}

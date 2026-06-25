@@ -104,6 +104,12 @@ export interface MultiplyResult {
   child: RosterItem;
 }
 
+/** The result of a resonance meeting between two creatures. */
+export interface MeetResult {
+  result: 'harmony' | 'clash';
+  names: [string, string] | string[];
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
   /** Which sign-in methods the server offers (Google only when configured). */
@@ -118,6 +124,8 @@ export interface ApiClient {
   interact(id: string, action: CareAction): Promise<InteractResult>;
   /** The Symposium split — only when the creature is overflowing. */
   multiply(id: string): Promise<MultiplyResult>;
+  /** A resonance meeting between two of your own creatures (a duet, never a duel). */
+  meet(id: string, otherId: string): Promise<MeetResult>;
   journal(id: string): Promise<JournalEntry[]>;
   stars(id: string): Promise<StarView[]>;
 }
@@ -195,6 +203,9 @@ export class HttpApiClient implements ApiClient {
   }
   multiply(id: string) {
     return this.req<MultiplyResult>(`/creatures/${id}/multiply`, 'POST', {});
+  }
+  meet(id: string, otherId: string) {
+    return this.req<MeetResult>(`/creatures/${id}/meet/${otherId}`, 'POST', {});
   }
   async journal(id: string) {
     return (await this.req<{ entries: JournalEntry[] }>(`/creatures/${id}/journal`)).entries;

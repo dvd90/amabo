@@ -39,6 +39,50 @@ async function makeCreature(app: Express) {
   return { ...u, id: created.body.id as string };
 }
 
+describe('meetings between your own creatures (M-H)', () => {
+  it('two of your creatures resonate and both keep a shared line', async () => {
+    const { app } = setup();
+    const u = await login(app, 'host');
+    const a = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Pip' });
+    const b = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Bo' });
+
+    const meet = await u.agent
+      .post(`/creatures/${a.body.id}/meet/${b.body.id}`)
+      .set('x-csrf-token', u.csrf)
+      .send({});
+    expect(meet.status).toBe(200);
+    expect(['harmony', 'clash']).toContain(meet.body.result);
+    expect(meet.body.names).toEqual(['Pip', 'Bo']);
+  });
+
+  it('a creature cannot meet itself (400)', async () => {
+    const { app } = setup();
+    const u = await login(app, 'host');
+    const a = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Pip' });
+    const res = await u.agent
+      .post(`/creatures/${a.body.id}/meet/${a.body.id}`)
+      .set('x-csrf-token', u.csrf)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it("cannot meet another owner's creature (404, no leak)", async () => {
+    const { app } = setup();
+    const alice = await login(app, 'alice');
+    const a = await alice.agent
+      .post('/creatures')
+      .set('x-csrf-token', alice.csrf)
+      .send({ name: 'Pip' });
+    const bob = await login(app, 'bob');
+    const b = await bob.agent.post('/creatures').set('x-csrf-token', bob.csrf).send({ name: 'Bo' });
+    const res = await alice.agent
+      .post(`/creatures/${a.body.id}/meet/${b.body.id}`)
+      .set('x-csrf-token', alice.csrf)
+      .send({});
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('visits (M9.5)', () => {
   it('a visit link warms the creature and can be revoked', async () => {
     const { app } = setup();

@@ -44,6 +44,7 @@ function fakeClient(): ApiClient {
       parent: { ...creature(), needs: [] },
       child: { ...creature(), id: 'c2', name: 'Pip’s half', needs: [] },
     }),
+    meet: vi.fn().mockResolvedValue({ result: 'harmony', names: ['Pip', 'Bo'] }),
     peek: vi.fn().mockResolvedValue({
       journal: 'soft gold day',
       mood: 'content',
@@ -225,6 +226,14 @@ describe('useGame store (M8)', () => {
     expect(client.multiply).toHaveBeenCalledWith('c1');
     expect(useGame.getState().creatures.some((c) => c.id === 'c2')).toBe(true);
     expect(useGame.getState().route).toBe('dashboard');
+  });
+
+  it('introducing two creatures resonates them and reports the result', async () => {
+    const client = fakeClient();
+    useGame.setState({ client });
+    const line = await useGame.getState().meet('c1', 'c2');
+    expect(client.meet).toHaveBeenCalledWith('c1', 'c2');
+    expect(line).toMatch(/harmonized/);
   });
 
   it('sign out clears the session and routes back to the login screen', async () => {
