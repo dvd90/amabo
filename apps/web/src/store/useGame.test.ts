@@ -47,6 +47,12 @@ function fakeClient(): ApiClient {
     meet: vi.fn().mockResolvedValue({ result: 'harmony', names: ['Pip', 'Bo'] }),
     vapidKey: vi.fn().mockResolvedValue(null),
     subscribePush: vi.fn().mockResolvedValue(undefined),
+    share: vi
+      .fn()
+      .mockResolvedValue({ token: 't', kind: 'postcard', url: 'https://x/look/t', expiresAt: 0 }),
+    postcard: vi
+      .fn()
+      .mockResolvedValue({ name: 'Pip', stage: 'mote', uncanny: false, graduated: false }),
     peek: vi.fn().mockResolvedValue({
       journal: 'soft gold day',
       mood: 'content',
@@ -236,6 +242,14 @@ describe('useGame store (M8)', () => {
     const line = await useGame.getState().meet('c1', 'c2');
     expect(client.meet).toHaveBeenCalledWith('c1', 'c2');
     expect(line).toMatch(/harmonized/);
+  });
+
+  it('shareCreature mints a keepsake link for the open creature', async () => {
+    const client = fakeClient();
+    useGame.setState({ client, creature: creature() });
+    const url = await useGame.getState().shareCreature();
+    expect(client.share).toHaveBeenCalledWith('c1', 'postcard');
+    expect(url).toMatch(/\/look\//);
   });
 
   it('sign out clears the session and routes back to the login screen', async () => {

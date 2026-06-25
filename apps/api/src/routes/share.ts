@@ -27,6 +27,8 @@ export interface ShareDeps {
   clock: Clock;
   baseUrl: string;
   getOwner: (req: Request) => string | null;
+  /** Where share links should open (the web app); falls back to baseUrl. */
+  webOrigin?: string;
 }
 
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -115,6 +117,7 @@ export function publicShareRouter(deps: ShareDeps): Router {
 /** Owner actions — require a session + CSRF (applied by the app before mounting). */
 export function authedShareRouter(deps: ShareDeps): Router {
   const { repo, clock, baseUrl, getOwner } = deps;
+  const linkBase = deps.webOrigin ?? baseUrl;
   const router = Router();
 
   // Mint a scoped, revocable, expiring share link.
@@ -137,10 +140,9 @@ export function authedShareRouter(deps: ShareDeps): Router {
           token: newToken(),
           expiresAt: clock() + ttl,
         });
-        const path = kind === 'postcard' ? `/postcard/${link.token}` : `/${kind}/${link.token}`;
-        return res
-          .status(201)
-          .json({ token: link.token, kind, expiresAt: link.expiresAt, url: `${baseUrl}${path}` });
+        // Open in the web app's public viewer (not the raw JSON API endpoint).
+        const url = `${linkBase}/look/${link.token}?k=${kind}`;
+        return res.status(201).json({ token: link.token, kind, expiresAt: link.expiresAt, url });
       } catch (err) {
         next(err);
       }

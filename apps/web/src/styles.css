@@ -1133,3 +1133,13 @@ body {
   opacity: 0.7;
   margin-top: 4px;
 }
+
+/* Public keepsake (share link) + share note (M-J) */
+.postcard-art {
+  width: 200px;
+  height: 200px;
+  margin: 0.5rem auto;
+}
+.share-note {
+  opacity: 0.85 !important;
+}

@@ -139,6 +139,8 @@ export interface GameState {
   multiply(): Promise<void>;
   /** Introduce two of your creatures; returns a human line about how they resonated. */
   meet(aId: string, bId: string): Promise<string>;
+  /** Mint a shareable postcard link for the open creature; returns the URL (or null). */
+  shareCreature(): Promise<string | null>;
   /** Return to the roster. */
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
@@ -261,6 +263,17 @@ export const useGame = create<GameState>((set, get) => ({
   dismissGraduation: async () => {
     set({ graduation: null });
     await get().openDashboard(); // the creature has ascended; back to the roster
+  },
+
+  shareCreature: async () => {
+    const { creature, client } = get();
+    if (!creature) return null;
+    try {
+      return (await client.share(creature.id, 'postcard')).url;
+    } catch (e) {
+      set({ error: friendlyError(e) });
+      return null;
+    }
   },
 
   multiply: async () => {

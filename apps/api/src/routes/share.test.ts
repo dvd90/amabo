@@ -39,6 +39,19 @@ async function makeCreature(app: Express) {
   return { ...u, id: created.body.id as string };
 }
 
+describe('share links open the web viewer (M-J)', () => {
+  it('mints a postcard link pointing at /look/:token', async () => {
+    const { app } = setup();
+    const host = await makeCreature(app);
+    const share = await host.agent
+      .post(`/creatures/${host.id}/share`)
+      .set('x-csrf-token', host.csrf)
+      .send({ kind: 'postcard' });
+    expect(share.status).toBe(201);
+    expect(share.body.url).toContain(`/look/${share.body.token}`);
+  });
+});
+
 describe('meetings between your own creatures (M-H)', () => {
   it('two of your creatures resonate and both keep a shared line', async () => {
     const { app } = setup();

@@ -10,9 +10,18 @@ import { Dashboard } from './components/Dashboard.js';
 import { Device } from './components/Device.js';
 import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
+import { PublicLook } from './components/PublicLook.js';
 import { useGame } from './store/useGame.js';
 
+/** A public share link (/look/:token) opens the read-only keepsake, no account needed. */
+function getLookToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const m = window.location.pathname.match(/^\/look\/([^/?]+)/);
+  return m ? m[1]! : null;
+}
+
 export function App() {
+  const lookToken = getLookToken();
   const authed = useGame((s) => s.authed);
   const checkSession = useGame((s) => s.checkSession);
   const creature = useGame((s) => s.creature);
@@ -20,9 +29,10 @@ export function App() {
   const route = useGame((s) => s.route);
 
   useEffect(() => {
-    void checkSession();
-  }, [checkSession]);
+    if (!lookToken) void checkSession();
+  }, [checkSession, lookToken]);
 
+  if (lookToken) return <PublicLook token={lookToken} />;
   if (authed === null) return <main className="boot">Warming the glass…</main>;
   if (!authed) return <Login />;
 
