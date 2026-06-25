@@ -24,9 +24,20 @@ export const SCREENS = [
   'comfort',
   'journal',
   'sky',
+  'story',
   'lights',
 ] as const;
 export type Screen = (typeof SCREENS)[number];
+
+/** Turn care events into a short, satisfying "what changed" line. */
+function summarizeCare(events: { kind: string; statDeltas?: Record<string, number> }[]): string {
+  const e = events[0];
+  if (!e) return 'nothing stirred';
+  const parts = Object.entries(e.statDeltas ?? {})
+    .filter(([, v]) => v !== 0)
+    .map(([k, v]) => `${k} ${v > 0 ? '↑' : '↓'}`);
+  return parts.length ? `${e.kind} · ${parts.join('  ')}` : e.kind;
+}
 
 const CARE_BY_SCREEN: Partial<Record<Screen, CareAction>> = {
   feed: 'feed',
@@ -65,6 +76,8 @@ export interface GameState {
   screen: Screen;
   lastJournal: string | null;
   mood: string | null;
+  /** Short "what just changed" feedback after a care action. */
+  lastResult: string | null;
   busy: boolean;
   error: string | null;
   lastPeekAt: number;
@@ -95,6 +108,7 @@ export const useGame = create<GameState>((set, get) => ({
   screen: 'home',
   lastJournal: null,
   mood: null,
+  lastResult: null,
   busy: false,
   error: null,
   lastPeekAt: 0,
@@ -158,12 +172,12 @@ export const useGame = create<GameState>((set, get) => ({
     }
     const action = CARE_BY_SCREEN[screen];
     if (action) {
-      set({ busy: true });
+      set({ busy: true, error: null });
       try {
-        const { creature: updated } = await client.interact(creature.id, action);
-        set({ creature: updated });
+        const { creature: updated, events } = await client.interact(creature.id, action);
+        set({ creature: updated, lastResult: summarizeCare(events) });
       } catch (e) {
-        set({ error: (e as Error).message });
+        set({ error: friendlyError(e) });
       } finally {
         set({ busy: false });
       }
@@ -177,18 +191,37 @@ export const useGame = create<GameState>((set, get) => ({
     } else if (screen === 'sky') {
       set({ stars: await client.stars(creature.id) });
     } else if (screen === 'lights') {
-      const { creature: updated } = await client.interact(
-        creature.id,
-        creature.state.asleep ? 'wake' : 'sleep',
-      );
-      set({ creature: updated });
+      set({ busy: true, error: null });
+      try {
+        const { creature: updated } = await client.interact(
+          creature.id,
+          creature.state.asleep ? 'wake' : 'sleep',
+        );
+        set({
+          creature: updated,
+          lastResult: updated.state.asleep ? 'settled to sleep' : 'woke up',
+        });
+      } catch (e) {
+        set({ error: friendlyError(e) });
+      } finally {
+        set({ busy: false });
+      }
     }
   },
 
   next: () => {
     const i = SCREENS.indexOf(get().screen);
-    set({ screen: SCREENS[(i + 1) % SCREENS.length]! });
+    set({ screen: SCREENS[(i + 1) % SCREENS.length]!, lastResult: null, error: null });
   },
 
-  back: () => set({ screen: 'home' }),
+  back: () => set({ screen: 'home', lastResult: null, error: null }),
 }));
+
+/** A human-readable error for the device readout (auth/network hints, not raw codes). */
+function friendlyError(e: unknown): string {
+  const msg = (e as Error)?.message ?? 'something went wrong';
+  if (msg.includes('401')) return 'signed out — reload to sign in again';
+  if (msg.includes('403')) return 'session expired — reload the page';
+  if (msg.includes('409')) return 'this one has graduated ✦';
+  return 'could not reach the Amarium — try again';
+}

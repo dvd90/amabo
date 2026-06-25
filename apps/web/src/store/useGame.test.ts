@@ -47,6 +47,7 @@ function fakeClient(): ApiClient {
           security: 50,
         },
       }),
+      events: [{ kind: 'fed', statDeltas: { ambra: 18 } }],
     }),
     journal: vi
       .fn()
@@ -85,12 +86,25 @@ describe('useGame store (M8)', () => {
     expect(useGame.getState().creature?.name).toBe('Pip');
   });
 
-  it('feeds on the Feed screen and reflects the new state', async () => {
+  it('feeds on the Feed screen, reflects the new state, and shows feedback', async () => {
     const client = fakeClient();
-    useGame.setState({ client, creature: creature(), screen: 'feed' });
+    useGame.setState({ client, creature: creature(), screen: 'feed', lastResult: null });
     await useGame.getState().confirm();
     expect(client.interact).toHaveBeenCalledWith('c1', 'feed');
     expect(useGame.getState().creature?.state.stats.ambra).toBe(88);
+    // The "nothing happens" fix: a visible result line after care.
+    expect(useGame.getState().lastResult).toContain('fed');
+    expect(useGame.getState().lastResult).toContain('ambra ↑');
+  });
+
+  it('surfaces an error instead of failing silently', async () => {
+    const client = fakeClient();
+    (client.interact as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('POST /creatures/c1/interact → 403'),
+    );
+    useGame.setState({ client, creature: creature(), screen: 'feed', error: null });
+    await useGame.getState().confirm();
+    expect(useGame.getState().error).toBeTruthy();
   });
 
   it('peeks on Home and shows the away-journal line', async () => {
