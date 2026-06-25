@@ -106,6 +106,15 @@ export class DrizzleRepository implements Repository {
     return row ? rowToRecord(row) : null;
   }
 
+  async listCreaturesByOwner(ownerId: string | null): Promise<CreatureRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(creatures)
+      .where(ownedBy(ownerId))
+      .orderBy(creatures.createdAt);
+    return rows.map(rowToRecord);
+  }
+
   async saveCreature(rec: CreatureRecord): Promise<void> {
     await this.db
       .update(creatures)

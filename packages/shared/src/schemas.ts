@@ -73,6 +73,10 @@ export const CreateCreatureRequest = z.object({
 export const InteractRequest = z.object({
   action: InteractActionSchema,
 });
+/** Passwordless email sign-in (the launch auth path; OAuth providers layer on top). */
+export const EmailLoginRequest = z.object({
+  email: z.string().trim().email().max(254),
+});
 
 // ── API response views ─────────────────────────────────────────────────────────
 export const CreatureView = z.object({

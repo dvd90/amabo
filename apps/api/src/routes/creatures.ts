@@ -47,6 +47,22 @@ export function creaturesRouter(deps: CreatureDeps): Router {
   const { repo, clock, seed, narrator, getOwner } = deps;
   const router = Router();
 
+  // The dashboard: all of the signed-in Light's creatures (caught up to now).
+  router.get(
+    '/creatures',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const recs = await repo.listCreaturesByOwner(owner);
+      const now = clock();
+      const views: CreatureViewT[] = [];
+      for (const rec of recs) {
+        const { record } = await catchUp(repo, rec, now);
+        views.push(toView(record));
+      }
+      return res.json({ creatures: views });
+    }),
+  );
+
   // Condense a Mote.
   router.post(
     '/creatures',

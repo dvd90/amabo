@@ -92,6 +92,8 @@ export interface Repository {
   createCreature(input: NewCreature): Promise<CreatureRecord>;
   /** Owner-scoped: returns null if it doesn't exist OR isn't owned by `ownerId`. */
   getCreature(id: string, ownerId: string | null): Promise<CreatureRecord | null>;
+  /** All of an owner's creatures (the dashboard), oldest first. */
+  listCreaturesByOwner(ownerId: string | null): Promise<CreatureRecord[]>;
   saveCreature(rec: CreatureRecord): Promise<void>;
   appendEvents(
     creatureId: string,

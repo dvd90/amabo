@@ -4,6 +4,7 @@
  * cookies, and torn down on logout. `/me` returns the current user + CSRF token.
  */
 
+import { EmailLoginRequest } from '@amabo/shared';
 import { Router, type Request, type Response } from 'express';
 import type { Clock } from '../clock.js';
 import type { AuthProvider } from '../auth/provider.js';
@@ -16,7 +17,7 @@ import {
   type SameSite,
 } from '../auth/session.js';
 import { requireAuth, requireCsrf } from '../auth/middleware.js';
-import type { Repository } from '../repo/types.js';
+import type { Repository, UserRecord } from '../repo/types.js';
 
 export interface AuthDeps {
   repo: Repository;
@@ -34,10 +35,57 @@ const STATE_COOKIE = 'amabo_oauth_state';
 export function authRouter(deps: AuthDeps): Router {
   const { repo, authProvider, clock, cookieSecure, sameSite, baseUrl, postLoginRedirect } = deps;
   const router = Router();
-  const redirectUri = `${baseUrl}/auth/callback`;
 
-  // Begin sign-in: set a state cookie and redirect to the provider.
-  router.get('/auth/google', (_req: Request, res: Response) => {
+  /**
+   * The OAuth redirect URI must EXACTLY match what's registered with the provider AND
+   * the host the browser actually hit. Deriving it from the request (honouring the
+   * proxy's X-Forwarded-* via `trust proxy`) removes the #1 production failure: a wrong
+   * BASE_URL (e.g. the localhost default) causing `redirect_uri_mismatch`.
+   */
+  const callbackUrl = (req: Request): string => {
+    const host = req.get('host');
+    const origin = host ? `${req.protocol}://${host}` : baseUrl;
+    return `${origin}/auth/callback`;
+  };
+
+  /** Mint a fresh session for a verified user and deliver the cookies (no fixation). */
+  const establishSession = async (res: Response, user: UserRecord): Promise<string> => {
+    const csrf = newToken();
+    const session = await repo.createSession(user.id, csrf, clock() + SESSION_TTL_MS);
+    setSessionCookies(res, session.id, csrf, cookieSecure, sameSite);
+    return csrf;
+  };
+
+  // Passwordless email sign-in: the launch path. A direct POST (no third-party redirect)
+  // so it works reliably cross-origin. The email is the identity; no password is stored.
+  router.post('/auth/email', (req: Request, res: Response, next) => {
+    void (async () => {
+      try {
+        const parsed = EmailLoginRequest.safeParse(req.body);
+        if (!parsed.success) {
+          res.status(400).json({ error: 'a valid email is required' });
+          return;
+        }
+        const email = parsed.data.email.toLowerCase();
+        const user = await repo.upsertUser({
+          provider: 'email',
+          subject: email,
+          email,
+          displayName: email.split('@')[0] || email,
+        });
+        const csrf = await establishSession(res, user);
+        res.json({
+          user: { id: user.id, email: user.email, displayName: user.displayName },
+          csrfToken: csrf,
+        });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // Begin OAuth sign-in: set a state cookie and redirect to the provider.
+  router.get('/auth/google', (req: Request, res: Response) => {
     const state = newToken();
     res.cookie(STATE_COOKIE, state, {
       httpOnly: true,
@@ -46,7 +94,7 @@ export function authRouter(deps: AuthDeps): Router {
       path: '/',
       maxAge: 10 * 60 * 1000,
     });
-    res.redirect(authProvider.authUrl(state, redirectUri));
+    res.redirect(authProvider.authUrl(state, callbackUrl(req)));
   });
 
   // OAuth callback: verify state, exchange code, upsert user, mint a fresh session.
@@ -60,17 +108,15 @@ export function authRouter(deps: AuthDeps): Router {
           res.status(400).json({ error: 'invalid oauth state' });
           return;
         }
-        const profile = await authProvider.exchange(code, redirectUri);
+        const profile = await authProvider.exchange(code, callbackUrl(req));
         const user = await repo.upsertUser({
           provider: profile.provider,
           subject: profile.subject,
           email: profile.email,
           displayName: profile.displayName,
         });
-        const csrf = newToken();
-        const session = await repo.createSession(user.id, csrf, clock() + SESSION_TTL_MS);
         res.clearCookie(STATE_COOKIE, { path: '/' });
-        setSessionCookies(res, session.id, csrf, cookieSecure, sameSite);
+        await establishSession(res, user);
         res.redirect(postLoginRedirect);
       } catch (err) {
         next(err);

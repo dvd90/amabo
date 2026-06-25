@@ -148,6 +148,33 @@ describe('graduation writes a stars row', () => {
   });
 });
 
+describe('GET /creatures — the dashboard', () => {
+  it('lists only the signed-in owner’s creatures, oldest first', async () => {
+    const { app } = setup();
+    const alice = await login(app, 'alice');
+    await alice.agent.post('/creatures').set('x-csrf-token', alice.csrf).send({ name: 'Pip' });
+    await alice.agent.post('/creatures').set('x-csrf-token', alice.csrf).send({ name: 'Bo' });
+
+    const bob = await login(app, 'bob');
+    await bob.agent.post('/creatures').set('x-csrf-token', bob.csrf).send({ name: 'Vex' });
+
+    const mine = await alice.agent.get('/creatures');
+    expect(mine.status).toBe(200);
+    expect(mine.body.creatures.map((c: { name: string }) => c.name)).toEqual(['Pip', 'Bo']);
+
+    const theirs = await bob.agent.get('/creatures');
+    expect(theirs.body.creatures.map((c: { name: string }) => c.name)).toEqual(['Vex']);
+  });
+
+  it('returns an empty list (not 401) for a signed-in owner with no creatures', async () => {
+    const { app } = setup();
+    const { agent } = await login(app);
+    const res = await agent.get('/creatures');
+    expect(res.status).toBe(200);
+    expect(res.body.creatures).toEqual([]);
+  });
+});
+
 describe('ownership scoping', () => {
   it('a different owner gets 404 (existence is never leaked)', async () => {
     const { app } = setup();

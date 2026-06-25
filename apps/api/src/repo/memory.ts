@@ -60,6 +60,13 @@ export class InMemoryRepository implements Repository {
     return structuredClone(rec);
   }
 
+  async listCreaturesByOwner(ownerId: string | null): Promise<CreatureRecord[]> {
+    return [...this.creatures.values()]
+      .filter((c) => c.ownerId === ownerId)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map((c) => structuredClone(c));
+  }
+
   async saveCreature(rec: CreatureRecord): Promise<void> {
     this.creatures.set(rec.id, structuredClone(rec));
   }

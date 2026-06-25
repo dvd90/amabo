@@ -608,3 +608,158 @@ body {
     transition: none !important;
   }
 }
+
+/* ── Login (the threshold) ──────────────────────────────────────────────────── */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(320px, 90vw);
+  margin: 1.4rem auto 0;
+}
+.login-form input {
+  font: inherit;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--amber) / 0.3);
+  background: rgba(0, 0, 0, 0.25);
+  color: #f3ece0;
+  text-align: center;
+}
+.login-form input:focus-visible {
+  outline: 2px solid hsl(var(--amber));
+}
+.btn-login {
+  background: linear-gradient(hsl(38 80% 52%), hsl(32 78% 44%));
+  color: #1a1410;
+  font-weight: 600;
+  border: none;
+}
+.login-or {
+  margin: 1rem auto 0.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.btn-ghost {
+  display: inline-block;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid hsl(var(--amber) / 0.4);
+}
+.login-error {
+  color: hsl(8 80% 70%);
+  font-size: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+/* ── Dashboard (the roster of glass worlds) ─────────────────────────────────── */
+.dashboard {
+  width: min(720px, 94vw);
+  padding: 1rem 0.5rem 3rem;
+}
+.dash-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.4rem;
+}
+.dash-kicker {
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  opacity: 0.65;
+  margin: 0 0 0.2rem;
+}
+.dash-title {
+  font-size: 1.25rem;
+  margin: 0;
+  color: hsl(var(--amber));
+}
+.linkish {
+  font: inherit;
+  font-size: 0.8rem;
+  background: none;
+  border: none;
+  color: #f3ece0;
+  opacity: 0.6;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.linkish:hover {
+  opacity: 1;
+}
+.amabo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+.amabo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 0.6rem 0.9rem;
+  border-radius: 18px;
+  border: 1px solid hsl(var(--amber) / 0.18);
+  background: radial-gradient(120% 90% at 50% 0%, rgba(60, 48, 34, 0.5), rgba(20, 17, 14, 0.6));
+  color: #f3ece0;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+.amabo-card:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--amber) / 0.5);
+}
+.amabo-card:focus-visible {
+  outline: 2px solid hsl(var(--amber));
+  outline-offset: 2px;
+}
+.amabo-card-glass {
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.06), transparent 70%);
+  margin-bottom: 0.3rem;
+}
+.amabo-card-name {
+  font-size: 0.95rem;
+  color: hsl(var(--amber));
+}
+.amabo-card-meta {
+  font-size: 0.66rem;
+  opacity: 0.7;
+}
+.amabo-card-fate {
+  font-size: 0.62rem;
+  font-style: italic;
+  opacity: 0.55;
+}
+.amabo-card-new {
+  border-style: dashed;
+  justify-content: center;
+}
+.amabo-card-new .new-orb {
+  font-size: 2rem;
+  color: hsl(var(--amber) / 0.7);
+}
+.amabo-card-new.is-naming input {
+  font: inherit;
+  width: 100%;
+  text-align: center;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid hsl(var(--amber) / 0.3);
+  background: rgba(0, 0, 0, 0.25);
+  color: #f3ece0;
+  margin-bottom: 0.5rem;
+}
+.device-roster {
+  letter-spacing: 0.1em;
+}
