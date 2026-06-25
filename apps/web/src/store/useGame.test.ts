@@ -39,7 +39,11 @@ function fakeClient(): ApiClient {
     logout: vi.fn().mockResolvedValue(undefined),
     listCreatures: vi.fn().mockResolvedValue([{ ...creature(), needs: [] }]),
     createCreature: vi.fn().mockResolvedValue(creature()),
-    getCreature: vi.fn().mockResolvedValue(creature()),
+    getCreature: vi.fn().mockResolvedValue({ ...creature(), needs: [] }),
+    multiply: vi.fn().mockResolvedValue({
+      parent: { ...creature(), needs: [] },
+      child: { ...creature(), id: 'c2', name: 'Pip’s half', needs: [] },
+    }),
     peek: vi.fn().mockResolvedValue({
       journal: 'soft gold day',
       mood: 'content',
@@ -64,6 +68,7 @@ function fakeClient(): ApiClient {
         },
       }),
       events: [{ kind: 'fed', statDeltas: { ambra: 18 } }],
+      needs: [],
     }),
     journal: vi
       .fn()
@@ -78,6 +83,7 @@ describe('useGame store (M8)', () => {
       authed: null,
       creatures: [],
       creature: null,
+      creatureNeeds: [],
       route: 'dashboard',
       screen: 'home',
       lastJournal: null,
@@ -181,6 +187,20 @@ describe('useGame store (M8)', () => {
     await useGame.getState().start('Pip');
     expect(useGame.getState().creatures.map((c) => c.name)).toContain('Pip');
     expect(useGame.getState().route).toBe('device');
+  });
+
+  it('multiply splits the creature and adds the new half to the roster', async () => {
+    const client = fakeClient();
+    // After the split, the authoritative roster (reloaded on return) holds both halves.
+    (client.listCreatures as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      { ...creature(), needs: [] },
+      { ...creature(), id: 'c2', name: 'Pip’s half', needs: [] },
+    ]);
+    useGame.setState({ client, creature: creature(), creatures: [{ ...creature(), needs: [] }] });
+    await useGame.getState().multiply();
+    expect(client.multiply).toHaveBeenCalledWith('c1');
+    expect(useGame.getState().creatures.some((c) => c.id === 'c2')).toBe(true);
+    expect(useGame.getState().route).toBe('dashboard');
   });
 
   it('sign out clears the session and routes back to the login screen', async () => {

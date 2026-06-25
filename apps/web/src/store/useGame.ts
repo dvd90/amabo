@@ -12,6 +12,7 @@ import {
   type CreatureViewT,
   type GapSummary,
   type JournalEntry,
+  type NeedFlag,
   type RosterItem,
   type StarView,
 } from '../api/client.js';
@@ -96,6 +97,8 @@ export interface GameState {
   creatures: RosterItem[];
   /** The currently-open creature (null on the dashboard). */
   creature: CreatureViewT | null;
+  /** The open creature's urgency signals (so the device can offer e.g. "share its light"). */
+  creatureNeeds: NeedFlag[];
   route: Route;
   journalEntries: JournalEntry[];
   stars: StarView[];
@@ -128,6 +131,8 @@ export interface GameState {
   openCreature(id: string): Promise<void>;
   /** Dismiss the "while you were away" recap. */
   dismissReveal(): void;
+  /** The Symposium split — let an overflowing creature share its light into a sibling. */
+  multiply(): Promise<void>;
   /** Return to the roster. */
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
@@ -148,6 +153,7 @@ export const useGame = create<GameState>((set, get) => ({
   authed: null,
   creatures: [],
   creature: null,
+  creatureNeeds: [],
   route: 'dashboard',
   journalEntries: [],
   stars: [],
@@ -200,6 +206,7 @@ export const useGame = create<GameState>((set, get) => ({
       saveCreatureId(id);
       set((st) => ({
         creature: r.creature,
+        creatureNeeds: r.needs ?? [],
         route: 'device',
         screen: 'home',
         lastResult: null,
@@ -225,6 +232,21 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   dismissReveal: () => set({ reveal: null }),
+
+  multiply: async () => {
+    const { creature, client } = get();
+    if (!creature) return;
+    set({ busy: true, error: null });
+    try {
+      const { child } = await client.multiply(creature.id);
+      set((s) => ({ creatures: [...s.creatures, child], lastResult: 'it shared its light ✧' }));
+      await get().openDashboard(); // show the new found-family member
+    } catch (e) {
+      set({ error: friendlyError(e) });
+    } finally {
+      set({ busy: false });
+    }
+  },
 
   openDashboard: async () => {
     set({ route: 'dashboard', creature: null, screen: 'home', reveal: null });
@@ -264,7 +286,8 @@ export const useGame = create<GameState>((set, get) => ({
   refresh: async () => {
     const { creature, client } = get();
     if (!creature) return;
-    set({ creature: await client.getCreature(creature.id) });
+    const c = await client.getCreature(creature.id);
+    set({ creature: c, creatureNeeds: c.needs });
   },
 
   peek: async () => {
@@ -298,10 +321,15 @@ export const useGame = create<GameState>((set, get) => ({
     if (action) {
       set({ busy: true, error: null });
       try {
-        const { creature: updated, events } = await client.interact(creature.id, action);
+        const {
+          creature: updated,
+          events,
+          needs: nextNeeds,
+        } = await client.interact(creature.id, action);
         const emote = emoteForEvents(events);
         set((st) => ({
           creature: updated,
+          creatureNeeds: nextNeeds ?? st.creatureNeeds,
           lastResult: summarizeCare(events),
           emote: emote ?? st.emote,
           emoteNonce: st.emoteNonce + 1,

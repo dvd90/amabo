@@ -48,6 +48,7 @@ export interface PeekResult {
   mood: string;
   creature: CreatureViewT;
   away?: GapSummary;
+  needs?: NeedFlag[];
 }
 
 export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';
@@ -68,6 +69,7 @@ export interface EventLite {
 export interface InteractResult {
   creature: CreatureViewT;
   events: EventLite[];
+  needs?: NeedFlag[];
 }
 
 export interface AuthConfig {
@@ -76,11 +78,25 @@ export interface AuthConfig {
 }
 
 /** The dashboard's urgency signals for a creature (engine.needs). */
-export type NeedFlag = 'ready' | 'souring' | 'ill' | 'hungry' | 'lonely' | 'asleep' | 'fading';
+export type NeedFlag =
+  | 'ready'
+  | 'overflowing'
+  | 'souring'
+  | 'ill'
+  | 'hungry'
+  | 'lonely'
+  | 'asleep'
+  | 'fading';
 
 /** A roster card: the creature view plus its "who needs the Light" signals. */
 export interface RosterItem extends CreatureViewT {
   needs: NeedFlag[];
+}
+
+/** The result of the Symposium split — the parent and its new other half. */
+export interface MultiplyResult {
+  parent: RosterItem;
+  child: RosterItem;
 }
 
 export interface ApiClient {
@@ -92,9 +108,11 @@ export interface ApiClient {
   logout(): Promise<void>;
   listCreatures(): Promise<RosterItem[]>;
   createCreature(name: string): Promise<CreatureViewT>;
-  getCreature(id: string): Promise<CreatureViewT>;
+  getCreature(id: string): Promise<RosterItem>;
   peek(id: string): Promise<PeekResult>;
   interact(id: string, action: CareAction): Promise<InteractResult>;
+  /** The Symposium split — only when the creature is overflowing. */
+  multiply(id: string): Promise<MultiplyResult>;
   journal(id: string): Promise<JournalEntry[]>;
   stars(id: string): Promise<StarView[]>;
 }
@@ -162,13 +180,16 @@ export class HttpApiClient implements ApiClient {
     return this.req<CreatureViewT>('/creatures', 'POST', { name });
   }
   getCreature(id: string) {
-    return this.req<CreatureViewT>(`/creatures/${id}`);
+    return this.req<RosterItem>(`/creatures/${id}`);
   }
   peek(id: string) {
     return this.req<PeekResult>(`/creatures/${id}/peek`, 'POST', {});
   }
   interact(id: string, action: CareAction) {
     return this.req<InteractResult>(`/creatures/${id}/interact`, 'POST', { action });
+  }
+  multiply(id: string) {
+    return this.req<MultiplyResult>(`/creatures/${id}/multiply`, 'POST', {});
   }
   async journal(id: string) {
     return (await this.req<{ entries: JournalEntry[] }>(`/creatures/${id}/journal`)).entries;

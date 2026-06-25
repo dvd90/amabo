@@ -169,6 +169,42 @@ describe('POST /creatures/:id/peek', () => {
   });
 });
 
+describe('POST /creatures/:id/multiply — the Symposium split (M-F)', () => {
+  it('refuses a creature that is not overflowing (409)', async () => {
+    const { app } = setup();
+    const { agent, csrf } = await login(app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    const res = await agent
+      .post(`/creatures/${created.body.id}/multiply`)
+      .set('x-csrf-token', csrf)
+      .send({});
+    expect(res.status).toBe(409);
+  });
+
+  it('splits an overflowing creature into a second half on the roster', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    const base = condenseMote(7, ctx.nowAt());
+    const overflowing: CreatureState = {
+      ...base,
+      stage: 'velveteen',
+      stats: { ...base.stats, ambra: 98 },
+    };
+    const rec = await ctx.repo.createCreature({ ownerId: userId, name: 'Bo', state: overflowing });
+
+    const res = await agent
+      .post(`/creatures/${rec.id}/multiply`)
+      .set('x-csrf-token', csrf)
+      .send({});
+    expect(res.status).toBe(201);
+    expect(res.body.child.name).toMatch(/Bo/);
+    expect(res.body.parent.state.stats.ambra).toBeLessThan(98); // Ambra shared, not lost
+
+    const roster = await agent.get('/creatures');
+    expect(roster.body.creatures).toHaveLength(2);
+  });
+});
+
 describe('graduation writes a stars row', () => {
   it('a high-Amabo Bloom ascends on read and appears in the sky', async () => {
     const ctx = setup();

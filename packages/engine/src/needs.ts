@@ -5,10 +5,19 @@
  */
 
 import { GAP_SUMMARY, GRADUATION, LOW_AMBRA_THRESHOLD } from './config.js';
+import { canMultiply } from './lifecycle.js';
 import type { CreatureState } from './state.js';
 
 /** Most-urgent-first signals a card can surface. */
-export type NeedFlag = 'ready' | 'souring' | 'ill' | 'hungry' | 'lonely' | 'asleep' | 'fading';
+export type NeedFlag =
+  | 'ready'
+  | 'overflowing'
+  | 'souring'
+  | 'ill'
+  | 'hungry'
+  | 'lonely'
+  | 'asleep'
+  | 'fading';
 
 /** A radiant Bloom, ripe to ascend — a hint, not the full graduation gate (age/ambra too). */
 function readyToAscend(s: CreatureState): boolean {
@@ -21,6 +30,7 @@ export function needs(state: CreatureState): NeedFlag[] {
 
   const out: NeedFlag[] = [];
   if (readyToAscend(state)) out.push('ready');
+  if (canMultiply(state)) out.push('overflowing'); // ripe to share its light (Symposium)
   if (state.uncanny) out.push('souring');
   if (state.ill) out.push('ill');
   if (state.stats.ambra < LOW_AMBRA_THRESHOLD) out.push('hungry');
