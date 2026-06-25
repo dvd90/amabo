@@ -7,8 +7,11 @@
 import type { CreatureViewT } from '@amabo/shared';
 import { Creature } from './Creature.js';
 import { glow } from './sprite.js';
+import { useGame } from '../store/useGame.js';
 
 export function Amarium({ creature }: { creature: CreatureViewT | null }) {
+  const emote = useGame((s) => s.emote);
+  const emoteNonce = useGame((s) => s.emoteNonce);
   const intensity = creature ? glow(creature) : 0.05;
   return (
     <div
@@ -23,7 +26,11 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
     >
       <div className="amarium-glow" />
       <div className="amarium-sprite">
-        {creature ? <Creature creature={creature} /> : <span className="amarium-empty">·</span>}
+        {creature ? (
+          <Creature creature={creature} emote={emote} emoteNonce={emoteNonce} />
+        ) : (
+          <span className="amarium-empty">·</span>
+        )}
       </div>
       <div className="amarium-scanlines" aria-hidden="true" />
     </div>

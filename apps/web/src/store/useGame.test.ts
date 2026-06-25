@@ -67,6 +67,8 @@ describe('useGame store (M8)', () => {
       stars: [],
       busy: false,
       error: null,
+      emote: null,
+      emoteNonce: 0,
     });
   });
 
@@ -95,6 +97,9 @@ describe('useGame store (M8)', () => {
     // The "nothing happens" fix: a visible result line after care.
     expect(useGame.getState().lastResult).toContain('fed');
     expect(useGame.getState().lastResult).toContain('ambra ↑');
+    // …and the creature reacts (emote + a bumped nonce so the SVG animates).
+    expect(useGame.getState().emote).toBe('feed');
+    expect(useGame.getState().emoteNonce).toBeGreaterThan(0);
   });
 
   it('surfaces an error instead of failing silently', async () => {

@@ -39,6 +39,28 @@ function summarizeCare(events: { kind: string; statDeltas?: Record<string, numbe
   return parts.length ? `${e.kind} · ${parts.join('  ')}` : e.kind;
 }
 
+/** The creature's reaction (emote) for a care event — drives the SVG animation. */
+export type Emote = 'feed' | 'clean' | 'play' | 'comfort' | 'refused' | 'sleep' | 'woke' | 'peek';
+
+const EMOTE_BY_KIND: Record<string, Emote> = {
+  fed: 'feed',
+  cleaned: 'clean',
+  played: 'play',
+  comforted: 'comfort',
+  refused: 'refused',
+  tooTired: 'refused',
+  fellAsleep: 'sleep',
+  woke: 'woke',
+};
+
+function emoteForEvents(events: { kind: string }[]): Emote | null {
+  for (const e of events) {
+    const em = EMOTE_BY_KIND[e.kind];
+    if (em) return em;
+  }
+  return null;
+}
+
 const CARE_BY_SCREEN: Partial<Record<Screen, CareAction>> = {
   feed: 'feed',
   clean: 'clean',
@@ -78,6 +100,9 @@ export interface GameState {
   mood: string | null;
   /** Short "what just changed" feedback after a care action. */
   lastResult: string | null;
+  /** The creature's current reaction; `emoteNonce` bumps so the same emote re-fires. */
+  emote: Emote | null;
+  emoteNonce: number;
   busy: boolean;
   error: string | null;
   lastPeekAt: number;
@@ -109,6 +134,8 @@ export const useGame = create<GameState>((set, get) => ({
   lastJournal: null,
   mood: null,
   lastResult: null,
+  emote: null,
+  emoteNonce: 0,
   busy: false,
   error: null,
   lastPeekAt: 0,
@@ -158,7 +185,14 @@ export const useGame = create<GameState>((set, get) => ({
     set({ busy: true });
     try {
       const r = await client.peek(creature.id);
-      set({ creature: r.creature, lastJournal: r.journal, mood: r.mood, lastPeekAt: Date.now() });
+      set((st) => ({
+        creature: r.creature,
+        lastJournal: r.journal,
+        mood: r.mood,
+        lastPeekAt: Date.now(),
+        emote: 'peek',
+        emoteNonce: st.emoteNonce + 1,
+      }));
     } finally {
       set({ busy: false });
     }
@@ -175,7 +209,13 @@ export const useGame = create<GameState>((set, get) => ({
       set({ busy: true, error: null });
       try {
         const { creature: updated, events } = await client.interact(creature.id, action);
-        set({ creature: updated, lastResult: summarizeCare(events) });
+        const emote = emoteForEvents(events);
+        set((st) => ({
+          creature: updated,
+          lastResult: summarizeCare(events),
+          emote: emote ?? st.emote,
+          emoteNonce: st.emoteNonce + 1,
+        }));
       } catch (e) {
         set({ error: friendlyError(e) });
       } finally {
@@ -197,10 +237,12 @@ export const useGame = create<GameState>((set, get) => ({
           creature.id,
           creature.state.asleep ? 'wake' : 'sleep',
         );
-        set({
+        set((st) => ({
           creature: updated,
           lastResult: updated.state.asleep ? 'settled to sleep' : 'woke up',
-        });
+          emote: updated.state.asleep ? 'sleep' : 'woke',
+          emoteNonce: st.emoteNonce + 1,
+        }));
       } catch (e) {
         set({ error: friendlyError(e) });
       } finally {

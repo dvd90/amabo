@@ -7,6 +7,7 @@
  */
 
 import type { CreatureViewT } from '@amabo/shared';
+import type { Emote } from '../store/useGame.js';
 
 const STAGE_SCALE: Record<string, number> = {
   mote: 0.55,
@@ -15,7 +16,64 @@ const STAGE_SCALE: Record<string, number> = {
   bloom: 1,
 };
 
-export function Creature({ creature }: { creature: CreatureViewT }) {
+/** Small floating particles per reaction (motes/sparkles/hearts), drawn in SVG space. */
+function Particles({ emote }: { emote: Emote }) {
+  const cx = 50;
+  if (emote === 'feed') {
+    return (
+      <g className="fx-particles">
+        {[-10, 0, 10].map((dx, i) => (
+          <circle key={i} className="p-mote" cx={cx + dx} cy={86} r={3} fill="hsl(38 95% 62%)" />
+        ))}
+      </g>
+    );
+  }
+  if (emote === 'clean') {
+    return (
+      <g className="fx-particles">
+        {[18, 50, 82].map((x, i) => (
+          <text key={i} className="p-spark" x={x} y={30 + (i % 2) * 10}>
+            ✦
+          </text>
+        ))}
+      </g>
+    );
+  }
+  if (emote === 'play') {
+    return (
+      <g className="fx-particles">
+        {[-12, 4, 14].map((dx, i) => (
+          <text key={i} className="p-heart" x={cx + dx} y={40}>
+            ♥
+          </text>
+        ))}
+      </g>
+    );
+  }
+  if (emote === 'comfort') {
+    return (
+      <circle className="p-ring" cx={cx} cy={56} r={20} fill="none" stroke="hsl(38 90% 70%)" />
+    );
+  }
+  if (emote === 'peek') {
+    return (
+      <text className="p-spark" x={cx + 16} y={28}>
+        ✦
+      </text>
+    );
+  }
+  return null;
+}
+
+export function Creature({
+  creature,
+  emote = null,
+  emoteNonce = 0,
+}: {
+  creature: CreatureViewT;
+  emote?: Emote | null;
+  emoteNonce?: number;
+}) {
   const { stage, uncanny, asleep, ill, alive } = creature.state;
   const ambra = Math.max(0, Math.min(100, creature.state.stats.ambra)) / 100;
   const scale = STAGE_SCALE[stage] ?? 1;
@@ -44,7 +102,8 @@ export function Creature({ creature }: { creature: CreatureViewT }) {
           : 'none',
       }}
     >
-      <g className="creature-float">
+      {/* key on the nonce so the same reaction replays each time it fires */}
+      <g className={`creature-float${emote ? ` fx-${emote}` : ''}`} key={emoteNonce}>
         {/* body */}
         <ellipse cx={cx} cy={cy + bodyR * 0.55} rx={bodyR} ry={bodyR * 0.9} fill={body} />
         {/* a soft tuft / antenna of light */}
@@ -102,6 +161,9 @@ export function Creature({ creature }: { creature: CreatureViewT }) {
 
         {/* illness: a small bead of sweat */}
         {ill && alive ? <circle cx={cx + bodyR * 0.6} cy={cy} r={2.2} fill="#7fd1a0" /> : null}
+
+        {/* reaction particles */}
+        {emote ? <Particles emote={emote} /> : null}
       </g>
     </svg>
   );
