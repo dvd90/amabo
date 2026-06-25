@@ -137,6 +137,8 @@ export interface GameState {
   dismissGraduation(): Promise<void>;
   /** The Symposium split — let an overflowing creature share its light into a sibling. */
   multiply(): Promise<void>;
+  /** Introduce two of your creatures; returns a human line about how they resonated. */
+  meet(aId: string, bId: string): Promise<string>;
   /** Return to the roster. */
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
@@ -238,6 +240,23 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   dismissReveal: () => set({ reveal: null }),
+
+  meet: async (aId, bId) => {
+    set({ busy: true, error: null });
+    try {
+      const r = await get().client.meet(aId, bId);
+      await get().loadDashboard(); // both came away a little changed
+      const [a, b] = r.names;
+      return r.result === 'harmony'
+        ? `${a} and ${b} harmonized ✦`
+        : `${a} and ${b} met, a little wary`;
+    } catch (e) {
+      set({ error: friendlyError(e) });
+      return 'they could not meet just now';
+    } finally {
+      set({ busy: false });
+    }
+  },
 
   dismissGraduation: async () => {
     set({ graduation: null });

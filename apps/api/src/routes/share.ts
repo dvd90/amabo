@@ -192,6 +192,35 @@ export function authedShareRouter(deps: ShareDeps): Router {
     })();
   });
 
+  // A meeting between two of your OWN creatures — a duet within one Amarium (M-H).
+  router.post('/creatures/:id/meet/:otherId', (req, res, next) => {
+    void (async () => {
+      try {
+        const owner = getOwner(req);
+        if (req.params.id === req.params.otherId) {
+          return res.status(400).json({ error: 'a creature cannot meet itself' });
+        }
+        const a0 = await repo.getCreature(req.params.id!, owner);
+        const b0 = await repo.getCreature(req.params.otherId!, owner);
+        if (!a0 || !b0) return res.status(404).json({ error: 'not found' });
+
+        const now = clock();
+        const a = (await catchUp(repo, a0, now)).record;
+        const b = (await catchUp(repo, b0, now)).record;
+        const rng = mulberry32(deriveSeed(a.state.seed, b.state.seed));
+        const { events, deltasA, deltasB } = resonate(a.state, b.state, rng);
+
+        await repo.saveCreature({ ...a, state: applyDelta(a.state, deltasA) });
+        await repo.saveCreature({ ...b, state: applyDelta(b.state, deltasB) });
+        await repo.appendEvents(a.id, events, 'sim');
+        await repo.appendEvents(b.id, events, 'sim');
+        return res.json({ result: events[0]?.tag ?? 'harmony', names: [a.name, b.name] });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
   // Rehoming: a deliberate, two-sided act of entrusting.
   router.post('/creatures/:id/rehome', (req, res, next) => {
     void (async () => {

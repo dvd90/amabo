@@ -46,14 +46,25 @@ function lastSeenLabel(c: RosterItem): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function CreatureCard({ c, onOpen }: { c: RosterItem; onOpen: () => void }) {
+function CreatureCard({
+  c,
+  onOpen,
+  selected = false,
+  meetMode = false,
+}: {
+  c: RosterItem;
+  onOpen: () => void;
+  selected?: boolean;
+  meetMode?: boolean;
+}) {
   // Sleep is informational; if the only signal is "asleep", don't raise an alarm dot.
   const urgent = c.needs.some((n) => NEED[n].tone === 'warn');
   return (
     <button
-      className={`amabo-card${urgent ? ' is-urgent' : ''}`}
+      className={`amabo-card${urgent ? ' is-urgent' : ''}${selected ? ' is-selected' : ''}`}
       onClick={onOpen}
-      aria-label={`Open ${c.name}`}
+      aria-pressed={meetMode ? selected : undefined}
+      aria-label={meetMode ? `Choose ${c.name} to meet` : `Open ${c.name}`}
     >
       <span className="amabo-card-glass">
         <Creature creature={c} />
@@ -81,9 +92,28 @@ export function Dashboard() {
   const openCreature = useGame((s) => s.openCreature);
   const start = useGame((s) => s.start);
   const signOut = useGame((s) => s.signOut);
+  const meet = useGame((s) => s.meet);
   const busy = useGame((s) => s.busy);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
+  const [meetMode, setMeetMode] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [note, setNote] = useState<string | null>(null);
+
+  const exitMeet = () => {
+    setMeetMode(false);
+    setPicked([]);
+  };
+
+  // In meet-mode, tapping cards selects two creatures; the second pick runs the meeting.
+  const onCardTap = (id: string) => {
+    if (!meetMode) return void openCreature(id);
+    if (picked.includes(id)) return setPicked(picked.filter((p) => p !== id));
+    const next = [...picked, id];
+    if (next.length < 2) return setPicked(next);
+    exitMeet();
+    void meet(next[0]!, next[1]!).then(setNote);
+  };
 
   return (
     <div className="dashboard">
@@ -92,14 +122,39 @@ export function Dashboard() {
           <p className="dash-kicker">Your Amarium</p>
           <h1 className="dash-title">The lights you tend</h1>
         </div>
-        <button className="linkish" onClick={() => void signOut()}>
-          Sign out
-        </button>
+        <span className="dash-actions">
+          {creatures.length >= 2 ? (
+            <button
+              className="linkish"
+              onClick={() => {
+                setNote(null);
+                if (meetMode) exitMeet();
+                else setMeetMode(true);
+              }}
+            >
+              {meetMode ? 'Cancel' : '✦ Introduce two'}
+            </button>
+          ) : null}
+          <button className="linkish" onClick={() => void signOut()}>
+            Sign out
+          </button>
+        </span>
       </header>
+
+      {meetMode ? (
+        <p className="dash-hint">Choose two to introduce — their Ambra will resonate.</p>
+      ) : null}
+      {note ? <p className="dash-note">{note}</p> : null}
 
       <div className="amabo-grid">
         {creatures.map((c) => (
-          <CreatureCard key={c.id} c={c} onOpen={() => void openCreature(c.id)} />
+          <CreatureCard
+            key={c.id}
+            c={c}
+            meetMode={meetMode}
+            selected={picked.includes(c.id)}
+            onOpen={() => onCardTap(c.id)}
+          />
         ))}
 
         {naming ? (
