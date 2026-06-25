@@ -97,6 +97,7 @@ if (process.env.NODE_ENV !== 'test') {
     staticDir: webDistDir(),
     googleEnabled: googleConfigured(),
     googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

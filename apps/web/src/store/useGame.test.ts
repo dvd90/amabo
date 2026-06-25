@@ -45,6 +45,8 @@ function fakeClient(): ApiClient {
       child: { ...creature(), id: 'c2', name: 'Pip’s half', needs: [] },
     }),
     meet: vi.fn().mockResolvedValue({ result: 'harmony', names: ['Pip', 'Bo'] }),
+    vapidKey: vi.fn().mockResolvedValue(null),
+    subscribePush: vi.fn().mockResolvedValue(undefined),
     peek: vi.fn().mockResolvedValue({
       journal: 'soft gold day',
       mood: 'content',

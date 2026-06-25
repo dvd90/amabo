@@ -17,6 +17,7 @@ import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
 import { authRouter } from './routes/auth.js';
 import { creaturesRouter } from './routes/creatures.js';
+import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
 
 export interface AppDeps {
@@ -35,6 +36,8 @@ export interface AppDeps {
   googleEnabled?: boolean;
   /** Pin the exact OAuth redirect URI (GOOGLE_CALLBACK_URL); derived from the request if unset. */
   googleCallbackUrl?: string;
+  /** VAPID public key for web-push; served to the client so it can subscribe. */
+  vapidPublicKey?: string;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -50,6 +53,7 @@ const API_PREFIXES = [
   '/meet',
   '/report',
   '/block',
+  '/push',
 ];
 const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 
@@ -66,6 +70,11 @@ export function createApp(deps: AppDeps): Express {
 
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
+  });
+
+  // Public: the VAPID key the client needs to subscribe to push (no secrets here).
+  app.get('/push/vapid', (_req, res) => {
+    res.json({ key: deps.vapidPublicKey ?? null });
   });
 
   // Session attachment + public auth lifecycle.
@@ -118,6 +127,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(
     authedShareRouter({ repo: deps.repo, clock: deps.clock, baseUrl: deps.baseUrl, getOwner }),
   );
+  app.use(pushRouter({ repo: deps.repo, getOwner }));
 
   const onError: ErrorRequestHandler = (_err, _req, res, _next) => {
     res.status(500).json({ error: 'internal error' });

@@ -105,8 +105,13 @@ BASE_URL=https://amabo-api.up.railway.app
 WEB_ORIGIN=https://amabo-web.up.railway.app
 # optional:
 ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_OAUTH_ID=...
-GOOGLE_OAUTH_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=https://amabo-api.up.railway.app/auth/google/callback
+# optional — push notifications (see "Notifications" below):
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:you@example.com
 ```
 
 **amabo-web**
@@ -147,8 +152,25 @@ build both and set `WEB_DIST=apps/web/dist` (or just leave the build to produce 
 API auto-serves it and you can drop `WEB_ORIGIN`/`VITE_API_BASE`/CORS entirely. (Earlier
 commits used this; we switched to two services per `ARCHITECTURE.md` §16.)
 
+## Notifications (optional — PWA web-push)
+
+A care game lives on the ping. Push is off until you set it up:
+
+1. **Generate VAPID keys once** (locally): `npx web-push generate-vapid-keys`.
+2. On **amabo-api**, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT`
+   (`mailto:you@example.com`). The API serves the public key at `GET /push/vapid`, so the
+   web app does **not** need a separate VAPID env var.
+3. Add a **Railway Cron** that runs the scheduler on the API image, e.g. every 30 min:
+   - Schedule: `*/30 * * * *`
+   - Command: `node dist/cron/notify.js`
+     It catches each subscribed Light's creatures up to now and pings the most urgent one
+     (illness, souring, low Ambra, ready-to-ascend, overflowing, or a long absence), at most
+     once per ~6h per device. Dead subscriptions are pruned automatically.
+4. In the app, tap **🔔 Notify me** on the dashboard, accept the browser prompt, and you're
+   subscribed. (iOS requires the PWA to be **installed** to Home Screen first.)
+
 ## Notes
 
 - Lazy simulate-on-read needs **no always-on worker** — these two services + Postgres
-  cover v1. An eager `CronScheduler` would be a separate Railway cron later.
+  cover v1; notifications add a single periodic **cron** (above), still no worker.
 - `packages/chain` (optional crypto, M10) is absent and not part of this deploy.

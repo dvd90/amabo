@@ -90,6 +90,18 @@ export interface RehomeRecord {
   at: number;
 }
 
+// ── M-C: web-push notifications ──────────────────────────────────────────────────
+export interface PushSubscriptionRecord {
+  id: string;
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  /** When this device was last pinged — used to honour a per-device cooldown. */
+  lastNotifiedAt: number | null;
+  createdAt: number;
+}
+
 export interface Repository {
   createCreature(input: NewCreature): Promise<CreatureRecord>;
   /** Owner-scoped: returns null if it doesn't exist OR isn't owned by `ownerId`. */
@@ -135,4 +147,14 @@ export interface Repository {
   confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null>;
   addBlock(userId: string, blockedUserId: string, at: number): Promise<void>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
+
+  // Push notifications (M-C)
+  /** Upsert a device subscription (keyed by endpoint). */
+  addPushSubscription(
+    input: Omit<PushSubscriptionRecord, 'id' | 'createdAt' | 'lastNotifiedAt'>,
+  ): Promise<PushSubscriptionRecord>;
+  /** All subscriptions — the cron groups these by user to decide who to ping. */
+  listPushSubscriptions(): Promise<PushSubscriptionRecord[]>;
+  deletePushSubscription(endpoint: string): Promise<void>;
+  touchPushNotified(id: string, at: number): Promise<void>;
 }
