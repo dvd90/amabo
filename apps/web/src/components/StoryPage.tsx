@@ -44,6 +44,10 @@ export function StoryPage({ onClose }: { onClose: () => void }) {
         <h1 className="codex-title">l'amor che move il sole e l'altre stelle</h1>
         <p className="codex-attr">— the love that moves the sun and the other stars (Dante)</p>
 
+        <video className="codex-video" controls preload="metadata" poster="/og.png">
+          <source src="/amabo-explainer.webm" type="video/webm" />
+        </video>
+
         <section className="codex-section">
           <h2>Ambra — love that has to go somewhere</h2>
           <p>
