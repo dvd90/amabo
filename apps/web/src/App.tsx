@@ -1,42 +1,43 @@
 /**
- * App.tsx — boots the device. Checks the session; if signed out, offers the OAuth
- * login. Once in, it reloads the player's creature (persisted id). With no creature yet
- * it runs the onboarding (the myth + naming your first Mote); otherwise the device.
+ * App.tsx — boots the device. Checks the session; if signed out, shows <Login>. Once in,
+ * it loads the Light's roster and lands on the <Dashboard>. Opening a creature switches
+ * to the <Device>; an empty roster drops straight into <Onboarding> (the myth + first
+ * Mote). The active view is driven by the store's `route`.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Dashboard } from './components/Dashboard.js';
 import { Device } from './components/Device.js';
+import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
-import { LOGIN_URL } from './api/client.js';
 import { useGame } from './store/useGame.js';
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const client = useGame((s) => s.client);
-  const boot = useGame((s) => s.boot);
+  const loadDashboard = useGame((s) => s.loadDashboard);
   const creature = useGame((s) => s.creature);
+  const creatures = useGame((s) => s.creatures);
+  const route = useGame((s) => s.route);
+
+  const signIn = useCallback(async () => {
+    await loadDashboard();
+    setAuthed(true);
+  }, [loadDashboard]);
 
   useEffect(() => {
     void client.me().then(async (me) => {
-      if (me) await boot();
+      if (me) await loadDashboard();
       setAuthed(Boolean(me));
     });
-  }, [client, boot]);
+  }, [client, loadDashboard]);
 
   if (authed === null) return <main className="boot">Warming the glass…</main>;
 
-  if (!authed) {
-    return (
-      <main className="boot">
-        <div className="boot-orb" aria-hidden="true" />
-        <h1>Amabo</h1>
-        <p>A small light lives in a sealed glass world. Be its Light.</p>
-        <a className="btn btn-login" href={LOGIN_URL}>
-          Sign in to open the Amarium
-        </a>
-      </main>
-    );
-  }
+  if (!authed) return <Login onSignedIn={() => void signIn()} />;
 
-  return <main className="app">{creature ? <Device /> : <Onboarding />}</main>;
+  // Inside the device for the open creature; otherwise the roster (or the first-run myth).
+  if (route === 'device' && creature) return <main className="app">{<Device />}</main>;
+  if (creatures.length === 0) return <main className="app">{<Onboarding />}</main>;
+  return <main className="app">{<Dashboard />}</main>;
 }

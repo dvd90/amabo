@@ -24,6 +24,7 @@ export function Device() {
     toggleMute,
     highContrast,
     toggleContrast,
+    openDashboard,
   } = useGame();
   const [storyOpen, setStoryOpen] = useState(false);
 
@@ -62,7 +63,15 @@ export function Device() {
   return (
     <div className={`device${highContrast ? ' hc' : ''}`} data-screen={screen}>
       <div className="device-topbar">
-        <span className="device-brand">amabo</span>
+        <button
+          className="toggle device-roster"
+          onClick={() => void openDashboard()}
+          aria-label="Back to all your amabos"
+          title="All your amabos"
+        >
+          ◂ all
+        </button>
+        <span className="device-brand">{creature?.name ?? 'amabo'}</span>
         <span className="device-toggles">
           <button
             className="toggle"

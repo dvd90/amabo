@@ -47,6 +47,30 @@ describe('auth (M5.5)', () => {
     expect(res.status).toBe(400);
   });
 
+  it('email sign-in establishes a session and is idempotent per email', async () => {
+    const { app } = setup();
+    const agent = request.agent(app);
+
+    const login = await agent.post('/auth/email').send({ email: 'Pip@Example.com' });
+    expect(login.status).toBe(200);
+    expect(login.body.user.email).toBe('pip@example.com'); // normalised
+    expect(login.body.csrfToken).toBeTruthy();
+
+    const me = await agent.get('/me');
+    expect(me.status).toBe(200);
+    expect(me.body.user.email).toBe('pip@example.com');
+
+    // Signing in again with the same email returns the same account.
+    const again = await request.agent(app).post('/auth/email').send({ email: 'pip@example.com' });
+    expect(again.body.user.id).toBe(login.body.user.id);
+  });
+
+  it('rejects a malformed email with 400', async () => {
+    const { app } = setup();
+    const res = await request(app).post('/auth/email').send({ email: 'not-an-email' });
+    expect(res.status).toBe(400);
+  });
+
   it('does not accept a forged/unknown session cookie', async () => {
     const { app } = setup();
     const res = await request(app).get('/me').set('Cookie', 'amabo_session=not-a-real-session');

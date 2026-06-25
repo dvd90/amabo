@@ -45,8 +45,10 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `GOOGLE_OAUTH_ID`     | optional\* | Google OAuth client ID                                                                                 |
    | `GOOGLE_OAUTH_SECRET` | optional\* | Google OAuth client secret                                                                             |
 
-   \*Without the Google vars the API uses a **fake** auth provider (local/testing only) —
-   set them for real sign-in.
+   \*Passwordless **email sign-in is always available** and needs no setup — it's the
+   primary login. The Google vars are optional and only enable the "Continue with
+   Google" button; without them that button falls back to a fake provider (local/testing
+   only), but email login still works in production.
 
    > Chicken/egg: you need the web URL for `WEB_ORIGIN`. Either create the web service
    > first to get its domain (Step 3), or set a placeholder now and update `WEB_ORIGIN`
@@ -71,13 +73,20 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
 ## Step 4 — Wire the cross-links
 
 1. Back on **amabo-api** → confirm `WEB_ORIGIN` = the web service URL (Step 3.3). Redeploy if you changed it.
-2. **Google OAuth** (if using real sign-in): in Google Cloud Console → your OAuth client →
-   **Authorized redirect URIs** add `https://<api-url>/auth/callback`.
+2. **Google OAuth** (optional — email sign-in works with no setup): in Google Cloud
+   Console → your OAuth client → **Authorized redirect URIs** add **exactly**
+   `https://<api-url>/auth/callback` (the API domain from Step 2.3, no trailing slash).
+   The API derives this same URL from the incoming request, so it always matches the
+   host the browser used — a wrong `BASE_URL` no longer causes `redirect_uri_mismatch`.
 
 ## Step 5 — Verify
 
-- `https://<web-url>/` → the device loads ("Sign in to open the Amarium").
-- Sign in → Google → you land back on the web app, signed in (`/me` works cross-origin).
+- `https://<web-url>/` → the threshold loads (email field + "Continue with Google").
+- **Email:** type any email → you land on the **dashboard** (your roster of amabos).
+- **Google** (if configured): sign in → back on the web app, signed in (`/me` works
+  cross-origin).
+- Dashboard → "New amabo" condenses a Mote → opens the device. "◂ all" returns to the
+  roster; "Sign out" ends the session.
 - Create a creature, peek, care — all calls go to the API with the session cookie.
 
 ---

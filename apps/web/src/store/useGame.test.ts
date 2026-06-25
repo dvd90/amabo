@@ -30,7 +30,12 @@ function creature(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
 
 function fakeClient(): ApiClient {
   return {
-    me: vi.fn().mockResolvedValue({ user: { id: 'u1', displayName: 'P' } }),
+    me: vi.fn().mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
+    loginWithEmail: vi
+      .fn()
+      .mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
+    logout: vi.fn().mockResolvedValue(undefined),
+    listCreatures: vi.fn().mockResolvedValue([creature()]),
     createCreature: vi.fn().mockResolvedValue(creature()),
     getCreature: vi.fn().mockResolvedValue(creature()),
     peek: vi
@@ -59,7 +64,9 @@ function fakeClient(): ApiClient {
 describe('useGame store (M8)', () => {
   beforeEach(() => {
     useGame.setState({
+      creatures: [],
       creature: null,
+      route: 'dashboard',
       screen: 'home',
       lastJournal: null,
       mood: null,
@@ -134,6 +141,36 @@ describe('useGame store (M8)', () => {
     await useGame.getState().peek();
     expect(client.peek).toHaveBeenCalledTimes(1);
     expect(useGame.getState().lastJournal).toBe('soft gold day');
+  });
+
+  it('loads the roster and opens a creature into the device view', async () => {
+    const client = fakeClient();
+    useGame.getState().setClient(client);
+    await useGame.getState().loadDashboard();
+    expect(client.listCreatures).toHaveBeenCalled();
+    expect(useGame.getState().creatures).toHaveLength(1);
+
+    await useGame.getState().openCreature('c1');
+    expect(client.getCreature).toHaveBeenCalledWith('c1');
+    expect(useGame.getState().route).toBe('device');
+    expect(useGame.getState().creature?.id).toBe('c1');
+  });
+
+  it('starting a new Mote adds it to the roster and opens it', async () => {
+    const client = fakeClient();
+    useGame.setState({ client, creatures: [] });
+    await useGame.getState().start('Pip');
+    expect(useGame.getState().creatures.map((c) => c.name)).toContain('Pip');
+    expect(useGame.getState().route).toBe('device');
+  });
+
+  it('sign out clears the session and returns to the dashboard', async () => {
+    const client = fakeClient();
+    useGame.setState({ client, creatures: [creature()], creature: creature(), route: 'device' });
+    await useGame.getState().signOut();
+    expect(client.logout).toHaveBeenCalled();
+    expect(useGame.getState().creature).toBeNull();
+    expect(useGame.getState().route).toBe('dashboard');
   });
 
   it('mute and high-contrast toggles flip state (M9 a11y)', () => {

@@ -31,7 +31,7 @@ export interface PeekResult {
 export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';
 
 export interface MeResult {
-  user: { id: string; displayName: string };
+  user: { id: string; email?: string; displayName: string };
   csrfToken: string;
 }
 
@@ -50,6 +50,10 @@ export interface InteractResult {
 
 export interface ApiClient {
   me(): Promise<MeResult | null>;
+  /** Passwordless sign-in; resolves to the session (and caches the CSRF token). */
+  loginWithEmail(email: string): Promise<MeResult>;
+  logout(): Promise<void>;
+  listCreatures(): Promise<CreatureViewT[]>;
   createCreature(name: string): Promise<CreatureViewT>;
   getCreature(id: string): Promise<CreatureViewT>;
   peek(id: string): Promise<PeekResult>;
@@ -98,6 +102,21 @@ export class HttpApiClient implements ApiClient {
     } catch {
       return null;
     }
+  }
+  async loginWithEmail(email: string) {
+    const r = await this.req<MeResult>('/auth/email', 'POST', { email });
+    this.csrf = r.csrfToken ?? '';
+    return r;
+  }
+  async logout() {
+    try {
+      await this.req<{ ok: true }>('/auth/logout', 'POST', {});
+    } finally {
+      this.csrf = '';
+    }
+  }
+  async listCreatures() {
+    return (await this.req<{ creatures: CreatureViewT[] }>('/creatures')).creatures;
   }
   createCreature(name: string) {
     return this.req<CreatureViewT>('/creatures', 'POST', { name });

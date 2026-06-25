@@ -73,13 +73,6 @@ export const PEEK_DEBOUNCE_MS = 2 * 60 * 1000;
 
 const CREATURE_KEY = 'amabo:creatureId';
 
-function loadCreatureId(): string | null {
-  try {
-    return typeof localStorage !== 'undefined' ? localStorage.getItem(CREATURE_KEY) : null;
-  } catch {
-    return null;
-  }
-}
 function saveCreatureId(id: string | null): void {
   try {
     if (typeof localStorage === 'undefined') return;
@@ -90,9 +83,16 @@ function saveCreatureId(id: string | null): void {
   }
 }
 
+/** Which top-level view is showing: the roster of amabos, or one open creature. */
+export type Route = 'dashboard' | 'device';
+
 export interface GameState {
   client: ApiClient;
+  /** The signed-in Light's whole roster (the dashboard). */
+  creatures: CreatureViewT[];
+  /** The currently-open creature (null on the dashboard). */
   creature: CreatureViewT | null;
+  route: Route;
   journalEntries: JournalEntry[];
   stars: StarView[];
   screen: Screen;
@@ -112,8 +112,14 @@ export interface GameState {
   setClient(client: ApiClient): void;
   toggleMute(): void;
   toggleContrast(): void;
-  /** Reload the player's creature from the persisted id (call after auth on boot). */
-  boot(): Promise<void>;
+  /** Load the roster from the server (call after auth, and when returning to it). */
+  loadDashboard(): Promise<void>;
+  /** Open one creature into the device view (catches it up to now). */
+  openCreature(id: string): Promise<void>;
+  /** Return to the roster. */
+  openDashboard(): Promise<void>;
+  /** End the session and clear all local state. */
+  signOut(): Promise<void>;
   start(name?: string): Promise<void>;
   refresh(): Promise<void>;
   peek(): Promise<void>;
@@ -127,7 +133,9 @@ export interface GameState {
 
 export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
+  creatures: [],
   creature: null,
+  route: 'dashboard',
   journalEntries: [],
   stars: [],
   screen: 'home',
@@ -146,15 +154,47 @@ export const useGame = create<GameState>((set, get) => ({
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   toggleContrast: () => set((s) => ({ highContrast: !s.highContrast })),
 
-  boot: async () => {
-    const id = loadCreatureId();
-    if (!id) return;
+  loadDashboard: async () => {
+    try {
+      set({ creatures: await get().client.listCreatures() });
+    } catch (e) {
+      set({ error: friendlyError(e) });
+    }
+  },
+
+  openCreature: async (id) => {
+    set({ busy: true, error: null });
     try {
       const creature = await get().client.getCreature(id);
-      set({ creature });
-    } catch {
-      // The stored creature is gone (e.g. rehomed/graduated) — start fresh.
+      saveCreatureId(id);
+      set({
+        creature,
+        route: 'device',
+        screen: 'home',
+        lastResult: null,
+        lastJournal: null,
+        mood: null,
+        emote: null,
+      });
+    } catch (e) {
+      set({ error: friendlyError(e) });
+    } finally {
+      set({ busy: false });
+    }
+  },
+
+  openDashboard: async () => {
+    set({ route: 'dashboard', creature: null, screen: 'home' });
+    saveCreatureId(null);
+    await get().loadDashboard();
+  },
+
+  signOut: async () => {
+    try {
+      await get().client.logout();
+    } finally {
       saveCreatureId(null);
+      set({ creatures: [], creature: null, route: 'dashboard', screen: 'home' });
     }
   },
 
@@ -163,9 +203,14 @@ export const useGame = create<GameState>((set, get) => ({
     try {
       const creature = await get().client.createCreature(name.trim() || 'Mote');
       saveCreatureId(creature.id);
-      set({ creature });
+      set((s) => ({
+        creature,
+        creatures: [...s.creatures, creature],
+        route: 'device',
+        screen: 'home',
+      }));
     } catch (e) {
-      set({ error: (e as Error).message });
+      set({ error: friendlyError(e) });
     } finally {
       set({ busy: false });
     }
