@@ -38,6 +38,25 @@ const CARE_BY_SCREEN: Partial<Record<Screen, CareAction>> = {
 /** Debounce peeks: a model call at most once per few minutes; show the cached line between. */
 export const PEEK_DEBOUNCE_MS = 2 * 60 * 1000;
 
+const CREATURE_KEY = 'amabo:creatureId';
+
+function loadCreatureId(): string | null {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage.getItem(CREATURE_KEY) : null;
+  } catch {
+    return null;
+  }
+}
+function saveCreatureId(id: string | null): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (id) localStorage.setItem(CREATURE_KEY, id);
+    else localStorage.removeItem(CREATURE_KEY);
+  } catch {
+    /* ignore (private mode etc.) */
+  }
+}
+
 export interface GameState {
   client: ApiClient;
   creature: CreatureViewT | null;
@@ -55,6 +74,8 @@ export interface GameState {
   setClient(client: ApiClient): void;
   toggleMute(): void;
   toggleContrast(): void;
+  /** Reload the player's creature from the persisted id (call after auth on boot). */
+  boot(): Promise<void>;
   start(name?: string): Promise<void>;
   refresh(): Promise<void>;
   peek(): Promise<void>;
@@ -84,10 +105,23 @@ export const useGame = create<GameState>((set, get) => ({
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   toggleContrast: () => set((s) => ({ highContrast: !s.highContrast })),
 
+  boot: async () => {
+    const id = loadCreatureId();
+    if (!id) return;
+    try {
+      const creature = await get().client.getCreature(id);
+      set({ creature });
+    } catch {
+      // The stored creature is gone (e.g. rehomed/graduated) — start fresh.
+      saveCreatureId(null);
+    }
+  },
+
   start: async (name = 'Mote') => {
     set({ busy: true, error: null });
     try {
-      const creature = await get().client.createCreature(name);
+      const creature = await get().client.createCreature(name.trim() || 'Mote');
+      saveCreatureId(creature.id);
       set({ creature });
     } catch (e) {
       set({ error: (e as Error).message });
