@@ -1,0 +1,1 @@
+ALTER TABLE "creatures" ADD COLUMN "last_seen_at" double precision;

@@ -15,6 +15,8 @@ export interface CreatureRecord {
   name: string;
   state: CreatureState;
   graduatedAt: number | null;
+  /** When the Light last explicitly looked in (peek); null until the first visit. */
+  lastSeenAt: number | null;
   createdAt: number;
 }
 
@@ -94,6 +96,8 @@ export interface Repository {
   getCreature(id: string, ownerId: string | null): Promise<CreatureRecord | null>;
   /** All of an owner's creatures (the dashboard), oldest first. */
   listCreaturesByOwner(ownerId: string | null): Promise<CreatureRecord[]>;
+  /** Record that the Light looked in (peek) — drives "Xh ago" on the roster. */
+  markSeen(id: string, at: number): Promise<void>;
   saveCreature(rec: CreatureRecord): Promise<void>;
   appendEvents(
     creatureId: string,

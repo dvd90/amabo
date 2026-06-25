@@ -873,3 +873,38 @@ body {
 .recap-done {
   width: 100%;
 }
+
+/* Dashboard urgency pips + time-ago (M-B) */
+.amabo-card {
+  position: relative;
+}
+.amabo-card.is-urgent {
+  border-color: hsl(8 70% 55% / 0.55);
+}
+.amabo-card-pips {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: flex;
+  gap: 3px;
+}
+.pip {
+  font-size: 0.72rem;
+  line-height: 1;
+  width: 1.25em;
+  height: 1.25em;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+}
+.pip-warn {
+  color: hsl(8 85% 72%);
+}
+.pip-good {
+  color: hsl(45 95% 68%);
+}
+.pip-mute {
+  color: #f3ece0;
+  opacity: 0.55;
+}

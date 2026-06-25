@@ -138,6 +138,20 @@ describe('POST /creatures/:id/peek', () => {
     // 12h unattended in the dark drains Ambra — a reported change.
     expect(res.body.away.deltas.ambra).toBeLessThan(0);
   });
+
+  it('marks lastSeenAt on peek so the roster can show "looked in" time', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    expect(created.body.lastSeenAt).toBeNull(); // never looked in yet
+
+    ctx.setNow(ctx.nowAt() + 2 * HOUR);
+    const peeked = await agent
+      .post(`/creatures/${created.body.id}/peek`)
+      .set('x-csrf-token', csrf)
+      .send({});
+    expect(peeked.body.creature.lastSeenAt).toBe(ctx.nowAt());
+  });
 });
 
 describe('graduation writes a stars row', () => {
@@ -177,6 +191,8 @@ describe('GET /creatures — the dashboard', () => {
     const mine = await alice.agent.get('/creatures');
     expect(mine.status).toBe(200);
     expect(mine.body.creatures.map((c: { name: string }) => c.name)).toEqual(['Pip', 'Bo']);
+    // Each roster item carries its urgency signals for the dashboard.
+    expect(Array.isArray(mine.body.creatures[0].needs)).toBe(true);
 
     const theirs = await bob.agent.get('/creatures');
     expect(theirs.body.creatures.map((c: { name: string }) => c.name)).toEqual(['Vex']);

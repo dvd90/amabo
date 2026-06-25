@@ -1,18 +1,26 @@
 // @vitest-environment jsdom
-import type { CreatureViewT } from '@amabo/shared';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { CreatureViewT } from '@amabo/shared';
+import type { NeedFlag, RosterItem } from '../api/client.js';
 import { useGame } from '../store/useGame.js';
 import { Dashboard } from './Dashboard.js';
 
 afterEach(cleanup);
 
-function creature(id: string, name: string, over: Partial<CreatureViewT['state']> = {}) {
+function creature(
+  id: string,
+  name: string,
+  over: Partial<CreatureViewT['state']> = {},
+  needs: NeedFlag[] = [],
+): RosterItem {
   return {
     id,
     name,
     graduatedAt: null,
+    lastSeenAt: null,
     createdAt: 0,
+    needs,
     state: {
       seed: 1,
       stage: 'mote',
@@ -29,7 +37,7 @@ function creature(id: string, name: string, over: Partial<CreatureViewT['state']
       lastTickAt: 0,
       ...over,
     },
-  } as CreatureViewT;
+  };
 }
 
 describe('<Dashboard> (the roster)', () => {
@@ -45,6 +53,16 @@ describe('<Dashboard> (the roster)', () => {
 
     fireEvent.click(screen.getByLabelText('Open Pip'));
     expect(openCreature).toHaveBeenCalledWith('c1');
+  });
+
+  it('surfaces urgency pips for a creature that needs the Light', () => {
+    useGame.setState({
+      creatures: [creature('c1', 'Pip', { uncanny: true, ill: true }, ['souring', 'ill'])],
+      openCreature: vi.fn(),
+    });
+    render(<Dashboard />);
+    expect(screen.getByTitle('souring')).toBeTruthy();
+    expect(screen.getByTitle('unwell')).toBeTruthy();
   });
 
   it('reveals a naming field to condense a new Mote', () => {

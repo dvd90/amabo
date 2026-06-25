@@ -46,6 +46,7 @@ export class InMemoryRepository implements Repository {
       name: input.name,
       state: input.state,
       graduatedAt: null,
+      lastSeenAt: null,
       createdAt: Date.now(),
     };
     this.creatures.set(rec.id, rec);
@@ -69,6 +70,11 @@ export class InMemoryRepository implements Repository {
 
   async saveCreature(rec: CreatureRecord): Promise<void> {
     this.creatures.set(rec.id, structuredClone(rec));
+  }
+
+  async markSeen(id: string, at: number): Promise<void> {
+    const rec = this.creatures.get(id);
+    if (rec) rec.lastSeenAt = at;
   }
 
   async appendEvents(creatureId: string, events: SimEvent[], source: 'sim' | 'ai' | 'user') {

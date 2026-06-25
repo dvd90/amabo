@@ -12,6 +12,7 @@ import {
   type CreatureViewT,
   type GapSummary,
   type JournalEntry,
+  type RosterItem,
   type StarView,
 } from '../api/client.js';
 
@@ -91,8 +92,8 @@ export interface GameState {
   client: ApiClient;
   /** Session state: null while the first check is in flight, then true/false. */
   authed: boolean | null;
-  /** The signed-in Light's whole roster (the dashboard). */
-  creatures: CreatureViewT[];
+  /** The signed-in Light's whole roster (the dashboard), each with its urgency signals. */
+  creatures: RosterItem[];
   /** The currently-open creature (null on the dashboard). */
   creature: CreatureViewT | null;
   route: Route;
@@ -249,7 +250,7 @@ export const useGame = create<GameState>((set, get) => ({
       saveCreatureId(creature.id);
       set((s) => ({
         creature,
-        creatures: [...s.creatures, creature],
+        creatures: [...s.creatures, { ...creature, needs: [] }],
         route: 'device',
         screen: 'home',
       }));

@@ -8,6 +8,7 @@ function creature(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
     id: 'c1',
     name: 'Pip',
     graduatedAt: null,
+    lastSeenAt: null,
     createdAt: 0,
     state: {
       seed: 1,
@@ -36,7 +37,7 @@ function fakeClient(): ApiClient {
       .fn()
       .mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
     logout: vi.fn().mockResolvedValue(undefined),
-    listCreatures: vi.fn().mockResolvedValue([creature()]),
+    listCreatures: vi.fn().mockResolvedValue([{ ...creature(), needs: [] }]),
     createCreature: vi.fn().mockResolvedValue(creature()),
     getCreature: vi.fn().mockResolvedValue(creature()),
     peek: vi.fn().mockResolvedValue({
@@ -187,7 +188,7 @@ describe('useGame store (M8)', () => {
     useGame.setState({
       client,
       authed: true,
-      creatures: [creature()],
+      creatures: [{ ...creature(), needs: [] }],
       creature: creature(),
       route: 'device',
     });

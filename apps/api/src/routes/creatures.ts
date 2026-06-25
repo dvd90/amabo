@@ -6,7 +6,14 @@
  */
 
 import { MAX_MEMORIES } from '@amabo/ai';
-import { condenseMote, interact, summarizeGap, type InteractAction } from '@amabo/engine';
+import {
+  condenseMote,
+  interact,
+  needs,
+  summarizeGap,
+  type InteractAction,
+  type NeedFlag,
+} from '@amabo/engine';
 import {
   CreateCreatureRequest,
   CreatureView,
@@ -34,6 +41,7 @@ function toView(rec: CreatureRecord): CreatureViewT {
     name: rec.name,
     state: rec.state,
     graduatedAt: rec.graduatedAt,
+    lastSeenAt: rec.lastSeenAt,
     createdAt: rec.createdAt,
   });
 }
@@ -54,12 +62,12 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       const owner = getOwner(req);
       const recs = await repo.listCreaturesByOwner(owner);
       const now = clock();
-      const views: CreatureViewT[] = [];
+      const creatures: (CreatureViewT & { needs: NeedFlag[] })[] = [];
       for (const rec of recs) {
         const { record } = await catchUp(repo, rec, now);
-        views.push(toView(record));
+        creatures.push({ ...toView(record), needs: needs(record.state) });
       }
-      return res.json({ creatures: views });
+      return res.json({ creatures });
     }),
   );
 
@@ -100,6 +108,9 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       const elapsedMs = now - rec.state.lastTickAt;
       const before = rec.state;
       const { record, events, graduated } = await catchUp(repo, rec, now);
+      // Record this as an explicit "look in" so the roster can show "Xh ago".
+      await repo.markSeen(rec.id, now);
+      record.lastSeenAt = now;
       const away = summarizeGap(before, record.state, events, elapsedMs);
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).

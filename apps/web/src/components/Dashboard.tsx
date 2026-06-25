@@ -5,9 +5,9 @@
  */
 
 import { useState } from 'react';
-import type { CreatureViewT } from '@amabo/shared';
 import { Creature } from './Creature.js';
 import { useGame } from '../store/useGame.js';
+import type { NeedFlag, RosterItem } from '../api/client.js';
 
 const STAGE_LABEL: Record<string, string> = {
   mote: 'Mote',
@@ -16,29 +16,61 @@ const STAGE_LABEL: Record<string, string> = {
   bloom: 'Bloom',
 };
 
-function fate(c: CreatureViewT): string {
+/** Each urgency signal → a glyph + label + tone class for the card pip. */
+const NEED: Record<NeedFlag, { glyph: string; label: string; tone: string }> = {
+  ready: { glyph: '✦', label: 'ready to ascend', tone: 'good' },
+  souring: { glyph: '☾', label: 'souring', tone: 'warn' },
+  ill: { glyph: '☓', label: 'unwell', tone: 'warn' },
+  hungry: { glyph: '◔', label: 'dim', tone: 'warn' },
+  lonely: { glyph: '◌', label: 'lonely', tone: 'warn' },
+  asleep: { glyph: 'z', label: 'asleep', tone: 'mute' },
+  fading: { glyph: '·', label: 'fading', tone: 'warn' },
+};
+
+function fate(c: RosterItem): string {
   if (!c.state.alive) return 'a fading light';
   if (c.state.uncanny) return 'Yim · longing';
   if (c.state.disposition > 20) return 'Amabo · radiant';
   return 'finding its shape';
 }
 
-function CreatureCard({ c, onOpen }: { c: CreatureViewT; onOpen: () => void }) {
-  const status = [
-    STAGE_LABEL[c.state.stage] ?? c.state.stage,
-    c.state.asleep ? 'asleep' : null,
-    c.state.ill ? 'unwell' : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+/** "looked in Xh ago" from the last peek (falling back to when it was condensed). */
+function lastSeenLabel(c: RosterItem): string {
+  const at = c.lastSeenAt ?? c.createdAt;
+  const min = Math.floor((Date.now() - at) / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function CreatureCard({ c, onOpen }: { c: RosterItem; onOpen: () => void }) {
+  // Sleep is informational; if the only signal is "asleep", don't raise an alarm dot.
+  const urgent = c.needs.some((n) => NEED[n].tone === 'warn');
   return (
-    <button className="amabo-card" onClick={onOpen} aria-label={`Open ${c.name}`}>
+    <button
+      className={`amabo-card${urgent ? ' is-urgent' : ''}`}
+      onClick={onOpen}
+      aria-label={`Open ${c.name}`}
+    >
       <span className="amabo-card-glass">
         <Creature creature={c} />
       </span>
       <span className="amabo-card-name">{c.name}</span>
-      <span className="amabo-card-meta">{status}</span>
+      <span className="amabo-card-meta">
+        {STAGE_LABEL[c.state.stage] ?? c.state.stage} · {lastSeenLabel(c)}
+      </span>
       <span className="amabo-card-fate">{fate(c)}</span>
+      {c.needs.length > 0 ? (
+        <span className="amabo-card-pips">
+          {c.needs.map((n) => (
+            <span key={n} className={`pip pip-${NEED[n].tone}`} title={NEED[n].label}>
+              {NEED[n].glyph}
+            </span>
+          ))}
+        </span>
+      ) : null}
     </button>
   );
 }
