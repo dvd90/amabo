@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 import { Amarium } from './Amarium.js';
 import { Screen } from './Screen.js';
-import { blip } from '../audio.js';
+import { blip, setAmbient } from '../audio.js';
 import { useGame, type Screen as ScreenName } from '../store/useGame.js';
 
 export function Device() {
@@ -27,7 +27,14 @@ export function Device() {
 
   const withBlip = (fn: () => void | Promise<void>) => () => {
     blip(muted);
+    // Browsers only allow audio after a gesture — start the ambient pad on first press.
+    if (!muted) setAmbient(true);
     void fn();
+  };
+
+  const onToggleMute = () => {
+    setAmbient(muted); // muted is the *old* value → if it was muted, turn sound on
+    toggleMute();
   };
 
   useEffect(() => {
@@ -46,7 +53,12 @@ export function Device() {
       <div className="device-topbar">
         <span className="device-brand">amabo</span>
         <span className="device-toggles">
-          <button className="toggle" onClick={() => toggleMute()} aria-pressed={muted}>
+          <button
+            className="toggle"
+            onClick={onToggleMute}
+            aria-pressed={muted}
+            aria-label={muted ? 'Unmute sound + music' : 'Mute sound + music'}
+          >
             {muted ? '🔇' : '🔊'}
           </button>
           <button

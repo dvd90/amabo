@@ -122,6 +122,42 @@ body {
 .journal-line {
   font-style: italic;
 }
+.feedback {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.feedback-ok {
+  color: #0c1a0c;
+  background: hsl(120 40% 70% / 0.9);
+  animation: pop 0.35s ease;
+}
+.feedback-error {
+  color: #2a0c0c;
+  background: hsl(8 70% 72% / 0.95);
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.story-title {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+.story-beat {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 6px 0;
+}
 .stat {
   display: grid;
   grid-template-columns: 3.5em 1fr 2em;

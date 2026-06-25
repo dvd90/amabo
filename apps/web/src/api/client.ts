@@ -35,12 +35,25 @@ export interface MeResult {
   csrfToken: string;
 }
 
+/** A lightweight event for showing care feedback ("ambra ↑"). */
+export interface EventLite {
+  kind: string;
+  tag?: string | null;
+  statDeltas?: Record<string, number>;
+  dispositionDelta?: number;
+}
+
+export interface InteractResult {
+  creature: CreatureViewT;
+  events: EventLite[];
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
   createCreature(name: string): Promise<CreatureViewT>;
   getCreature(id: string): Promise<CreatureViewT>;
   peek(id: string): Promise<PeekResult>;
-  interact(id: string, action: CareAction): Promise<{ creature: CreatureViewT }>;
+  interact(id: string, action: CareAction): Promise<InteractResult>;
   journal(id: string): Promise<JournalEntry[]>;
   stars(id: string): Promise<StarView[]>;
 }
@@ -96,7 +109,7 @@ export class HttpApiClient implements ApiClient {
     return this.req<PeekResult>(`/creatures/${id}/peek`, 'POST', {});
   }
   interact(id: string, action: CareAction) {
-    return this.req<{ creature: CreatureViewT }>(`/creatures/${id}/interact`, 'POST', { action });
+    return this.req<InteractResult>(`/creatures/${id}/interact`, 'POST', { action });
   }
   async journal(id: string) {
     return (await this.req<{ entries: JournalEntry[] }>(`/creatures/${id}/journal`)).entries;
