@@ -1143,3 +1143,48 @@ body {
 .share-note {
   opacity: 0.85 !important;
 }
+
+/* Rehoming: accept inbox + entrust form (M-K) */
+.rehome-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 1.2rem;
+}
+.rehome-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--amber) / 0.4);
+  background: rgba(60, 48, 34, 0.4);
+  font-size: 0.85rem;
+}
+.rehome-card .btn {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+.entrust-form {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+.entrust-form input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--amber) / 0.4);
+  background: rgba(0, 0, 0, 0.2);
+  color: #2a2118;
+}
+.entrust-form .btn {
+  flex: none;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}

@@ -126,6 +126,15 @@ export interface PostcardView {
   graduated: boolean;
 }
 
+/** A pending rehome addressed to me (the accept inbox). */
+export interface IncomingRehome {
+  id: string;
+  creatureId: string;
+  creatureName: string;
+  fromEmail: string;
+  at: number;
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
   /** Which sign-in methods the server offers (Google only when configured). */
@@ -146,6 +155,12 @@ export interface ApiClient {
   share(id: string, kind: 'visit' | 'postcard'): Promise<ShareLink>;
   /** Fetch a shared creature's public, read-only postcard (no session needed). */
   postcard(token: string): Promise<PostcardView>;
+  /** Entrust a creature to another Light by email (they must accept). */
+  rehome(id: string, toEmail: string): Promise<void>;
+  /** Pending rehomes addressed to me. */
+  incomingRehomes(): Promise<IncomingRehome[]>;
+  /** Accept an incoming rehome — ownership transfers to me. */
+  acceptRehome(id: string): Promise<void>;
   /** The server's VAPID public key for web-push (null if push isn't configured). */
   vapidKey(): Promise<string | null>;
   /** Register a device's push subscription for the signed-in Light. */
@@ -236,6 +251,15 @@ export class HttpApiClient implements ApiClient {
   }
   postcard(token: string) {
     return this.req<PostcardView>(`/postcard/${token}`);
+  }
+  async rehome(id: string, toEmail: string) {
+    await this.req(`/creatures/${id}/rehome`, 'POST', { toEmail });
+  }
+  async incomingRehomes() {
+    return (await this.req<{ incoming: IncomingRehome[] }>('/rehomes/incoming')).incoming;
+  }
+  async acceptRehome(id: string) {
+    await this.req(`/rehome/${id}/confirm`, 'POST', {});
   }
   async vapidKey() {
     try {

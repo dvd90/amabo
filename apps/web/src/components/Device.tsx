@@ -30,10 +30,20 @@ export function Device() {
     creatureNeeds,
     multiply,
     shareCreature,
+    rehome,
   } = useGame();
   const overflowing = creatureNeeds.includes('overflowing');
   const [storyOpen, setStoryOpen] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [entrusting, setEntrusting] = useState(false);
+  const [entrustEmail, setEntrustEmail] = useState('');
+
+  const onEntrust = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setShareNote(await rehome(entrustEmail));
+    setEntrusting(false);
+    setEntrustEmail('');
+  };
 
   const onShare = async () => {
     const url = await shareCreature();
@@ -101,6 +111,14 @@ export function Device() {
           </button>
           <button
             className="toggle"
+            onClick={() => setEntrusting((v) => !v)}
+            aria-label="Entrust this amabo to a friend"
+            title="Entrust to another Light"
+          >
+            ⮌
+          </button>
+          <button
+            className="toggle"
             onClick={() => setStoryOpen(true)}
             aria-label="Open the Story"
             title="The story of the Amarium"
@@ -135,6 +153,21 @@ export function Device() {
         <button className="overflow-banner" onClick={withBlip(multiply)}>
           ✧ {creature?.name ?? 'It'} is overflowing — let it share its light
         </button>
+      ) : null}
+      {entrusting ? (
+        <form className="entrust-form" onSubmit={(e) => void onEntrust(e)}>
+          <input
+            type="email"
+            required
+            value={entrustEmail}
+            placeholder="friend's email…"
+            onChange={(e) => setEntrustEmail(e.target.value)}
+            aria-label="Recipient email"
+          />
+          <button className="btn btn-b" type="submit">
+            Entrust ⮌
+          </button>
+        </form>
       ) : null}
       <div className="device-screenname" aria-live="polite">
         {labelFor(screen)} {busy ? '⏳' : ''}

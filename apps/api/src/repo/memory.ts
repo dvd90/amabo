@@ -155,6 +155,14 @@ export class InMemoryRepository implements Repository {
     return u ? structuredClone(u) : null;
   }
 
+  async getUserByEmail(email: string): Promise<UserRecord | null> {
+    const lower = email.toLowerCase();
+    for (const u of this.users.values()) {
+      if (u.email.toLowerCase() === lower) return structuredClone(u);
+    }
+    return null;
+  }
+
   async createSession(
     userId: string,
     csrfToken: string,
@@ -218,6 +226,18 @@ export class InMemoryRepository implements Repository {
   async getRehome(id: string): Promise<RehomeRecord | null> {
     const r = this.rehomes.get(id);
     return r ? structuredClone(r) : null;
+  }
+
+  async listIncomingRehomes(userId: string) {
+    return [...this.rehomes.values()]
+      .filter((r) => r.status === 'pending' && r.toUserId === userId)
+      .map((r) => ({
+        id: r.id,
+        creatureId: r.creatureId,
+        creatureName: this.creatures.get(r.creatureId)?.name ?? 'a creature',
+        fromEmail: this.users.get(r.fromUserId)?.email ?? 'someone',
+        at: r.at,
+      }));
   }
 
   async confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null> {

@@ -50,6 +50,7 @@ const API_PREFIXES = [
   '/postcard',
   '/share',
   '/rehome',
+  '/rehomes',
   '/meet',
   '/report',
   '/block',

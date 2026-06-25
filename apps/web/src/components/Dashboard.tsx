@@ -103,6 +103,8 @@ export function Dashboard() {
   const signOut = useGame((s) => s.signOut);
   const meet = useGame((s) => s.meet);
   const client = useGame((s) => s.client);
+  const incoming = useGame((s) => s.incoming);
+  const acceptRehome = useGame((s) => s.acceptRehome);
   const busy = useGame((s) => s.busy);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
@@ -156,6 +158,22 @@ export function Dashboard() {
           </button>
         </span>
       </header>
+
+      {incoming.length > 0 ? (
+        <div className="rehome-inbox">
+          {incoming.map((r) => (
+            <div key={r.id} className="rehome-card">
+              <span>
+                <strong>{r.fromEmail}</strong> wants to entrust you{' '}
+                <strong>{r.creatureName}</strong>.
+              </span>
+              <button className="btn btn-b" onClick={() => void acceptRehome(r.id)}>
+                Accept
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {meetMode ? (
         <p className="dash-hint">Choose two to introduce — their Ambra will resonate.</p>

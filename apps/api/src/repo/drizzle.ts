@@ -5,7 +5,7 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
 import {
@@ -255,6 +255,15 @@ export class DrizzleRepository implements Repository {
     return row ? toUser(row) : null;
   }
 
+  async getUserByEmail(email: string): Promise<UserRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.email}) = ${email.toLowerCase()}`)
+      .limit(1);
+    return row ? toUser(row) : null;
+  }
+
   async createSession(
     userId: string,
     csrfToken: string,
@@ -332,6 +341,21 @@ export class DrizzleRepository implements Repository {
   async getRehome(id: string): Promise<RehomeRecord | null> {
     const [row] = await this.db.select().from(rehomes).where(eq(rehomes.id, id)).limit(1);
     return row ? toRehome(row) : null;
+  }
+
+  async listIncomingRehomes(userId: string) {
+    return this.db
+      .select({
+        id: rehomes.id,
+        creatureId: rehomes.creatureId,
+        creatureName: creatures.name,
+        fromEmail: users.email,
+        at: rehomes.at,
+      })
+      .from(rehomes)
+      .innerJoin(creatures, eq(rehomes.creatureId, creatures.id))
+      .innerJoin(users, eq(rehomes.fromUserId, users.id))
+      .where(and(eq(rehomes.toUserId, userId), eq(rehomes.status, 'pending')));
   }
 
   async confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null> {
