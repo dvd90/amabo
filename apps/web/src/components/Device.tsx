@@ -29,9 +29,22 @@ export function Device() {
     openDashboard,
     creatureNeeds,
     multiply,
+    shareCreature,
   } = useGame();
   const overflowing = creatureNeeds.includes('overflowing');
   const [storyOpen, setStoryOpen] = useState(false);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  const onShare = async () => {
+    const url = await shareCreature();
+    if (!url) return setShareNote('could not make a link');
+    try {
+      await navigator.clipboard?.writeText(url);
+      setShareNote('link copied ✦');
+    } catch {
+      setShareNote(url);
+    }
+  };
 
   // The soundtrack follows the creature's fate: warm for Amabo, wistful for Yim.
   useEffect(() => {
@@ -78,6 +91,14 @@ export function Device() {
         </button>
         <span className="device-brand">{creature?.name ?? 'amabo'}</span>
         <span className="device-toggles">
+          <button
+            className="toggle"
+            onClick={() => void onShare()}
+            aria-label="Share a link to this amabo"
+            title="Share a keepsake link"
+          >
+            🔗
+          </button>
           <button
             className="toggle"
             onClick={() => setStoryOpen(true)}
@@ -129,6 +150,7 @@ export function Device() {
           ◂ C
         </button>
       </div>
+      {shareNote ? <p className="device-help share-note">{shareNote}</p> : null}
       <p className="device-help">A cycles · ● acts · C goes home · ❖ story</p>
 
       {storyOpen ? <StoryPage onClose={() => setStoryOpen(false)} /> : null}

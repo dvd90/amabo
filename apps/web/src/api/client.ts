@@ -110,6 +110,22 @@ export interface MeetResult {
   names: [string, string] | string[];
 }
 
+/** A minted share link. */
+export interface ShareLink {
+  token: string;
+  kind: string;
+  url: string;
+  expiresAt: number;
+}
+
+/** The public, read-only view of a shared creature (a postcard). */
+export interface PostcardView {
+  name: string;
+  stage: string;
+  uncanny: boolean;
+  graduated: boolean;
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
   /** Which sign-in methods the server offers (Google only when configured). */
@@ -126,6 +142,10 @@ export interface ApiClient {
   multiply(id: string): Promise<MultiplyResult>;
   /** A resonance meeting between two of your own creatures (a duet, never a duel). */
   meet(id: string, otherId: string): Promise<MeetResult>;
+  /** Mint a scoped, expiring share link for a creature. */
+  share(id: string, kind: 'visit' | 'postcard'): Promise<ShareLink>;
+  /** Fetch a shared creature's public, read-only postcard (no session needed). */
+  postcard(token: string): Promise<PostcardView>;
   /** The server's VAPID public key for web-push (null if push isn't configured). */
   vapidKey(): Promise<string | null>;
   /** Register a device's push subscription for the signed-in Light. */
@@ -210,6 +230,12 @@ export class HttpApiClient implements ApiClient {
   }
   meet(id: string, otherId: string) {
     return this.req<MeetResult>(`/creatures/${id}/meet/${otherId}`, 'POST', {});
+  }
+  share(id: string, kind: 'visit' | 'postcard') {
+    return this.req<ShareLink>(`/creatures/${id}/share`, 'POST', { kind });
+  }
+  postcard(token: string) {
+    return this.req<PostcardView>(`/postcard/${token}`);
   }
   async vapidKey() {
     try {

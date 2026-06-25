@@ -125,7 +125,13 @@ export function createApp(deps: AppDeps): Express {
     }),
   );
   app.use(
-    authedShareRouter({ repo: deps.repo, clock: deps.clock, baseUrl: deps.baseUrl, getOwner }),
+    authedShareRouter({
+      repo: deps.repo,
+      clock: deps.clock,
+      baseUrl: deps.baseUrl,
+      webOrigin: deps.webOrigin,
+      getOwner,
+    }),
   );
   app.use(pushRouter({ repo: deps.repo, getOwner }));
 
