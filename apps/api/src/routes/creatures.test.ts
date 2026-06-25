@@ -122,6 +122,22 @@ describe('POST /creatures/:id/peek', () => {
     expect(typeof res.body.journal).toBe('string');
     expect(typeof res.body.mood).toBe('string');
   });
+
+  it('includes a "while you were away" summary of the elapsed gap', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+
+    ctx.setNow(ctx.nowAt() + 12 * HOUR); // away for half a day
+    const res = await agent
+      .post(`/creatures/${created.body.id}/peek`)
+      .set('x-csrf-token', csrf)
+      .send({});
+    expect(res.body.away.elapsedMinutes).toBe(12 * 60);
+    expect(Array.isArray(res.body.away.highlights)).toBe(true);
+    // 12h unattended in the dark drains Ambra — a reported change.
+    expect(res.body.away.deltas.ambra).toBeLessThan(0);
+  });
 });
 
 describe('graduation writes a stars row', () => {

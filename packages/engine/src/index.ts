@@ -18,3 +18,4 @@ export * from './interact.js';
 export * from './lifecycle.js';
 export * from './resonate.js';
 export * from './advance.js';
+export * from './gap.js';

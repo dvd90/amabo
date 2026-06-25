@@ -39,9 +39,18 @@ function fakeClient(): ApiClient {
     listCreatures: vi.fn().mockResolvedValue([creature()]),
     createCreature: vi.fn().mockResolvedValue(creature()),
     getCreature: vi.fn().mockResolvedValue(creature()),
-    peek: vi
-      .fn()
-      .mockResolvedValue({ journal: 'soft gold day', mood: 'content', creature: creature() }),
+    peek: vi.fn().mockResolvedValue({
+      journal: 'soft gold day',
+      mood: 'content',
+      creature: creature(),
+      away: {
+        elapsedMinutes: 120,
+        fromStage: 'mote',
+        toStage: 'mote',
+        highlights: ['hungry'],
+        deltas: { ambra: -20 },
+      },
+    }),
     interact: vi.fn().mockResolvedValue({
       creature: creature({
         stats: {
@@ -72,6 +81,7 @@ describe('useGame store (M8)', () => {
       screen: 'home',
       lastJournal: null,
       mood: null,
+      reveal: null,
       journalEntries: [],
       stars: [],
       busy: false,
@@ -153,9 +163,15 @@ describe('useGame store (M8)', () => {
     expect(useGame.getState().creatures).toHaveLength(1);
 
     await useGame.getState().openCreature('c1');
-    expect(client.getCreature).toHaveBeenCalledWith('c1');
+    // Opening peeks (so the away-recap can show) rather than a silent fetch.
+    expect(client.peek).toHaveBeenCalledWith('c1');
     expect(useGame.getState().route).toBe('device');
     expect(useGame.getState().creature?.id).toBe('c1');
+    expect(useGame.getState().lastJournal).toBe('soft gold day');
+    expect(useGame.getState().reveal?.highlights).toContain('hungry');
+
+    useGame.getState().dismissReveal();
+    expect(useGame.getState().reveal).toBeNull();
   });
 
   it('starting a new Mote adds it to the roster and opens it', async () => {

@@ -6,7 +6,7 @@
  */
 
 import { MAX_MEMORIES } from '@amabo/ai';
-import { condenseMote, interact, type InteractAction } from '@amabo/engine';
+import { condenseMote, interact, summarizeGap, type InteractAction } from '@amabo/engine';
 import {
   CreateCreatureRequest,
   CreatureView,
@@ -95,7 +95,12 @@ export function creaturesRouter(deps: CreatureDeps): Router {
     asyncHandler(async (req, res) => {
       const rec = await repo.getCreature(req.params.id!, getOwner(req));
       if (!rec) return res.status(404).json({ error: 'not found' });
-      const { record, events, graduated } = await catchUp(repo, rec, clock());
+      const now = clock();
+      // Capture the gap BEFORE catch-up overwrites lastTickAt, for the away-recap.
+      const elapsedMs = now - rec.state.lastTickAt;
+      const before = rec.state;
+      const { record, events, graduated } = await catchUp(repo, rec, now);
+      const away = summarizeGap(before, record.state, events, elapsedMs);
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
       const memories = await repo.topMemories(record.id, MAX_MEMORIES);
@@ -110,7 +115,7 @@ export function creaturesRouter(deps: CreatureDeps): Router {
           narration.newMemories.map((m) => ({ at: clock(), text: m.text, salience: m.salience })),
         );
       }
-      return res.json({ ...narration, creature: toView(record), graduated });
+      return res.json({ ...narration, creature: toView(record), graduated, away });
     }),
   );
 
