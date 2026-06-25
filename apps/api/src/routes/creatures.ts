@@ -77,11 +77,15 @@ export function creaturesRouter(deps: CreatureDeps): Router {
     asyncHandler(async (req, res) => {
       const parsed = CreateCreatureRequest.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+      const now = clock();
       const rec = await repo.createCreature({
         ownerId: getOwner(req),
         name: parsed.data.name,
-        state: condenseMote(seed(), clock()),
+        state: condenseMote(seed(), now),
       });
+      // Condensing it is the first look-in, so the away-gap starts from now (not null).
+      await repo.markSeen(rec.id, now);
+      rec.lastSeenAt = now;
       return res.status(201).json(toView(rec));
     }),
   );
@@ -104,13 +108,16 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       const rec = await repo.getCreature(req.params.id!, getOwner(req));
       if (!rec) return res.status(404).json({ error: 'not found' });
       const now = clock();
-      // Capture the gap BEFORE catch-up overwrites lastTickAt, for the away-recap.
-      const elapsedMs = now - rec.state.lastTickAt;
+      // The away-gap is measured from the last explicit LOOK-IN (lastSeenAt), not
+      // lastTickAt — background/dashboard catch-up advances lastTickAt to "now", which
+      // would otherwise make every open read as ~0 ("a moment in the dark").
+      const prevSeen = rec.lastSeenAt;
       const before = rec.state;
       const { record, events, graduated } = await catchUp(repo, rec, now);
       // Record this as an explicit "look in" so the roster can show "Xh ago".
       await repo.markSeen(rec.id, now);
       record.lastSeenAt = now;
+      const elapsedMs = prevSeen == null ? 0 : now - prevSeen;
       const away = summarizeGap(before, record.state, events, elapsedMs);
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
