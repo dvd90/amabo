@@ -33,6 +33,8 @@ export interface AppDeps {
   webOrigin?: string;
   /** True when real Google OAuth credentials are configured (drives the login UI). */
   googleEnabled?: boolean;
+  /** Pin the exact OAuth redirect URI (GOOGLE_CALLBACK_URL); derived from the request if unset. */
+  googleCallbackUrl?: string;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -78,6 +80,7 @@ export function createApp(deps: AppDeps): Express {
       baseUrl: deps.baseUrl,
       postLoginRedirect: deps.webOrigin ?? '/',
       googleEnabled: deps.googleEnabled ?? false,
+      callbackOverride: deps.googleCallbackUrl,
     }),
   );
 

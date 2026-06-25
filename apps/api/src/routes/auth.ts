@@ -30,6 +30,13 @@ export interface AuthDeps {
   postLoginRedirect: string;
   /** True only when real Google credentials are configured (controls the UI button). */
   googleEnabled: boolean;
+  /**
+   * Exact OAuth redirect URI to use, if you want to pin it (GOOGLE_CALLBACK_URL). Must
+   * match what's registered in the provider console. When unset we derive it from the
+   * request host. Its path also becomes a callback route, so either `/auth/callback` or
+   * `/auth/google/callback` works.
+   */
+  callbackOverride?: string;
 }
 
 const STATE_COOKIE = 'amabo_oauth_state';
@@ -50,6 +57,7 @@ export function authRouter(deps: AuthDeps): Router {
    * BASE_URL (e.g. the localhost default) causing `redirect_uri_mismatch`.
    */
   const callbackUrl = (req: Request): string => {
+    if (deps.callbackOverride) return deps.callbackOverride;
     const host = req.get('host');
     const origin = host ? `${req.protocol}://${host}` : baseUrl;
     return `${origin}/auth/callback`;
@@ -115,7 +123,9 @@ export function authRouter(deps: AuthDeps): Router {
   };
 
   // OAuth callback: verify state, exchange code, upsert user, mint a fresh session.
-  router.get('/auth/callback', (req: Request, res: Response) => {
+  // Registered at BOTH /auth/callback and /auth/google/callback so whichever path the
+  // provider console / GOOGLE_CALLBACK_URL uses lands here.
+  const handleCallback = (req: Request, res: Response) => {
     void (async () => {
       try {
         const code = String(req.query.code ?? '');
@@ -141,7 +151,9 @@ export function authRouter(deps: AuthDeps): Router {
         backToLogin(res, 'google');
       }
     })();
-  });
+  };
+  router.get('/auth/callback', handleCallback);
+  router.get('/auth/google/callback', handleCallback);
 
   // Current user (and the CSRF token to use for mutations).
   router.get('/me', requireAuth, (req: Request, res: Response) => {

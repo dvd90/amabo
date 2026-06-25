@@ -42,8 +42,9 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `BASE_URL`            | ✅         | the **API's own** URL, e.g. `https://amabo-api.up.railway.app` (OAuth redirect + share links)          |
    | `WEB_ORIGIN`          | ✅         | the **web app's** URL, e.g. `https://amabo-web.up.railway.app` (CORS allow-list + post-login redirect) |
    | `ANTHROPIC_API_KEY`   | optional   | omit → local templated narrator (zero AI cost)                                                         |
-   | `GOOGLE_OAUTH_ID`     | optional\* | Google OAuth client ID                                                                                 |
-   | `GOOGLE_OAUTH_SECRET` | optional\* | Google OAuth client secret                                                                             |
+   | `GOOGLE_CLIENT_ID`     | optional\* | Google OAuth client ID (alias: `GOOGLE_OAUTH_ID`)                                                     |
+   | `GOOGLE_CLIENT_SECRET` | optional\* | Google OAuth client secret (alias: `GOOGLE_OAUTH_SECRET`)                                             |
+   | `GOOGLE_CALLBACK_URL`  | optional   | Pin the exact redirect URI, e.g. `https://<api-url>/auth/google/callback`. Must match the console.    |
 
    \*Passwordless **email sign-in is always available** and needs no setup — it's the
    primary login. The Google vars are optional and only enable the "Continue with
@@ -74,10 +75,12 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
 
 1. Back on **amabo-api** → confirm `WEB_ORIGIN` = the web service URL (Step 3.3). Redeploy if you changed it.
 2. **Google OAuth** (optional — email sign-in works with no setup): in Google Cloud
-   Console → your OAuth client → **Authorized redirect URIs** add **exactly**
-   `https://<api-url>/auth/callback` (the API domain from Step 2.3, no trailing slash).
-   The API derives this same URL from the incoming request, so it always matches the
-   host the browser used — a wrong `BASE_URL` no longer causes `redirect_uri_mismatch`.
+   Console → your OAuth client → **Authorized redirect URIs**, add the URI the API will
+   send. If you set `GOOGLE_CALLBACK_URL`, register **exactly** that (e.g.
+   `https://<api-url>/auth/google/callback`); otherwise register
+   `https://<api-url>/auth/callback` (the API derives this from the request host, so a
+   wrong `BASE_URL` no longer causes `redirect_uri_mismatch`). The callback is served at
+   **both** `/auth/callback` and `/auth/google/callback`, so either choice works.
 
 ## Step 5 — Verify
 
