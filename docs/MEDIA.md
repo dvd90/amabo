@@ -2,9 +2,10 @@
 
 ## `amabo-explainer.webm`
 
-A ~35s, 1080p concept explainer for Amabo — the myth, the care loop, the two fates
-(Amabo / Yim), the stage ladder, the "while you were away" beat, and ascension into a
-star. Built from Chromium-rendered storyboard frames, encoded VP8/WebM. **Silent.**
+A ~38s, 1080p concept explainer for Amabo — the myth, the care loop, the two fates
+(Amabo / Yim), the stage ladder (with the real polymorphic sprite growing Mote → Bloom),
+the found-family split, the "while you were away" beat, and ascension into a star. Built
+from Chromium-rendered storyboard frames, encoded VP8/WebM. **Silent.**
 
 ### Make an MP4 (with optional music) locally
 
