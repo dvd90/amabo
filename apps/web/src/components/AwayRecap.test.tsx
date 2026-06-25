@@ -52,4 +52,17 @@ describe('<AwayRecap> (the magic beat)', () => {
     const { container } = render(<AwayRecap />);
     expect(container.firstChild).toBeNull();
   });
+
+  it('does not interrupt for a short visit, even when the state has highlights', () => {
+    // The bug: re-opening moments later still popped the modal because highlights existed.
+    show({
+      elapsedMinutes: 8,
+      fromStage: 'mote',
+      toStage: 'mote',
+      highlights: ['content', 'hungry'],
+      deltas: {},
+    });
+    const { container } = render(<AwayRecap />);
+    expect(container.firstChild).toBeNull();
+  });
 });

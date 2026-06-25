@@ -31,9 +31,14 @@ function elapsedLabel(min: number): string {
   return `${d} day${d === 1 ? '' : 's'}`;
 }
 
-/** Worth interrupting for? Only if real time passed or something actually changed. */
-function meaningful(elapsedMinutes: number, highlights: GapHighlight[]): boolean {
-  return elapsedMinutes >= 30 || highlights.length > 0;
+/**
+ * The recap should feel like returning after a real absence — not pop on every open.
+ * So it's gated purely on elapsed time since the last look-in; highlights alone (which
+ * exist on almost any state) never trigger it.
+ */
+const MIN_RECAP_MINUTES = 30;
+function meaningful(elapsedMinutes: number): boolean {
+  return elapsedMinutes >= MIN_RECAP_MINUTES;
 }
 
 export function AwayRecap() {
@@ -43,7 +48,7 @@ export function AwayRecap() {
   const creature = useGame((s) => s.creature);
   const dismiss = useGame((s) => s.dismissReveal);
 
-  if (!reveal || !meaningful(reveal.elapsedMinutes, reveal.highlights)) return null;
+  if (!reveal || !meaningful(reveal.elapsedMinutes)) return null;
   const name = creature?.name ?? 'your Amabo';
 
   return (

@@ -139,11 +139,11 @@ describe('POST /creatures/:id/peek', () => {
     expect(res.body.away.deltas.ambra).toBeLessThan(0);
   });
 
-  it('marks lastSeenAt on peek so the roster can show "looked in" time', async () => {
+  it('marks lastSeenAt on create (the first look-in) and updates it on peek', async () => {
     const ctx = setup();
     const { agent, csrf } = await login(ctx.app);
     const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
-    expect(created.body.lastSeenAt).toBeNull(); // never looked in yet
+    expect(created.body.lastSeenAt).toBe(ctx.nowAt()); // condensing it counts as looking in
 
     ctx.setNow(ctx.nowAt() + 2 * HOUR);
     const peeked = await agent
@@ -151,6 +151,21 @@ describe('POST /creatures/:id/peek', () => {
       .set('x-csrf-token', csrf)
       .send({});
     expect(peeked.body.creature.lastSeenAt).toBe(ctx.nowAt());
+  });
+
+  it('measures the away gap from the last look-in, not background catch-up', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    const id = created.body.id;
+    await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({}); // look in at T0
+
+    ctx.setNow(ctx.nowAt() + 3 * HOUR);
+    await agent.get('/creatures'); // dashboard catch-up advances lastTickAt — NOT a look-in
+
+    const peeked = await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({});
+    // The gap is measured from the last peek (3h ago), not the just-now catch-up.
+    expect(peeked.body.away.elapsedMinutes).toBe(3 * 60);
   });
 });
 
