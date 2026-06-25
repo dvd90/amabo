@@ -1,0 +1,55 @@
+// @vitest-environment jsdom
+import type { CreatureViewT } from '@amabo/shared';
+import { cleanup, render } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { Amarium } from './Amarium.js';
+
+afterEach(cleanup);
+
+function view(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
+  return {
+    id: 'c1',
+    name: 'Pip',
+    graduatedAt: null,
+    lastSeenAt: null,
+    createdAt: 0,
+    state: {
+      seed: 1,
+      stage: 'velveteen',
+      disposition: 60,
+      ageMinutes: 0,
+      stats: { ambra: 80, energy: 80, cleanliness: 100, health: 100, affection: 60, security: 60 },
+      asleep: false,
+      ill: false,
+      uncanny: false,
+      alive: true,
+      mortality: 'soft',
+      traits: {},
+      careHistory: { fed: 0, cleaned: 0, played: 0, comforted: 0, neglectedSteps: 0 },
+      lastTickAt: 0,
+      ...over,
+    },
+  };
+}
+
+describe('<Amarium> environment (M-E)', () => {
+  it('a radiant Amabo drifts in warm Ambra motes', () => {
+    const { container } = render(<Amarium creature={view()} />);
+    expect(container.querySelector('.amarium-amabo')).toBeTruthy();
+    expect(container.querySelector('.amabo-mote')).toBeTruthy();
+    expect(container.querySelector('.amarium-yim')).toBeNull();
+  });
+
+  it("a Yim's glass is Satis House — a stopped clock, candle, and raven", () => {
+    const { container } = render(<Amarium creature={view({ uncanny: true })} />);
+    expect(container.querySelector('.amarium-yim')).toBeTruthy();
+    expect(container.querySelector('.yim-clock')).toBeTruthy();
+    expect(container.querySelector('.yim-candle')).toBeTruthy();
+    expect(container.querySelector('.yim-raven')).toBeTruthy();
+  });
+
+  it('an empty glass has no scenery', () => {
+    const { container } = render(<Amarium creature={null} />);
+    expect(container.querySelector('.amarium-env')).toBeNull();
+  });
+});
