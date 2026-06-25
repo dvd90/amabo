@@ -26,7 +26,10 @@ export function Device() {
     highContrast,
     toggleContrast,
     openDashboard,
+    creatureNeeds,
+    multiply,
   } = useGame();
+  const overflowing = creatureNeeds.includes('overflowing');
   const [storyOpen, setStoryOpen] = useState(false);
 
   // The soundtrack follows the creature's fate: warm for Amabo, wistful for Yim.
@@ -106,6 +109,11 @@ export function Device() {
       <div className="device-readout">
         <Screen />
       </div>
+      {overflowing ? (
+        <button className="overflow-banner" onClick={withBlip(multiply)}>
+          ✧ {creature?.name ?? 'It'} is overflowing — let it share its light
+        </button>
+      ) : null}
       <div className="device-screenname" aria-live="polite">
         {labelFor(screen)} {busy ? '⏳' : ''}
       </div>

@@ -36,6 +36,11 @@ describe('needs — the dashboard urgency signals (M-B)', () => {
     expect(needs(s({ stage: 'velveteen', disposition: 90 }))).not.toContain('ready');
   });
 
+  it('flags a velveteen+ creature overflowing with Ambra as ready to share its light', () => {
+    expect(needs(stats(s({ stage: 'velveteen' }), { ambra: 96 }))).toContain('overflowing');
+    expect(needs(stats(s({ stage: 'spark' }), { ambra: 96 }))).not.toContain('overflowing');
+  });
+
   it('a creature whose light went out reads only as fading', () => {
     expect(needs(s({ alive: false }))).toEqual(['fading']);
   });

@@ -19,6 +19,7 @@ const STAGE_LABEL: Record<string, string> = {
 /** Each urgency signal → a glyph + label + tone class for the card pip. */
 const NEED: Record<NeedFlag, { glyph: string; label: string; tone: string }> = {
   ready: { glyph: '✦', label: 'ready to ascend', tone: 'good' },
+  overflowing: { glyph: '✧', label: 'overflowing — can share its light', tone: 'good' },
   souring: { glyph: '☾', label: 'souring', tone: 'warn' },
   ill: { glyph: '☓', label: 'unwell', tone: 'warn' },
   hungry: { glyph: '◔', label: 'dim', tone: 'warn' },

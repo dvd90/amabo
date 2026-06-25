@@ -7,8 +7,10 @@
 
 import { MAX_MEMORIES } from '@amabo/ai';
 import {
+  canMultiply,
   condenseMote,
   interact,
+  multiply,
   needs,
   summarizeGap,
   type InteractAction,
@@ -97,7 +99,7 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       const rec = await repo.getCreature(req.params.id!, getOwner(req));
       if (!rec) return res.status(404).json({ error: 'not found' });
       const { record } = await catchUp(repo, rec, clock());
-      return res.json(toView(record));
+      return res.json({ ...toView(record), needs: needs(record.state) });
     }),
   );
 
@@ -133,7 +135,13 @@ export function creaturesRouter(deps: CreatureDeps): Router {
           narration.newMemories.map((m) => ({ at: clock(), text: m.text, salience: m.salience })),
         );
       }
-      return res.json({ ...narration, creature: toView(record), graduated, away });
+      return res.json({
+        ...narration,
+        creature: toView(record),
+        graduated,
+        away,
+        needs: needs(record.state),
+      });
     }),
   );
 
@@ -157,7 +165,36 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       await repo.saveCreature(updated);
       await repo.appendEvents(updated.id, events, 'user');
       await repo.recordInteraction(updated.id, action, now);
-      return res.json({ creature: toView(updated), events });
+      return res.json({ creature: toView(updated), events, needs: needs(updated.state) });
+    }),
+  );
+
+  // The Symposium split — a creature overflowing with Ambra shares its light (M-F).
+  router.post(
+    '/creatures/:id/multiply',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const rec = await repo.getCreature(req.params.id!, owner);
+      if (!rec) return res.status(404).json({ error: 'not found' });
+      const now = clock();
+      const { record } = await catchUp(repo, rec, now);
+      if (!canMultiply(record.state)) {
+        return res.status(409).json({ error: 'not overflowing yet' });
+      }
+      const { parent, child } = multiply(record.state);
+      const updatedParent: CreatureRecord = { ...record, state: parent };
+      await repo.saveCreature(updatedParent);
+      const childRec = await repo.createCreature({
+        ownerId: owner,
+        name: `${record.name}'s half`,
+        state: child,
+      });
+      await repo.markSeen(childRec.id, now);
+      childRec.lastSeenAt = now;
+      return res.status(201).json({
+        parent: { ...toView(updatedParent), needs: needs(updatedParent.state) },
+        child: { ...toView(childRec), needs: needs(childRec.state) },
+      });
     }),
   );
 
