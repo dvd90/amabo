@@ -181,6 +181,133 @@ body {
   text-decoration: none;
 }
 
+/* The SVG creature */
+.amarium-sprite {
+  width: 70%;
+  height: 70%;
+  display: grid;
+  place-items: center;
+}
+.amarium-empty {
+  font-size: 4rem;
+  color: hsl(var(--amber) / 0.3);
+}
+.creature-float {
+  transform-origin: center;
+  animation: bob 4s ease-in-out infinite;
+}
+.creature.is-asleep .creature-float {
+  animation-duration: 7s;
+}
+.creature.is-yim .creature-float {
+  animation: bob 9s ease-in-out infinite; /* slower, time-broken */
+}
+.creature-z {
+  font-size: 9px;
+  fill: hsl(var(--amber) / 0.7);
+  font-family: ui-monospace, monospace;
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Onboarding */
+.onboarding {
+  max-width: 360px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.ob-card {
+  background: linear-gradient(#241d16, #1a1410);
+  border: 1px solid hsl(var(--amber) / 0.25);
+  border-radius: 18px;
+  padding: 1.75rem 1.5rem;
+  animation: fadein 0.4s ease;
+}
+.ob-art {
+  font-size: 3.5rem;
+  color: hsl(var(--amber));
+  text-shadow: 0 0 24px hsl(var(--amber) / 0.7);
+  margin-bottom: 0.5rem;
+}
+.ob-art-pulse {
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.ob-card h2 {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 1.1rem;
+}
+.ob-card p {
+  opacity: 0.85;
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+.ob-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+}
+.ob-dots span {
+  opacity: 0.3;
+  font-size: 0.6rem;
+  margin-right: 3px;
+}
+.ob-dots span.on {
+  opacity: 1;
+  color: hsl(var(--amber));
+}
+.ob-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.ob-name input {
+  font: inherit;
+  text-align: center;
+  padding: 0.6rem;
+  border-radius: 10px;
+  border: 1px solid hsl(var(--amber) / 0.4);
+  background: #0f0c09;
+  color: #f3ece0;
+}
+.boot-orb {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, hsl(var(--amber)), transparent 70%);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* a11y: honor reduced motion (no animations are essential). */
 @media (prefers-reduced-motion: reduce) {
   * {

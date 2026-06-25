@@ -6,7 +6,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { Clock } from '../clock.js';
 import type { Repository, UserRecord } from '../repo/types.js';
-import { CSRF_COOKIE, SESSION_COOKIE, parseCookies } from './session.js';
+import { SESSION_COOKIE, parseCookies } from './session.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -47,8 +47,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 }
 
 /**
- * Double-submit CSRF on state-changing methods: the X-CSRF-Token header must match
- * the session's token (also mirrored in a readable cookie). Safe methods pass through.
+ * CSRF on state-changing methods (synchronizer-token pattern): the X-CSRF-Token header
+ * must equal the token bound to the server-side session (delivered to the client via
+ * GET /me, and also mirrored in a readable cookie for the single-origin case). We compare
+ * against the *session* token — not a blind double-submit — so it works cross-origin too:
+ * a hostile site can't read /me (CORS blocks the response), so it can't learn the token.
+ * Safe methods pass through.
  */
 export function requireCsrf(req: Request, res: Response, next: NextFunction): void {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
@@ -56,8 +60,7 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction): vo
     return;
   }
   const header = req.header('x-csrf-token');
-  const cookie = parseCookies(req)[CSRF_COOKIE];
-  if (!req.csrfToken || header !== req.csrfToken || cookie !== req.csrfToken) {
+  if (!req.csrfToken || header !== req.csrfToken) {
     res.status(403).json({ error: 'invalid CSRF token' });
     return;
   }

@@ -5,7 +5,8 @@
  */
 
 import type { CreatureViewT } from '@amabo/shared';
-import { glow, spriteFor } from './sprite.js';
+import { Creature } from './Creature.js';
+import { glow } from './sprite.js';
 
 export function Amarium({ creature }: { creature: CreatureViewT | null }) {
   const intensity = creature ? glow(creature) : 0.05;
@@ -21,7 +22,9 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
       style={{ ['--ambra' as string]: intensity.toFixed(3) }}
     >
       <div className="amarium-glow" />
-      <div className="amarium-sprite">{creature ? spriteFor(creature) : '·'}</div>
+      <div className="amarium-sprite">
+        {creature ? <Creature creature={creature} /> : <span className="amarium-empty">·</span>}
+      </div>
       <div className="amarium-scanlines" aria-hidden="true" />
     </div>
   );

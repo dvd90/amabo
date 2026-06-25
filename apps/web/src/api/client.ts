@@ -30,8 +30,13 @@ export interface PeekResult {
 
 export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';
 
+export interface MeResult {
+  user: { id: string; displayName: string };
+  csrfToken: string;
+}
+
 export interface ApiClient {
-  me(): Promise<{ user: { id: string; displayName: string } } | null>;
+  me(): Promise<MeResult | null>;
   createCreature(name: string): Promise<CreatureViewT>;
   getCreature(id: string): Promise<CreatureViewT>;
   peek(id: string): Promise<PeekResult>;
@@ -52,12 +57,16 @@ function readCookie(name: string): string {
 export const API_BASE: string = import.meta.env.VITE_API_BASE ?? '';
 
 export class HttpApiClient implements ApiClient {
+  /** CSRF token from /me. Cross-origin we cannot read the cookie, so we cache it here. */
+  private csrf = '';
+
   constructor(private base = API_BASE) {}
 
   private async req<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
     const headers: Record<string, string> = {};
     if (body !== undefined) headers['content-type'] = 'application/json';
-    if (method !== 'GET') headers['x-csrf-token'] = readCookie('amabo_csrf');
+    // Prefer the token from /me; fall back to the readable cookie (single-origin).
+    if (method !== 'GET') headers['x-csrf-token'] = this.csrf || readCookie('amabo_csrf');
     const res = await fetch(`${this.base}${path}`, {
       method,
       headers,
@@ -70,7 +79,9 @@ export class HttpApiClient implements ApiClient {
 
   async me() {
     try {
-      return await this.req<{ user: { id: string; displayName: string } }>('/me');
+      const r = await this.req<MeResult>('/me');
+      this.csrf = r.csrfToken ?? '';
+      return r;
     } catch {
       return null;
     }
