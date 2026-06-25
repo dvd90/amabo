@@ -57,6 +57,32 @@ describe('auth (M5.5)', () => {
     expect(res.body.google).toBe(false); // fake provider → Google button hidden
   });
 
+  it('honours GOOGLE_CALLBACK_URL and serves the callback at /auth/google/callback', async () => {
+    const repo = new InMemoryRepository();
+    const app = createApp({
+      repo,
+      clock: () => 1_000_000,
+      seed: () => 1,
+      narrator: localNarrator,
+      authProvider: new FakeAuthProvider(),
+      cookieSecure: false,
+      baseUrl: 'http://localhost',
+      googleEnabled: true,
+      googleCallbackUrl: 'http://localhost/auth/google/callback',
+    });
+    expect((await request(app).get('/auth/config')).body.google).toBe(true);
+
+    const agent = request.agent(app);
+    const start = await agent.get('/auth/google');
+    // The pinned redirect_uri is what we send the provider (and register in the console).
+    expect(start.headers.location).toContain('/auth/google/callback');
+    const state = new URL(start.headers.location!).searchParams.get('state') ?? '';
+
+    const cb = await agent.get('/auth/google/callback').query({ code: 'pip', state });
+    expect(cb.status).toBe(302);
+    expect((await agent.get('/me')).body.user.email).toBe('pip@example.com');
+  });
+
   it('email sign-in establishes a session and is idempotent per email', async () => {
     const { app } = setup();
     const agent = request.agent(app);

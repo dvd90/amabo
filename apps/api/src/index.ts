@@ -44,15 +44,25 @@ function buildRepo(): Repository {
   return new DrizzleRepository(makeDb(url));
 }
 
+/** Read Google creds under either common name pair (OAUTH_* or CLIENT_*). */
+function googleCreds(): { id?: string; secret?: string } {
+  return {
+    id: process.env.GOOGLE_OAUTH_ID ?? process.env.GOOGLE_CLIENT_ID,
+    secret: process.env.GOOGLE_OAUTH_SECRET ?? process.env.GOOGLE_CLIENT_SECRET,
+  };
+}
+
 function googleConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_OAUTH_ID && process.env.GOOGLE_OAUTH_SECRET);
+  const { id, secret } = googleCreds();
+  return Boolean(id && secret);
 }
 
 function buildAuthProvider(): AuthProvider {
-  const id = process.env.GOOGLE_OAUTH_ID;
-  const secret = process.env.GOOGLE_OAUTH_SECRET;
+  const { id, secret } = googleCreds();
   if (id && secret) return new GoogleAuthProvider(id, secret);
-  console.warn('[amabo] GOOGLE_OAUTH_ID/SECRET not set — using fake auth provider (local only)');
+  console.warn(
+    '[amabo] Google creds not set (GOOGLE_CLIENT_ID/SECRET or GOOGLE_OAUTH_ID/SECRET) — using fake auth provider (local only)',
+  );
   return new FakeAuthProvider();
 }
 
@@ -75,6 +85,7 @@ if (process.env.NODE_ENV !== 'test') {
     webOrigin,
     staticDir: webDistDir(),
     googleEnabled: googleConfigured(),
+    googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {
