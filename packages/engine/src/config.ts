@@ -164,3 +164,14 @@ export const VISIT = {
   affection: 3,
   security: 2,
 } as const;
+
+/**
+ * "While you were away" recap (STORY.md §2 — the magic beat). Thresholds for turning a
+ * before/after gap into a few factual highlights the device reveals on return. The
+ * creature's *voice* still comes from the AI; the engine only says what changed.
+ */
+export const GAP_SUMMARY = {
+  lonelySecurity: 30, // ended the gap aching in the quiet
+  contentAffection: 60, // healthy enough to read as "okay alone in the dark"
+  deltaNoiseFloor: 2, // only report a stat move at least this large
+} as const;

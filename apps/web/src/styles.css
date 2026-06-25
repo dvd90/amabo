@@ -804,3 +804,72 @@ body {
 .device-roster {
   letter-spacing: 0.1em;
 }
+
+/* ── "While you were away" recap (the magic beat) ───────────────────────────── */
+.recap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(8, 6, 5, 0.82);
+  backdrop-filter: blur(4px);
+  animation: fadein 0.4s ease;
+}
+.recap-sheet {
+  width: min(420px, 100%);
+  background: linear-gradient(#241d16, #18120d);
+  border: 1px solid hsl(var(--amber) / 0.28);
+  border-radius: 18px;
+  padding: 1.6rem 1.5rem 1.4rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  color: #f3ece0;
+}
+.recap-kicker {
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  opacity: 0.7;
+  margin: 0 0 0.2rem;
+}
+.recap-elapsed {
+  font-size: 1.15rem;
+  color: hsl(var(--amber));
+  margin: 0 0 1rem;
+}
+.recap-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.recap-list li {
+  font-size: 0.9rem;
+  line-height: 1.35;
+  opacity: 0.92;
+}
+.recap-glyph {
+  display: inline-block;
+  width: 1.4em;
+  color: hsl(var(--amber));
+  text-align: center;
+}
+.recap-journal {
+  font-style: italic;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  border-top: 1px solid hsl(var(--amber) / 0.15);
+  padding-top: 0.9rem;
+  margin: 0 0 1.2rem;
+}
+.recap-mood {
+  font-style: normal;
+  opacity: 0.6;
+}
+.recap-done {
+  width: 100%;
+}

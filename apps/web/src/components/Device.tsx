@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { Amarium } from './Amarium.js';
+import { AwayRecap } from './AwayRecap.js';
 import { Screen } from './Screen.js';
 import { StoryPage } from './StoryPage.js';
 import { blip, setMusic, setMusicMood } from '../audio.js';
@@ -122,6 +123,7 @@ export function Device() {
       <p className="device-help">A cycles · ● acts · C goes home · ❖ story</p>
 
       {storyOpen ? <StoryPage onClose={() => setStoryOpen(false)} /> : null}
+      <AwayRecap />
     </div>
   );
 }

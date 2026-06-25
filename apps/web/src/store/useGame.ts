@@ -10,6 +10,7 @@ import {
   type ApiClient,
   type CareAction,
   type CreatureViewT,
+  type GapSummary,
   type JournalEntry,
   type StarView,
 } from '../api/client.js';
@@ -100,6 +101,8 @@ export interface GameState {
   screen: Screen;
   lastJournal: string | null;
   mood: string | null;
+  /** The "while you were away" recap shown when a creature is opened; null = dismissed. */
+  reveal: GapSummary | null;
   /** Short "what just changed" feedback after a care action. */
   lastResult: string | null;
   /** The creature's current reaction; `emoteNonce` bumps so the same emote re-fires. */
@@ -120,8 +123,10 @@ export interface GameState {
   signInWithEmail(email: string): Promise<void>;
   /** Load the roster from the server (call after auth, and when returning to it). */
   loadDashboard(): Promise<void>;
-  /** Open one creature into the device view (catches it up to now). */
+  /** Open one creature into the device view (peeks, so the away-recap can show). */
   openCreature(id: string): Promise<void>;
+  /** Dismiss the "while you were away" recap. */
+  dismissReveal(): void;
   /** Return to the roster. */
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
@@ -148,6 +153,7 @@ export const useGame = create<GameState>((set, get) => ({
   screen: 'home',
   lastJournal: null,
   mood: null,
+  reveal: null,
   lastResult: null,
   emote: null,
   emoteNonce: 0,
@@ -188,26 +194,39 @@ export const useGame = create<GameState>((set, get) => ({
   openCreature: async (id) => {
     set({ busy: true, error: null });
     try {
-      const creature = await get().client.getCreature(id);
+      // Peek on open: catch up, narrate, and capture the "while you were away" recap.
+      const r = await get().client.peek(id);
       saveCreatureId(id);
-      set({
-        creature,
+      set((st) => ({
+        creature: r.creature,
         route: 'device',
         screen: 'home',
         lastResult: null,
-        lastJournal: null,
-        mood: null,
-        emote: null,
-      });
-    } catch (e) {
-      set({ error: friendlyError(e) });
+        lastJournal: r.journal,
+        mood: r.mood,
+        reveal: r.away ?? null,
+        emote: 'peek',
+        emoteNonce: st.emoteNonce + 1,
+        lastPeekAt: Date.now(),
+      }));
+    } catch {
+      // Narration unavailable — still open the device with the caught-up creature.
+      try {
+        const creature = await get().client.getCreature(id);
+        saveCreatureId(id);
+        set({ creature, route: 'device', screen: 'home', lastResult: null, reveal: null });
+      } catch (e) {
+        set({ error: friendlyError(e) });
+      }
     } finally {
       set({ busy: false });
     }
   },
 
+  dismissReveal: () => set({ reveal: null }),
+
   openDashboard: async () => {
-    set({ route: 'dashboard', creature: null, screen: 'home' });
+    set({ route: 'dashboard', creature: null, screen: 'home', reveal: null });
     saveCreatureId(null);
     await get().loadDashboard();
   },

@@ -35,16 +35,16 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
 3. **Settings → Networking → Generate Domain** (note the URL, e.g. `https://amabo-api.up.railway.app`).
 4. **Variables** → add:
 
-   | Variable              | Required   | Value / notes                                                                                          |
-   | --------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
-   | `NODE_ENV`            | ✅         | `production` — enables Secure cookies, trust-proxy, and `SameSite=None`                                |
-   | `DATABASE_URL`        | ✅         | `${{ Postgres.DATABASE_URL }}` (reference the Postgres service)                                        |
-   | `BASE_URL`            | ✅         | the **API's own** URL, e.g. `https://amabo-api.up.railway.app` (OAuth redirect + share links)          |
-   | `WEB_ORIGIN`          | ✅         | the **web app's** URL, e.g. `https://amabo-web.up.railway.app` (CORS allow-list + post-login redirect) |
-   | `ANTHROPIC_API_KEY`   | optional   | omit → local templated narrator (zero AI cost)                                                         |
-   | `GOOGLE_CLIENT_ID`     | optional\* | Google OAuth client ID (alias: `GOOGLE_OAUTH_ID`)                                                     |
-   | `GOOGLE_CLIENT_SECRET` | optional\* | Google OAuth client secret (alias: `GOOGLE_OAUTH_SECRET`)                                             |
-   | `GOOGLE_CALLBACK_URL`  | optional   | Pin the exact redirect URI, e.g. `https://<api-url>/auth/google/callback`. Must match the console.    |
+   | Variable               | Required   | Value / notes                                                                                          |
+   | ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
+   | `NODE_ENV`             | ✅         | `production` — enables Secure cookies, trust-proxy, and `SameSite=None`                                |
+   | `DATABASE_URL`         | ✅         | `${{ Postgres.DATABASE_URL }}` (reference the Postgres service)                                        |
+   | `BASE_URL`             | ✅         | the **API's own** URL, e.g. `https://amabo-api.up.railway.app` (OAuth redirect + share links)          |
+   | `WEB_ORIGIN`           | ✅         | the **web app's** URL, e.g. `https://amabo-web.up.railway.app` (CORS allow-list + post-login redirect) |
+   | `ANTHROPIC_API_KEY`    | optional   | omit → local templated narrator (zero AI cost)                                                         |
+   | `GOOGLE_CLIENT_ID`     | optional\* | Google OAuth client ID (alias: `GOOGLE_OAUTH_ID`)                                                      |
+   | `GOOGLE_CLIENT_SECRET` | optional\* | Google OAuth client secret (alias: `GOOGLE_OAUTH_SECRET`)                                              |
+   | `GOOGLE_CALLBACK_URL`  | optional   | Pin the exact redirect URI, e.g. `https://<api-url>/auth/google/callback`. Must match the console.     |
 
    \*Passwordless **email sign-in is always available** and needs no setup — it's the
    primary login. The Google vars are optional and only enable the "Continue with

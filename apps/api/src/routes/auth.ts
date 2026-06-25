@@ -115,7 +115,8 @@ export function authRouter(deps: AuthDeps): Router {
     const redirectUri = callbackUrl(req);
     // The exact value sent to Google — must match an Authorized redirect URI there,
     // or Google answers `redirect_uri_mismatch`. Logged so it can be copied verbatim.
-    if (deps.googleEnabled) console.info('[amabo] OAuth redirect_uri sent to Google →', redirectUri);
+    if (deps.googleEnabled)
+      console.info('[amabo] OAuth redirect_uri sent to Google →', redirectUri);
     res.redirect(authProvider.authUrl(state, redirectUri));
   });
 

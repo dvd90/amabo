@@ -22,10 +22,32 @@ export interface StarView {
   constellationPos: { x: number; y: number };
 }
 
+/** Factual highlights of what changed while the Light was away (engine.summarizeGap). */
+export type GapHighlight =
+  | 'graduated'
+  | 'grew'
+  | 'brightened'
+  | 'soured'
+  | 'recovered'
+  | 'fellIll'
+  | 'rested'
+  | 'content'
+  | 'hungry'
+  | 'lonely';
+
+export interface GapSummary {
+  elapsedMinutes: number;
+  fromStage: string;
+  toStage: string;
+  highlights: GapHighlight[];
+  deltas: Partial<Record<string, number>>;
+}
+
 export interface PeekResult {
   journal: string;
   mood: string;
   creature: CreatureViewT;
+  away?: GapSummary;
 }
 
 export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';
