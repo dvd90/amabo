@@ -5,8 +5,20 @@
  * lands, and any error surfaces instead of failing silently.
  */
 
+import { useState } from 'react';
 import type { CreatureViewT } from '@amabo/shared';
+import type { StarView } from '../api/client.js';
 import { useGame } from '../store/useGame.js';
+
+/** A graduated soul's plaque: name + how long it shone (Mnemosyne). */
+function StarDetail({ star }: { star: StarView }) {
+  const days = Math.max(1, Math.round((star.graduatedAt - star.bornAt) / 86_400_000));
+  return (
+    <p className="star-detail">
+      ✦ {star.name} — shone {days} day{days === 1 ? '' : 's'}
+    </p>
+  );
+}
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
@@ -39,6 +51,7 @@ const STORY_BEATS: string[] = [
 export function Screen() {
   const { screen, creature, lastJournal, mood, lastResult, error, journalEntries, stars, busy } =
     useGame();
+  const [selectedStar, setSelectedStar] = useState<StarView | null>(null);
 
   if (!creature) {
     return <p className="screen-text">A Mote is gathering. Press ● to call it into being.</p>;
@@ -119,12 +132,21 @@ export function Screen() {
           {stars.length === 0 ? (
             <p>(none yet — raise an Amabo to its light)</p>
           ) : (
-            stars.map((st) => (
-              <span key={st.id} className="star" title={st.name}>
-                ✦
-              </span>
-            ))
+            <span className="sky-stars">
+              {stars.map((st) => (
+                <button
+                  key={st.id}
+                  className="star"
+                  title={st.name}
+                  aria-label={`Star: ${st.name}`}
+                  onClick={() => setSelectedStar(st)}
+                >
+                  ✦
+                </button>
+              ))}
+            </span>
           )}
+          {selectedStar ? <StarDetail star={selectedStar} /> : null}
           {feedback}
         </div>
       );

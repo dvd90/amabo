@@ -19,6 +19,9 @@ export interface JournalEntry {
 export interface StarView {
   id: string;
   name: string;
+  /** Epoch ms — when this soul was born and when it ascended (Mnemosyne). */
+  bornAt: number;
+  graduatedAt: number;
   constellationPos: { x: number; y: number };
 }
 
@@ -49,6 +52,8 @@ export interface PeekResult {
   creature: CreatureViewT;
   away?: GapSummary;
   needs?: NeedFlag[];
+  /** Set the moment a creature ascends during catch-up — triggers the ceremony. */
+  graduated?: StarView | null;
 }
 
 export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';

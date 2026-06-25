@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Amarium } from './Amarium.js';
 import { AwayRecap } from './AwayRecap.js';
+import { Graduation } from './Graduation.js';
 import { Screen } from './Screen.js';
 import { StoryPage } from './StoryPage.js';
 import { blip, setMusic, setMusicMood } from '../audio.js';
@@ -132,6 +133,7 @@ export function Device() {
 
       {storyOpen ? <StoryPage onClose={() => setStoryOpen(false)} /> : null}
       <AwayRecap />
+      <Graduation />
     </div>
   );
 }
