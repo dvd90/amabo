@@ -28,6 +28,8 @@ export interface AuthDeps {
   baseUrl: string; // used to build the OAuth redirect URI (the API's own origin)
   /** Where to send the browser after login (the web origin in a two-service deploy). */
   postLoginRedirect: string;
+  /** True only when real Google credentials are configured (controls the UI button). */
+  googleEnabled: boolean;
 }
 
 const STATE_COOKIE = 'amabo_oauth_state';
@@ -35,6 +37,11 @@ const STATE_COOKIE = 'amabo_oauth_state';
 export function authRouter(deps: AuthDeps): Router {
   const { repo, authProvider, clock, cookieSecure, sameSite, baseUrl, postLoginRedirect } = deps;
   const router = Router();
+
+  // What sign-in methods the client should offer (email is always on).
+  router.get('/auth/config', (_req: Request, res: Response) => {
+    res.json({ email: true, google: deps.googleEnabled });
+  });
 
   /**
    * The OAuth redirect URI must EXACTLY match what's registered with the provider AND
@@ -84,12 +91,15 @@ export function authRouter(deps: AuthDeps): Router {
     })();
   });
 
-  // Begin OAuth sign-in: set a state cookie and redirect to the provider.
+  // Begin OAuth sign-in: set a state cookie and redirect to the provider. The state
+  // cookie is SameSite=Lax (NOT None): it's only ever read back on this same API origin
+  // during the top-level redirect from Google, where Lax cookies ARE sent — and Lax
+  // survives Safari/ITP and partitioned-cookie rules that can silently drop None cookies.
   router.get('/auth/google', (req: Request, res: Response) => {
     const state = newToken();
     res.cookie(STATE_COOKIE, state, {
       httpOnly: true,
-      sameSite,
+      sameSite: 'lax',
       secure: cookieSecure,
       path: '/',
       maxAge: 10 * 60 * 1000,
@@ -97,16 +107,23 @@ export function authRouter(deps: AuthDeps): Router {
     res.redirect(authProvider.authUrl(state, callbackUrl(req)));
   });
 
+  // Where to send the browser back to after the OAuth dance, with an error flagged so
+  // the sign-in screen can show it instead of failing into a blank page.
+  const backToLogin = (res: Response, reason: string) => {
+    const base = postLoginRedirect === '/' ? '' : postLoginRedirect;
+    res.redirect(`${base}/?auth_error=${encodeURIComponent(reason)}`);
+  };
+
   // OAuth callback: verify state, exchange code, upsert user, mint a fresh session.
-  router.get('/auth/callback', (req: Request, res: Response, next) => {
+  router.get('/auth/callback', (req: Request, res: Response) => {
     void (async () => {
       try {
         const code = String(req.query.code ?? '');
         const state = String(req.query.state ?? '');
         const expected = parseCookies(req)[STATE_COOKIE];
+        if (req.query.error) return backToLogin(res, String(req.query.error));
         if (!code || !state || !expected || state !== expected) {
-          res.status(400).json({ error: 'invalid oauth state' });
-          return;
+          return backToLogin(res, 'state');
         }
         const profile = await authProvider.exchange(code, callbackUrl(req));
         const user = await repo.upsertUser({
@@ -119,7 +136,9 @@ export function authRouter(deps: AuthDeps): Router {
         await establishSession(res, user);
         res.redirect(postLoginRedirect);
       } catch (err) {
-        next(err);
+        // Surface the real reason in the server log; show a friendly flag to the user.
+        console.error('[amabo] google oauth callback failed:', (err as Error).message);
+        backToLogin(res, 'google');
       }
     })();
   });

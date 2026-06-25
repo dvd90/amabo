@@ -31,6 +31,8 @@ export interface AppDeps {
   staticDir?: string;
   /** Two-service deploy: the web origin to allow via CORS + redirect to after login. */
   webOrigin?: string;
+  /** True when real Google OAuth credentials are configured (drives the login UI). */
+  googleEnabled?: boolean;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -75,6 +77,7 @@ export function createApp(deps: AppDeps): Express {
       sameSite,
       baseUrl: deps.baseUrl,
       postLoginRedirect: deps.webOrigin ?? '/',
+      googleEnabled: deps.googleEnabled ?? false,
     }),
   );
 
