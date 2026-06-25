@@ -5,10 +5,11 @@
  * high-contrast text line below the LCD (ARCHITECTURE.md §10).
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Amarium } from './Amarium.js';
 import { Screen } from './Screen.js';
-import { blip, setAmbient } from '../audio.js';
+import { StoryPage } from './StoryPage.js';
+import { blip, setMusic, setMusicMood } from '../audio.js';
 import { useGame, type Screen as ScreenName } from '../store/useGame.js';
 
 export function Device() {
@@ -24,21 +25,31 @@ export function Device() {
     highContrast,
     toggleContrast,
   } = useGame();
+  const [storyOpen, setStoryOpen] = useState(false);
+
+  // The soundtrack follows the creature's fate: warm for Amabo, wistful for Yim.
+  useEffect(() => {
+    setMusicMood(creature?.state.uncanny ? 'yim' : 'amabo');
+  }, [creature?.state.uncanny]);
 
   const withBlip = (fn: () => void | Promise<void>) => () => {
     blip(muted);
-    // Browsers only allow audio after a gesture — start the ambient pad on first press.
-    if (!muted) setAmbient(true);
+    // Browsers only allow audio after a gesture — start the music on first press.
+    if (!muted) setMusic(true);
     void fn();
   };
 
   const onToggleMute = () => {
-    setAmbient(muted); // muted is the *old* value → if it was muted, turn sound on
+    setMusic(muted); // muted is the *old* value → if it was muted, turn sound on
     toggleMute();
   };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (storyOpen) {
+        if (e.key === 'Escape') setStoryOpen(false);
+        return;
+      }
       const k = e.key.toLowerCase();
       if (k === 'a' || k === 'arrowright') void next();
       else if (k === 'b' || k === 'enter' || k === ' ') void confirm();
@@ -46,13 +57,21 @@ export function Device() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, confirm, back]);
+  }, [next, confirm, back, storyOpen]);
 
   return (
     <div className={`device${highContrast ? ' hc' : ''}`} data-screen={screen}>
       <div className="device-topbar">
         <span className="device-brand">amabo</span>
         <span className="device-toggles">
+          <button
+            className="toggle"
+            onClick={() => setStoryOpen(true)}
+            aria-label="Open the Story"
+            title="The story of the Amarium"
+          >
+            ❖
+          </button>
           <button
             className="toggle"
             onClick={onToggleMute}
@@ -91,7 +110,9 @@ export function Device() {
           ◂ C
         </button>
       </div>
-      <p className="device-help">A cycles · ● acts · C goes home</p>
+      <p className="device-help">A cycles · ● acts · C goes home · ❖ story</p>
+
+      {storyOpen ? <StoryPage onClose={() => setStoryOpen(false)} /> : null}
     </div>
   );
 }

@@ -46,4 +46,10 @@ describe('<Creature> (visual fix)', () => {
     const { getByText } = render(<Creature creature={view({ asleep: true })} />);
     expect(getByText('z')).toBeTruthy();
   });
+
+  it('reacts to an action with an emote class + particles', () => {
+    const { container } = render(<Creature creature={view()} emote="feed" emoteNonce={1} />);
+    expect(container.querySelector('.creature-float.fx-feed')).toBeTruthy();
+    expect(container.querySelector('.p-mote')).toBeTruthy();
+  });
 });
