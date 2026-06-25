@@ -13,6 +13,10 @@ describe('<StoryPage> (the Codex)', () => {
     expect(screen.getByText(/Yim — love gone unspent/i)).toBeTruthy();
     // Inline SVG creatures illustrate the two fates.
     expect(container.querySelectorAll('svg.creature').length).toBeGreaterThanOrEqual(2);
+    // The explainer video is embedded at the top of the Codex.
+    expect(container.querySelector('video source')?.getAttribute('src')).toBe(
+      '/amabo-explainer.webm',
+    );
   });
 
   it('closes on the close button', () => {

@@ -30,6 +30,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [watching, setWatching] = useState(false);
   const [error, setError] = useState<string | null>(() => readAuthError());
 
   useEffect(() => {
@@ -87,6 +88,25 @@ export function Login() {
             Continue with Google
           </a>
         </>
+      ) : null}
+
+      <button className="linkish login-watch" onClick={() => setWatching(true)}>
+        ▶ Watch how it works (38s)
+      </button>
+
+      {watching ? (
+        <div className="video-modal" role="dialog" aria-label="How Amabo works">
+          <button
+            className="video-close"
+            onClick={() => setWatching(false)}
+            aria-label="Close the video"
+          >
+            ✕
+          </button>
+          <video className="video-player" controls autoPlay poster="/og.png">
+            <source src="/amabo-explainer.webm" type="video/webm" />
+          </video>
+        </div>
       ) : null}
     </main>
   );

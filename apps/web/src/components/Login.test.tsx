@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../api/client.js';
 import { useGame } from '../store/useGame.js';
@@ -28,6 +28,15 @@ describe('<Login> (the threshold)', () => {
     render(<Login />);
     await waitFor(() => expect(client.authConfig).toHaveBeenCalled());
     expect(screen.queryByText(/Continue with Google/i)).toBeNull();
+  });
+
+  it('offers the explainer video, opening it in a modal', () => {
+    withClient(false);
+    const { container } = render(<Login />);
+    expect(container.querySelector('video')).toBeNull(); // closed by default
+    fireEvent.click(screen.getByText(/Watch how it works/i));
+    expect(container.querySelector('video')).toBeTruthy();
+    expect(container.querySelector('source')?.getAttribute('src')).toBe('/amabo-explainer.webm');
   });
 
   it('surfaces an OAuth failure flagged in the URL', async () => {
