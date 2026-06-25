@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="46%" r="55%">
+      <stop offset="0%" stop-color="hsl(40 95% 66%)" />
+      <stop offset="60%" stop-color="hsl(36 92% 58%)" />
+      <stop offset="100%" stop-color="hsl(32 90% 50%)" />
+    </radialGradient>
+  </defs>
+  <!-- the sealed glass world: a dark amber ground -->
+  <rect width="100" height="100" rx="22" fill="#1a1714" />
+  <!-- the creature's aura -->
+  <circle cx="50" cy="54" r="30" fill="hsl(38 95% 60%)" opacity="0.28" />
+  <!-- body -->
+  <ellipse cx="50" cy="58" rx="26" ry="23" fill="url(#glow)" />
+  <!-- antenna of light -->
+  <line x1="50" y1="34" x2="50" y2="22" stroke="hsl(36 80% 46%)" stroke-width="2.4" stroke-linecap="round" />
+  <circle cx="50" cy="20" r="2.8" fill="hsl(44 98% 74%)" />
+  <!-- eyes -->
+  <circle cx="42" cy="54" r="3.6" fill="#241a12" />
+  <circle cx="58" cy="54" r="3.6" fill="#241a12" />
+  <circle cx="43.1" cy="52.9" r="1.1" fill="#fff" />
+  <circle cx="59.1" cy="52.9" r="1.1" fill="#fff" />
+  <!-- a small content smile -->
+  <path d="M 42 66 Q 50 72 58 66" stroke="hsl(32 70% 40%)" stroke-width="2.2" fill="none" stroke-linecap="round" />
+</svg>
