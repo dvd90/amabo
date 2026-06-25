@@ -53,4 +53,23 @@ describe('<Creature> (visual fix)', () => {
     expect(container.querySelector('.creature-float.fx-feed')).toBeTruthy();
     expect(container.querySelector('.p-mote')).toBeTruthy();
   });
+
+  it('is polymorphic by stage: a Mote is bare; an antenna grows by Spark', () => {
+    const mote = render(<Creature creature={view({ stage: 'mote' })} />);
+    const spark = render(<Creature creature={view({ stage: 'spark' })} />);
+    expect(mote.container.querySelector('.creature-antenna')).toBeNull();
+    expect(spark.container.querySelector('.creature-antenna')).toBeTruthy();
+  });
+
+  it('grows soft ears by the Velveteen stage', () => {
+    const spark = render(<Creature creature={view({ stage: 'spark' })} />);
+    const velveteen = render(<Creature creature={view({ stage: 'velveteen' })} />);
+    expect(spark.container.querySelector('.creature-ear')).toBeNull();
+    expect(velveteen.container.querySelector('.creature-ear')).toBeTruthy();
+  });
+
+  it('the stage is exposed for styling/inspection', () => {
+    const { container } = render(<Creature creature={view({ stage: 'bloom' })} />);
+    expect(container.querySelector('svg.creature')?.getAttribute('data-stage')).toBe('bloom');
+  });
 });
