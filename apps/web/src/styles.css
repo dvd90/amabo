@@ -908,3 +908,84 @@ body {
   color: #f3ece0;
   opacity: 0.55;
 }
+
+/* The Amarium environment — disposition-reactive scenery (M-E) */
+.amarium-env {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Amabo: warm Ambra motes drifting up */
+.amabo-mote {
+  position: absolute;
+  bottom: -6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(var(--amber) / 0.8);
+  box-shadow: 0 0 6px hsl(var(--amber) / 0.7);
+  opacity: 0;
+  animation: moteDrift 6s ease-in-out infinite;
+}
+@keyframes moteDrift {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-120px) scale(1.1);
+    opacity: 0;
+  }
+}
+/* Yim: Satis House in miniature — stopped clock, guttering candle, a perched raven */
+.amarium-yim {
+  color: hsl(254 18% 70% / 0.6);
+}
+.yim-clock {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+}
+.yim-candle {
+  position: absolute;
+  bottom: 8%;
+  right: 14%;
+}
+.yim-flame {
+  transform-origin: center bottom;
+  animation: gutter 2.6s ease-in-out infinite;
+}
+@keyframes gutter {
+  0%,
+  100% {
+    transform: scaleY(1) translateX(0);
+    opacity: 0.85;
+  }
+  40% {
+    transform: scaleY(0.7) translateX(0.6px);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scaleY(1.1) translateX(-0.4px);
+    opacity: 0.95;
+  }
+}
+.yim-raven {
+  position: absolute;
+  top: 12%;
+  right: 10%;
+  color: hsl(254 10% 30% / 0.8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .amabo-mote,
+  .yim-flame {
+    animation: none;
+  }
+  .amabo-mote {
+    opacity: 0.5;
+  }
+}
