@@ -11,6 +11,21 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
+    // Node scripts (start.js dispatcher, config files) run on Node — declare its globals
+    // so `no-undef` doesn't flag process/console.
+    files: ['**/*.{js,cjs,mjs}'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+        __dirname: 'readonly',
+      },
+    },
+  },
+  {
     // Allow intentionally-unused names prefixed with _ (e.g. Express's 4-arg error
     // handler, which must keep `next` in its signature to be recognized).
     rules: {

@@ -53,17 +53,22 @@ function buildAuthProvider(): AuthProvider {
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  const webOrigin = process.env.WEB_ORIGIN;
+  // Cross-site cookies (SameSite=None, used when WEB_ORIGIN is set) are REJECTED by
+  // browsers unless also Secure — so force Secure in that case even if NODE_ENV wasn't
+  // set. Railway is always HTTPS. This prevents a silent "logged out forever" failure.
+  const cookieSecure = process.env.NODE_ENV === 'production' || Boolean(webOrigin);
   const app = createApp({
     repo: buildRepo(),
     clock: systemClock,
     seed: randomSeed,
     narrator: buildNarrator(),
     authProvider: buildAuthProvider(),
-    cookieSecure: process.env.NODE_ENV === 'production',
+    cookieSecure,
     baseUrl: process.env.BASE_URL ?? 'http://localhost:3000',
     // Two-service deploy: set WEB_ORIGIN to the web app's URL (enables CORS +
     // SameSite=None cookies + post-login redirect back to the web app).
-    webOrigin: process.env.WEB_ORIGIN,
+    webOrigin,
     staticDir: webDistDir(),
   });
   const port = Number(process.env.PORT ?? 3000);
