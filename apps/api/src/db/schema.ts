@@ -37,6 +37,9 @@ export const creatures = pgTable(
     careHistory: jsonb('care_history').$type<CareTotals>().notNull(),
     lastTickAt: doublePrecision('last_tick_at').notNull(),
     graduatedAt: doublePrecision('graduated_at'),
+    // When the Light last explicitly looked in (peek). Distinct from lastTickAt, which
+    // any background catch-up advances — this only moves on a real visit (M-B).
+    lastSeenAt: doublePrecision('last_seen_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [index('creatures_owner_idx').on(t.ownerId)],

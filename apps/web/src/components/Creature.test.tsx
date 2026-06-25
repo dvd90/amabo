@@ -9,6 +9,7 @@ function view(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
     id: 'c1',
     name: 'Pip',
     graduatedAt: null,
+    lastSeenAt: null,
     createdAt: 0,
     state: {
       seed: 1,

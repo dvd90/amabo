@@ -85,6 +85,8 @@ export const CreatureView = z.object({
   state: CreatureStateSchema,
   graduatedAt: z.number().nullable(),
   createdAt: z.number(),
+  /** When the Light last looked in (peek); null if never. Drives "Xh ago" on the roster. */
+  lastSeenAt: z.number().nullable(),
 });
 
 export type CreatureViewT = z.infer<typeof CreatureView>;

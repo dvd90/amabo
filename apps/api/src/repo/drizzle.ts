@@ -59,6 +59,7 @@ function rowToRecord(row: Row): CreatureRecord {
     name: row.name,
     state,
     graduatedAt: row.graduatedAt,
+    lastSeenAt: row.lastSeenAt,
     createdAt: row.createdAt.getTime(),
   };
 }
@@ -120,6 +121,10 @@ export class DrizzleRepository implements Repository {
       .update(creatures)
       .set({ ...stateColumns(rec.state), graduatedAt: rec.graduatedAt })
       .where(eq(creatures.id, rec.id));
+  }
+
+  async markSeen(id: string, at: number): Promise<void> {
+    await this.db.update(creatures).set({ lastSeenAt: at }).where(eq(creatures.id, id));
   }
 
   async appendEvents(creatureId: string, list: SimEvent[], source: 'sim' | 'ai' | 'user') {

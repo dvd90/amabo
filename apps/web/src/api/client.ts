@@ -75,6 +75,14 @@ export interface AuthConfig {
   google: boolean;
 }
 
+/** The dashboard's urgency signals for a creature (engine.needs). */
+export type NeedFlag = 'ready' | 'souring' | 'ill' | 'hungry' | 'lonely' | 'asleep' | 'fading';
+
+/** A roster card: the creature view plus its "who needs the Light" signals. */
+export interface RosterItem extends CreatureViewT {
+  needs: NeedFlag[];
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
   /** Which sign-in methods the server offers (Google only when configured). */
@@ -82,7 +90,7 @@ export interface ApiClient {
   /** Passwordless sign-in; resolves to the session (and caches the CSRF token). */
   loginWithEmail(email: string): Promise<MeResult>;
   logout(): Promise<void>;
-  listCreatures(): Promise<CreatureViewT[]>;
+  listCreatures(): Promise<RosterItem[]>;
   createCreature(name: string): Promise<CreatureViewT>;
   getCreature(id: string): Promise<CreatureViewT>;
   peek(id: string): Promise<PeekResult>;
@@ -148,7 +156,7 @@ export class HttpApiClient implements ApiClient {
     }
   }
   async listCreatures() {
-    return (await this.req<{ creatures: CreatureViewT[] }>('/creatures')).creatures;
+    return (await this.req<{ creatures: RosterItem[] }>('/creatures')).creatures;
   }
   createCreature(name: string) {
     return this.req<CreatureViewT>('/creatures', 'POST', { name });
