@@ -8,6 +8,15 @@ import { useState } from 'react';
 import { Creature } from './Creature.js';
 import { useGame } from '../store/useGame.js';
 import type { NeedFlag, RosterItem } from '../api/client.js';
+import { enableNotifications, type EnableResult } from '../push.js';
+
+const NOTIFY_NOTE: Record<EnableResult, string> = {
+  on: '🔔 Notifications on — your lights can reach you.',
+  denied: 'Notifications are blocked in your browser settings.',
+  unsupported: 'This browser can’t do notifications (try installing the app).',
+  unavailable: 'Notifications aren’t configured on the server yet.',
+  error: 'Could not turn on notifications — try again.',
+};
 
 const STAGE_LABEL: Record<string, string> = {
   mote: 'Mote',
@@ -93,6 +102,7 @@ export function Dashboard() {
   const start = useGame((s) => s.start);
   const signOut = useGame((s) => s.signOut);
   const meet = useGame((s) => s.meet);
+  const client = useGame((s) => s.client);
   const busy = useGame((s) => s.busy);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
@@ -135,6 +145,12 @@ export function Dashboard() {
               {meetMode ? 'Cancel' : '✦ Introduce two'}
             </button>
           ) : null}
+          <button
+            className="linkish"
+            onClick={() => void enableNotifications(client).then((r) => setNote(NOTIFY_NOTE[r]))}
+          >
+            🔔 Notify me
+          </button>
           <button className="linkish" onClick={() => void signOut()}>
             Sign out
           </button>

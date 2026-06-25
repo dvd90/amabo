@@ -14,6 +14,7 @@ import {
   events as eventsTable,
   interactions,
   memories as memoriesTable,
+  pushSubscriptions,
   rehomes,
   reports,
   sessions,
@@ -26,6 +27,7 @@ import type {
   JournalEntry,
   NewCreature,
   OAuthUpsert,
+  PushSubscriptionRecord,
   RehomeRecord,
   Repository,
   SessionRecord,
@@ -365,6 +367,48 @@ export class DrizzleRepository implements Repository {
   ): Promise<void> {
     await this.db.insert(reports).values({ reporterId, subject, reason, at });
   }
+
+  async addPushSubscription(
+    input: Omit<PushSubscriptionRecord, 'id' | 'createdAt' | 'lastNotifiedAt'>,
+  ): Promise<PushSubscriptionRecord> {
+    const [row] = await this.db
+      .insert(pushSubscriptions)
+      .values(input)
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: { userId: input.userId, p256dh: input.p256dh, auth: input.auth },
+      })
+      .returning();
+    return toPushSub(row!);
+  }
+
+  async listPushSubscriptions(): Promise<PushSubscriptionRecord[]> {
+    const rows = await this.db.select().from(pushSubscriptions);
+    return rows.map(toPushSub);
+  }
+
+  async deletePushSubscription(endpoint: string): Promise<void> {
+    await this.db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async touchPushNotified(id: string, at: number): Promise<void> {
+    await this.db
+      .update(pushSubscriptions)
+      .set({ lastNotifiedAt: at })
+      .where(eq(pushSubscriptions.id, id));
+  }
+}
+
+function toPushSub(row: typeof pushSubscriptions.$inferSelect): PushSubscriptionRecord {
+  return {
+    id: row.id,
+    userId: row.userId,
+    endpoint: row.endpoint,
+    p256dh: row.p256dh,
+    auth: row.auth,
+    lastNotifiedAt: row.lastNotifiedAt,
+    createdAt: row.createdAt.getTime(),
+  };
 }
 
 function toShareLink(row: typeof shareLinks.$inferSelect): ShareLinkRecord {

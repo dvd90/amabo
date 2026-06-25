@@ -11,6 +11,7 @@ import type {
   JournalEntry,
   NewCreature,
   OAuthUpsert,
+  PushSubscriptionRecord,
   RehomeRecord,
   Repository,
   SessionRecord,
@@ -38,6 +39,7 @@ export class InMemoryRepository implements Repository {
   private blocks: { userId: string; blockedUserId: string; at: number }[] = [];
   private reports: { reporterId: string; subject: string; reason: string | null; at: number }[] =
     [];
+  private pushSubs = new Map<string, PushSubscriptionRecord>();
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -244,5 +246,28 @@ export class InMemoryRepository implements Repository {
     at: number,
   ): Promise<void> {
     this.reports.push({ reporterId, subject, reason, at });
+  }
+
+  async addPushSubscription(
+    input: Omit<PushSubscriptionRecord, 'id' | 'createdAt' | 'lastNotifiedAt'>,
+  ): Promise<PushSubscriptionRecord> {
+    const existing = this.pushSubs.get(input.endpoint);
+    const rec: PushSubscriptionRecord = existing
+      ? { ...existing, ...input }
+      : { ...input, id: randomUUID(), lastNotifiedAt: null, createdAt: Date.now() };
+    this.pushSubs.set(rec.endpoint, rec);
+    return structuredClone(rec);
+  }
+
+  async listPushSubscriptions(): Promise<PushSubscriptionRecord[]> {
+    return [...this.pushSubs.values()].map((s) => structuredClone(s));
+  }
+
+  async deletePushSubscription(endpoint: string): Promise<void> {
+    this.pushSubs.delete(endpoint);
+  }
+
+  async touchPushNotified(id: string, at: number): Promise<void> {
+    for (const s of this.pushSubs.values()) if (s.id === id) s.lastNotifiedAt = at;
   }
 }

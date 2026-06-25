@@ -26,6 +26,16 @@ export default tseslint.config(
     },
   },
   {
+    // The service worker runs in a ServiceWorkerGlobalScope (`self`, etc.), not Node.
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        atob: 'readonly',
+      },
+    },
+  },
+  {
     // Allow intentionally-unused names prefixed with _ (e.g. Express's 4-arg error
     // handler, which must keep `next` in its signature to be recognized).
     rules: {

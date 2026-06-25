@@ -126,6 +126,10 @@ export interface ApiClient {
   multiply(id: string): Promise<MultiplyResult>;
   /** A resonance meeting between two of your own creatures (a duet, never a duel). */
   meet(id: string, otherId: string): Promise<MeetResult>;
+  /** The server's VAPID public key for web-push (null if push isn't configured). */
+  vapidKey(): Promise<string | null>;
+  /** Register a device's push subscription for the signed-in Light. */
+  subscribePush(subscription: unknown): Promise<void>;
   journal(id: string): Promise<JournalEntry[]>;
   stars(id: string): Promise<StarView[]>;
 }
@@ -206,6 +210,16 @@ export class HttpApiClient implements ApiClient {
   }
   meet(id: string, otherId: string) {
     return this.req<MeetResult>(`/creatures/${id}/meet/${otherId}`, 'POST', {});
+  }
+  async vapidKey() {
+    try {
+      return (await this.req<{ key: string | null }>('/push/vapid')).key;
+    } catch {
+      return null;
+    }
+  }
+  async subscribePush(subscription: unknown) {
+    await this.req('/push/subscribe', 'POST', { subscription });
   }
   async journal(id: string) {
     return (await this.req<{ entries: JournalEntry[] }>(`/creatures/${id}/journal`)).entries;
