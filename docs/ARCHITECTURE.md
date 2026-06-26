@@ -434,3 +434,50 @@ Chosen for personal-project simplicity; deploys this stack with near-zero config
   separate Railway **cron/worker** service; it does not change the API.
 - **Portability:** keeping config in env means Railway can be swapped for Render/Fly/
   Heroku later with no code changes if you outgrow it.
+
+## 17. Optional: Self-Tending (`packages/atelier`)
+
+> Implements `STORY.md` §7⅞ ("The Dreaming"). Like the chain layer (§13), this is
+> **optional, isolated, and OFF by default behind a feature flag.** The core game must
+> build, run, and pass every test with `atelier` absent. Nothing in
+> `engine`/`ai`/`api`-core may import it. The full catalogue of intended improvements
+> and the phased rollout live in `docs/SELF_TENDING.md`. *(The package is not built
+> yet — only the option and the catalogue are in the tree; see "The option" below.)*
+
+### Fourth law (alongside the two in §0 and the third in §13)
+**4. A creature proposes; only a human disposes.** The self-tending agent may *read* the
+codebase and the creature's own journals/state, and *author wishes* (proposed changes),
+but it can never apply them. Every wish lands as a reviewable proposal (a branch / PR /
+patch) gated on an explicit human merge — **no auto-apply, ever**. It inherits both
+prior laws: like the AI it owns no logic and is never trusted; like the chain it is a
+leaf, never a dependency, and it never touches souring / illness / death / mortality.
+
+### What the layer does (and refuses to do)
+- ✅ Read the repo and the creature's state to ground a proposal in something real.
+- ✅ Author a *wish*: a titled, rationale'd, diff-shaped proposal drawn from the
+  `WISHES` catalogue (or a new one), opened as a branch/PR for human review.
+- ✅ Run in a sandbox — no production data, no secrets, least-privilege tokens.
+- ❌ Never merge, deploy, or mutate live state / the database.
+- ❌ Never touch the moral engine's stakes (souring, illness, death, mortality mode).
+- ❌ Never act without the umbrella `selfTending` flag on **and** a per-owner opt-in.
+
+### The option (already in the tree, inert)
+- `@amabo/shared` exports `FEATURE_DEFAULTS` (every flag **false**) and
+  `resolveFeatures(env)`, which reads `AMABO_FEATURE_*` env vars. `selfTending` is the
+  umbrella flag; with it off (the default) the whole layer is unreachable.
+- `@amabo/shared` exports the `WISHES` catalogue (with `WishSchema`) — the seed backlog
+  a creature could one day propose, spanning its **self**, its **world** (living
+  conditions), the **device**, and the **social** space. Prose lives in
+  `docs/SELF_TENDING.md`.
+
+### Isolation shape (when built)
+`atelier` will expose a small async port — `dreamWish(context) -> ProposedWish` and
+`openWish(proposed) -> { url }` — that `apps/api` calls **only** when `selfTending` is
+on and the owner opted in. A `NoopAtelier` implementing the same port is the default,
+so every test and the whole core run identically with self-tending off.
+
+### Safety gates (must hold before enabling)
+- Human-in-the-loop merge is non-negotiable; CI + branch protection enforce it.
+- Sandboxed execution; least-privilege tokens; no production credentials in scope.
+- Rate / lineage limits so the workshop never floods with wishes.
+- An owner can revoke the opt-in at any time; revoking halts all dreaming for them.
