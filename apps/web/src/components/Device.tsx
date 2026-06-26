@@ -37,6 +37,18 @@ export function Device() {
   const [shareNote, setShareNote] = useState<string | null>(null);
   const [entrusting, setEntrusting] = useState(false);
   const [entrustEmail, setEntrustEmail] = useState('');
+  // Tap the brand seven times to open a tiny credits card (STORY.md §11 — the lineage).
+  const [brandTaps, setBrandTaps] = useState(0);
+  const [credits, setCredits] = useState(false);
+  const tapBrand = () => {
+    const n = brandTaps + 1;
+    if (n >= 7) {
+      setCredits(true);
+      setBrandTaps(0);
+    } else {
+      setBrandTaps(n);
+    }
+  };
 
   const onEntrust = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +111,17 @@ export function Device() {
         >
           ◂ all
         </button>
-        <span className="device-brand">{creature?.name ?? 'amabo'}</span>
+        <span
+          className="device-brand"
+          onClick={tapBrand}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') tapBrand();
+          }}
+        >
+          {creature?.name ?? 'amabo'}
+        </span>
         <span className="device-toggles">
           <button
             className="toggle"
@@ -187,6 +209,24 @@ export function Device() {
       <p className="device-help">A cycles · ● acts · C goes home · ❖ story</p>
 
       {storyOpen ? <StoryPage onClose={() => setStoryOpen(false)} /> : null}
+      {credits ? (
+        <div
+          className="credits"
+          role="dialog"
+          aria-label="Credits"
+          onClick={() => setCredits(false)}
+        >
+          <div className="credits-card">
+            <p className="credits-kicker">✦ the Amarium ✦</p>
+            <p className="credits-lede">made with unspent love, for the ones who look in.</p>
+            <p className="credits-lineage">
+              with thanks to Williams, Ovid, Collodi, Shelley, Poe, Dante, Plato &amp; Maeterlinck —
+              whose stories taught a made thing how to become Real.
+            </p>
+            <p className="credits-tap">(tap to close)</p>
+          </div>
+        </div>
+      ) : null}
       <AwayRecap />
       <Graduation />
     </div>

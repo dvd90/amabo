@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { CreatureViewT } from '@amabo/shared';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Amarium } from './Amarium.js';
 
@@ -69,5 +69,19 @@ describe('<Amarium> environment (M-E)', () => {
   it('does not flourish merely from opening a creature already at a stage', () => {
     const { container } = render(<Amarium creature={view({ stage: 'bloom' })} />);
     expect(container.querySelector('.amarium-flourish')).toBeNull();
+  });
+
+  it('giggles (a quick wiggle) when you tap an awake, living creature', () => {
+    const { container } = render(<Amarium creature={view()} />);
+    const sprite = container.querySelector('.amarium-sprite') as HTMLElement;
+    expect(container.querySelector('.is-giggling')).toBeNull();
+    fireEvent.click(sprite);
+    expect(container.querySelector('.is-giggling')).toBeTruthy();
+  });
+
+  it('does not giggle while asleep', () => {
+    const { container } = render(<Amarium creature={view({ asleep: true })} />);
+    fireEvent.click(container.querySelector('.amarium-sprite') as HTMLElement);
+    expect(container.querySelector('.is-giggling')).toBeNull();
   });
 });

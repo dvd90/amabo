@@ -12,6 +12,7 @@
 
 import { STAGES, type CreatureViewT } from '@amabo/shared';
 import type { Emote } from '../store/useGame.js';
+import { nameEgg, type NameEgg } from '../eggs.js';
 
 const STAGE_SCALE: Record<string, number> = {
   mote: 0.5,
@@ -85,6 +86,86 @@ function Particles({ emote }: { emote: Emote }) {
   return null;
 }
 
+/** Geometry the egg marks need to attach themselves to the right spot on the face/body. */
+type Geo = {
+  cx: number;
+  eyeY: number;
+  eyeDx: number;
+  rx: number;
+  ry: number;
+  bodyCy: number;
+  shade: string;
+};
+
+/**
+ * A quiet nod for a creature named after a touchstone (STORY.md §11): a worn seam for a
+ * Velveteen, a long nose for Pinocchio, a wink for Galatea, neck bolts for Frankenstein,
+ * a tiny perched raven for Nevermore. Drawn over the body; original art, not the source.
+ */
+function NameEggMark({ egg, geo }: { egg: NameEgg; geo: Geo }) {
+  const { cx, eyeY, eyeDx, rx, ry, bodyCy, shade } = geo;
+  if (egg === 'velveteen') {
+    // a worn stitched seam — loved soft, becoming Real
+    return (
+      <line
+        className="egg-velveteen"
+        x1={cx - rx * 0.5}
+        y1={bodyCy + ry * 0.18}
+        x2={cx + rx * 0.5}
+        y2={bodyCy + ry * 0.1}
+        stroke={shade}
+        strokeWidth={1.2}
+        strokeDasharray="2 2"
+        strokeLinecap="round"
+      />
+    );
+  }
+  if (egg === 'pinocchio') {
+    return (
+      <line
+        className="egg-pinocchio"
+        x1={cx}
+        y1={eyeY + 5}
+        x2={cx + rx * 0.7}
+        y2={eyeY + 4}
+        stroke={shade}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+      />
+    );
+  }
+  if (egg === 'galatea') {
+    // a wink — the one who finally looks back (Pygmalion)
+    return (
+      <path
+        className="egg-galatea"
+        d={`M ${cx - eyeDx - 4} ${eyeY} Q ${cx - eyeDx} ${eyeY + 4} ${cx - eyeDx + 4} ${eyeY}`}
+        stroke={shade}
+        strokeWidth={2}
+        fill="none"
+        strokeLinecap="round"
+      />
+    );
+  }
+  if (egg === 'frankenstein') {
+    return (
+      <g className="egg-frankenstein" fill={shade}>
+        <rect x={cx - rx * 0.78} y={bodyCy - 2} width={3} height={6} rx={1} />
+        <rect x={cx + rx * 0.78 - 3} y={bodyCy - 2} width={3} height={6} rx={1} />
+      </g>
+    );
+  }
+  // raven — perched, longing (Poe)
+  return (
+    <path
+      className="egg-raven"
+      d={`M ${cx - 6} ${eyeY - ry * 0.62} q 5 -3 9 0 q -2 -4 3 -5 q -2 3 2 4 q 4 -1 5 -4 q -1 6 -7 7 q -7 1 -12 1 z`}
+      fill={shade}
+      transform={`translate(${rx * 0.3} 0)`}
+    />
+  );
+}
+
 export function Creature({
   creature,
   emote = null,
@@ -106,6 +187,7 @@ export function Creature({
   const showEars = stageIdx >= 2; // Velveteen and up
   const ears = showEars ? v.earsSeed : 0;
   const trait = Object.keys(traits ?? {}).length > 0; // a distinguishing mark, if any
+  const egg = alive ? nameEgg(creature.name) : null; // a nod for a canon-named creature
 
   // Palette: warm amber for an Amabo, pale lavender-grey for a Yim, dim when gone.
   const hue = (uncanny ? 254 : 36) + v.hueShift;
@@ -257,6 +339,11 @@ export function Creature({
 
           {/* illness: a small bead */}
           {ill && alive ? <circle cx={cx + rx * 0.6} cy={bodyCy} r={2.2} fill="#7fd1a0" /> : null}
+
+          {/* a quiet nod for a creature named after a touchstone */}
+          {egg && !asleep ? (
+            <NameEggMark egg={egg} geo={{ cx, eyeY, eyeDx, rx, ry, bodyCy, shade }} />
+          ) : null}
         </g>
 
         {/* reaction particles */}
