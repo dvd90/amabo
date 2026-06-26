@@ -94,4 +94,11 @@ describe('<Amarium> environment (M-E)', () => {
     fireEvent.click(container.querySelector('.amarium-sprite') as HTMLElement);
     expect(container.querySelector('.is-giggling')).toBeNull();
   });
+
+  it('ripples where the glass is tapped', () => {
+    const { container } = render(<Amarium creature={view()} />);
+    expect(container.querySelector('.amarium-ripple')).toBeNull();
+    fireEvent.click(container.querySelector('.amarium') as HTMLElement);
+    expect(container.querySelector('.amarium-ripple')).toBeTruthy();
+  });
 });

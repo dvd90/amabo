@@ -38,14 +38,31 @@ function variation(seed: number) {
   };
 }
 
-/** Small floating particles per reaction (motes/sparkles/hearts), drawn in SVG space. */
+/** A bright flash ring that punches out from the centre on the big care actions. */
+function Flash({ cy = 56 }: { cy?: number }) {
+  return (
+    <circle className="p-flash" cx={50} cy={cy} r={12} fill="none" stroke="hsl(44 100% 78%)" />
+  );
+}
+
+/** Layered floating particles per reaction (motes/sparkles/hearts), drawn in SVG space. */
 function Particles({ emote }: { emote: Emote }) {
   const cx = 50;
   if (emote === 'feed') {
+    // a warm shower of motes rising from below, plus a flash
     return (
       <g className="fx-particles">
-        {[-10, 0, 10].map((dx, i) => (
-          <circle key={i} className="p-mote" cx={cx + dx} cy={86} r={3} fill="hsl(38 95% 62%)" />
+        <Flash cy={70} />
+        {[-16, -8, 0, 8, 16].map((dx, i) => (
+          <circle
+            key={i}
+            className="p-mote"
+            cx={cx + dx}
+            cy={86 - (i % 2) * 6}
+            r={2.4 + (i % 2)}
+            fill="hsl(38 95% 62%)"
+            style={{ animationDelay: `${i * 0.05}s` }}
+          />
         ))}
       </g>
     );
@@ -53,8 +70,14 @@ function Particles({ emote }: { emote: Emote }) {
   if (emote === 'clean') {
     return (
       <g className="fx-particles">
-        {[18, 50, 82].map((px, i) => (
-          <text key={i} className="p-spark" x={px} y={30 + (i % 2) * 10}>
+        {[16, 34, 50, 66, 84].map((px, i) => (
+          <text
+            key={i}
+            className="p-spark"
+            x={px}
+            y={26 + (i % 3) * 9}
+            style={{ animationDelay: `${i * 0.06}s` }}
+          >
             ✦
           </text>
         ))}
@@ -64,8 +87,15 @@ function Particles({ emote }: { emote: Emote }) {
   if (emote === 'play') {
     return (
       <g className="fx-particles">
-        {[-12, 4, 14].map((dx, i) => (
-          <text key={i} className="p-heart" x={cx + dx} y={40}>
+        <Flash cy={52} />
+        {[-16, -6, 6, 16].map((dx, i) => (
+          <text
+            key={i}
+            className="p-heart"
+            x={cx + dx}
+            y={42 - (i % 2) * 6}
+            style={{ animationDelay: `${i * 0.06}s` }}
+          >
             ♥
           </text>
         ))}
@@ -73,15 +103,31 @@ function Particles({ emote }: { emote: Emote }) {
     );
   }
   if (emote === 'comfort') {
+    // a double, nested ring of warmth
     return (
-      <circle className="p-ring" cx={cx} cy={56} r={20} fill="none" stroke="hsl(38 90% 70%)" />
+      <g className="fx-particles">
+        <circle className="p-ring" cx={cx} cy={56} r={16} fill="none" stroke="hsl(38 90% 70%)" />
+        <circle
+          className="p-ring"
+          cx={cx}
+          cy={56}
+          r={22}
+          fill="none"
+          stroke="hsl(38 90% 78%)"
+          style={{ animationDelay: '0.12s' }}
+        />
+      </g>
     );
   }
   if (emote === 'peek') {
     return (
-      <text className="p-spark" x={cx + 16} y={28}>
-        ✦
-      </text>
+      <g className="fx-particles">
+        {[14, 84].map((px, i) => (
+          <text key={i} className="p-spark" x={px} y={26 + i * 8}>
+            ✦
+          </text>
+        ))}
+      </g>
     );
   }
   return null;
