@@ -72,4 +72,33 @@ describe('<Creature> (visual fix)', () => {
     const { container } = render(<Creature creature={view({ stage: 'bloom' })} />);
     expect(container.querySelector('svg.creature')?.getAttribute('data-stage')).toBe('bloom');
   });
+
+  it('open eyes blink and have a gaze group that can track the Light', () => {
+    const { container } = render(<Creature creature={view()} />);
+    expect(container.querySelector('.creature-eyes')).toBeTruthy();
+    expect(container.querySelector('.creature-gaze')).toBeTruthy();
+    // a per-creature blink offset keeps a row of them from blinking in unison
+    expect(
+      (container.querySelector('.creature-eyes') as SVGElement).style.animationDelay,
+    ).toBeTruthy();
+  });
+
+  it('asleep has no blinking eyes group (they are closed)', () => {
+    const { container } = render(<Creature creature={view({ asleep: true })} />);
+    expect(container.querySelector('.creature-eyes')).toBeNull();
+  });
+
+  it('droops when tired (low energy) and dims when its Ambra runs low', () => {
+    const tired = render(
+      <Creature creature={view({ stats: { ...view().state.stats, energy: 10 } })} />,
+    );
+    const dim = render(
+      <Creature creature={view({ stats: { ...view().state.stats, ambra: 12 } })} />,
+    );
+    const bright = render(<Creature creature={view()} />);
+    expect(tired.container.querySelector('svg.creature.is-tired')).toBeTruthy();
+    expect(dim.container.querySelector('svg.creature.is-dim')).toBeTruthy();
+    expect(bright.container.querySelector('svg.creature.is-tired')).toBeNull();
+    expect(bright.container.querySelector('svg.creature.is-dim')).toBeNull();
+  });
 });
