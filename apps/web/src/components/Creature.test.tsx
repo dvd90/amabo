@@ -95,6 +95,15 @@ describe('<Creature> (visual fix)', () => {
     expect(plain.container.querySelector('[class^="egg-"]')).toBeNull();
   });
 
+  it('a rare seed is born an iridescent Mote (and only at the Mote stage)', () => {
+    const rareMote = render(<Creature creature={view({ stage: 'mote', seed: 28 })} />);
+    const plainMote = render(<Creature creature={view({ stage: 'mote', seed: 1 })} />);
+    const rareGrown = render(<Creature creature={view({ stage: 'bloom', seed: 28 })} />);
+    expect(rareMote.container.querySelector('.creature.is-iridescent')).toBeTruthy();
+    expect(plainMote.container.querySelector('.creature.is-iridescent')).toBeNull();
+    expect(rareGrown.container.querySelector('.creature.is-iridescent')).toBeNull();
+  });
+
   it('droops when tired (low energy) and dims when its Ambra runs low', () => {
     const tired = render(
       <Creature creature={view({ stats: { ...view().state.stats, energy: 10 } })} />,

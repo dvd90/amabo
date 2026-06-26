@@ -13,6 +13,7 @@
 import { STAGES, type CreatureViewT } from '@amabo/shared';
 import type { Emote } from '../store/useGame.js';
 import { nameEgg, type NameEgg } from '../eggs.js';
+import { isIridescent } from '../worldtime.js';
 
 const STAGE_SCALE: Record<string, number> = {
   mote: 0.5,
@@ -188,6 +189,8 @@ export function Creature({
   const ears = showEars ? v.earsSeed : 0;
   const trait = Object.keys(traits ?? {}).length > 0; // a distinguishing mark, if any
   const egg = alive ? nameEgg(creature.name) : null; // a nod for a canon-named creature
+  // A rare iridescent Mote — a one-in-many shimmering soul (STORY.md §11).
+  const iridescent = alive && stage === 'mote' && isIridescent(seed);
 
   // Palette: warm amber for an Amabo, pale lavender-grey for a Yim, dim when gone.
   const hue = (uncanny ? 254 : 36) + v.hueShift;
@@ -217,7 +220,7 @@ export function Creature({
 
   return (
     <svg
-      className={`creature${asleep ? ' is-asleep' : ''}${uncanny ? ' is-yim' : ''}${tired ? ' is-tired' : ''}${dim ? ' is-dim' : ''}`}
+      className={`creature${asleep ? ' is-asleep' : ''}${uncanny ? ' is-yim' : ''}${tired ? ' is-tired' : ''}${dim ? ' is-dim' : ''}${iridescent ? ' is-iridescent' : ''}`}
       data-stage={stage}
       viewBox="0 0 100 100"
       width="100%"
