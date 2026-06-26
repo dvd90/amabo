@@ -52,4 +52,22 @@ describe('<Amarium> environment (M-E)', () => {
     const { container } = render(<Amarium creature={null} />);
     expect(container.querySelector('.amarium-env')).toBeNull();
   });
+
+  it('bursts a flourish when the creature climbs a stage (and a Real shimmer at Bloom)', () => {
+    const { container, rerender } = render(<Amarium creature={view({ stage: 'spark' })} />);
+    expect(container.querySelector('.amarium-flourish')).toBeNull(); // steady state: none
+
+    rerender(<Amarium creature={view({ stage: 'velveteen' })} />);
+    const burst = container.querySelector('.amarium-flourish');
+    expect(burst).toBeTruthy();
+    expect(burst?.classList.contains('is-real')).toBe(false);
+
+    rerender(<Amarium creature={view({ stage: 'bloom' })} />);
+    expect(container.querySelector('.amarium-flourish.is-real')).toBeTruthy();
+  });
+
+  it('does not flourish merely from opening a creature already at a stage', () => {
+    const { container } = render(<Amarium creature={view({ stage: 'bloom' })} />);
+    expect(container.querySelector('.amarium-flourish')).toBeNull();
+  });
 });
