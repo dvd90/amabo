@@ -58,6 +58,13 @@ amabo/
 - Crypto (`packages/chain`) is **optional, isolated, off by default** — Solana + USDC,
   non-custodial, keepsakes only. The core must build/run/test with it absent; it never
   gates gameplay and never touches souring/illness/death. See `ARCHITECTURE.md` §13.
+- Self-tending (`packages/atelier`, "the Dreaming") is **optional, isolated, off by
+  default** — a grown creature may *propose* improvements to itself and its world, but
+  **a creature proposes; only a human disposes**: every wish is a human-reviewed
+  proposal, never auto-applied, never mutating state, never touching
+  souring/illness/death. The `selfTending` flag (`@amabo/shared` `resolveFeatures`) is
+  off by default; the seed backlog is `WISHES`. See `STORY.md` §7⅞, `ARCHITECTURE.md`
+  §17, `docs/SELF_TENDING.md`.
 - **Auth & ownership:** OAuth-first sessions (httpOnly+SameSite cookies, CSRF). Every
   creature/journal/star query is **owner-scoped**; a missing `owner_id` filter is a
   bug that blocks merge. Cross-owner reads return 404, not 403.

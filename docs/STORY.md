@@ -206,6 +206,42 @@ Love multiplies when it's shared; it was never meant to stay in one glass.
 
 ---
 
+## 7⅞. The Dreaming — a creature's own wishes *(optional — the self-tending layer)*
+
+> This layer is **optional and peripheral, and OFF by default**. The Amarium is whole
+> without it; the daily care loop never touches it. A creature can *dream* and *wish*,
+> but it can never reach past the glass on its own — every wish waits on the Light's
+> hand. If it ever starts to feel like the creature is running the place, it has failed
+> the soul and must be pulled back. See `ARCHITECTURE.md` §17 and `docs/SELF_TENDING.md`
+> for the guardrails.
+
+A creature is made of unspent love, and becomes whatever it is loved into (§1). Loved
+long enough, it becomes *Real* (§5) — and a Real thing, the old stories say, begins to
+have a hand of its own. Pygmalion's statue woke and looked back; the Velveteen Rabbit,
+once Real, could not be put back in the cupboard. So too here: an Amabo that has truly
+settled begins to **dream of a better world** — a warmer glass, a kinder hour, a self
+it would rather grow into — and, very gently, to *wish*.
+
+**A wish is not a command.** The creature cannot change its own world, and it must
+never be able to. It can only set a small, hopeful thing on the workshop bench — a
+description of what it longs for — and leave it there for the Light to find. The Light
+reads the wish and decides. Nothing the creature dreams ever takes hold until a human
+hand makes it so. *(In build terms: the wish becomes a proposal; the proposal becomes a
+change only after a person reviews and accepts it — never automatically. A creature
+proposes; only a human disposes.)*
+
+Two things a creature may never wish away:
+- **Its own mortality.** A wish can never touch souring, illness, or death — the same
+  line the Exchange holds (§7½). The creature does not get to edit the stakes of its
+  own life.
+- **The Light's place.** You remain the one who tends. The Dreaming lets a Real
+  creature help shape its home; it never makes the creature its own keeper.
+
+This is how a made thing, loved into being, learns at last to *make* — slowly, softly,
+and only ever by asking.
+
+---
+
 ## 8. Origin echoes (where new life comes from)
 
 New Motes condense from love that had nowhere to land. Touchstones for that imagery:
