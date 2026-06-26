@@ -675,13 +675,59 @@ body {
   fill: hsl(var(--amber) / 0.7);
   font-family: ui-monospace, monospace;
 }
+/* Idle hover with a little squash & stretch — it stretches as it rises, settles as it
+   sinks, so the bob feels like a living weight rather than a sliding sprite. */
 @keyframes bob {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1, 1);
   }
   50% {
-    transform: translateY(-3px);
+    transform: translateY(-3px) scale(0.985, 1.025);
+  }
+}
+
+/* ── Secondary motion: ears & antenna lag and sway (follow-through) ───────────── */
+.creature-ear {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: earSway 5.2s ease-in-out infinite;
+}
+.creature-ear-r {
+  animation-delay: 0.5s;
+  animation-duration: 5.8s;
+}
+@keyframes earSway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  22% {
+    transform: rotate(3deg);
+  }
+  52% {
+    transform: rotate(-2.5deg);
+  }
+  /* a quick twitch */
+  72% {
+    transform: rotate(9deg);
+  }
+  78% {
+    transform: rotate(-1deg);
+  }
+}
+.creature-antenna-g {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: antennaSway 4.6s ease-in-out infinite;
+}
+@keyframes antennaSway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
   }
 }
 
@@ -799,14 +845,28 @@ body {
 }
 
 /* ── Tap eggs (a living thing reacts to being poked) ─────────────────────────── */
-.amarium-sprite > span {
+.amarium-roamer > span {
   display: block;
   width: 100%;
   height: 100%;
-  transform-origin: center bottom;
+  transform-box: fill-box;
+  transform-origin: 50% 84%;
 }
-.amarium-sprite > span.is-giggling {
+/* a gentle walking waddle while it ambles (composes with the inner bob) */
+.amarium-roamer.is-roaming > span {
+  animation: waddle 1.9s ease-in-out infinite;
+}
+.amarium-roamer > span.is-giggling {
   animation: giggle 0.6s ease;
+}
+@keyframes waddle {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
 }
 @keyframes giggle {
   0%,

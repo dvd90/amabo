@@ -289,7 +289,7 @@ export function Creature({
           ) : null}
           {ears >= 2 ? (
             <ellipse
-              className="creature-ear"
+              className="creature-ear creature-ear-r"
               cx={cx + rx * 0.55}
               cy={bodyCy - ry * 0.55}
               rx={rx * 0.22}
@@ -322,9 +322,12 @@ export function Creature({
             transform={`rotate(-20 ${cx - rx * 0.32} ${bodyCy - ry * 0.44})`}
           />
 
-          {/* antenna / tuft of light (Spark and up) */}
+          {/* antenna / tuft of light (Spark and up) — sways as a unit (secondary motion) */}
           {showAntenna ? (
-            <>
+            <g
+              className="creature-antenna-g"
+              style={{ ['--pivot-x' as string]: `${cx}px`, ['--pivot-y' as string]: `${cy}px` }}
+            >
               <line
                 className="creature-antenna"
                 x1={cx}
@@ -336,7 +339,7 @@ export function Creature({
                 strokeLinecap="round"
               />
               <circle cx={cx} cy={cy - ry * 0.7 * v.tuft - 2} r={2.6} fill={tuftTip} />
-            </>
+            </g>
           ) : null}
 
           {/* eyes */}
