@@ -638,6 +638,85 @@ body {
   }
 }
 
+/* ── Tap eggs (a living thing reacts to being poked) ─────────────────────────── */
+.amarium-sprite > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: center bottom;
+}
+.amarium-sprite > span.is-giggling {
+  animation: giggle 0.6s ease;
+}
+@keyframes giggle {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  20% {
+    transform: rotate(-5deg) scale(1.04);
+  }
+  45% {
+    transform: rotate(5deg) scale(1.06);
+  }
+  70% {
+    transform: rotate(-3deg) scale(1.03);
+  }
+}
+/* A faint, slow shimmer on a canon-named creature's egg mark. */
+.egg-galatea,
+.egg-pinocchio,
+.egg-raven,
+.egg-velveteen {
+  opacity: 0.92;
+}
+
+/* The hidden credits card (tap the brand seven times). */
+.credits {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(8, 6, 5, 0.82);
+  backdrop-filter: blur(3px);
+  animation: fadein 0.4s ease;
+}
+.credits-card {
+  max-width: 360px;
+  text-align: center;
+  background: linear-gradient(#241d16, #1a1410);
+  border: 1px solid hsl(var(--amber) / 0.3);
+  border-radius: 16px;
+  padding: 1.8rem 1.5rem;
+  color: #f3ece0;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+}
+.credits-kicker {
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  color: hsl(var(--amber));
+  margin: 0 0 0.8rem;
+}
+.credits-lede {
+  font-size: 0.95rem;
+  font-style: italic;
+  margin: 0 0 0.9rem;
+}
+.credits-lineage {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  opacity: 0.82;
+  margin: 0 0 1rem;
+}
+.credits-tap {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  margin: 0;
+}
+
 /* Onboarding */
 .onboarding {
   width: 100%;

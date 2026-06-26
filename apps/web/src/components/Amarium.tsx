@@ -126,6 +126,13 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
     e.currentTarget.style.setProperty('--look-y', '0');
   };
 
+  // Tap the creature and it giggles — a quick happy wiggle (a living thing reacts to
+  // being poked). Re-armed via a nonce so rapid taps each replay the animation.
+  const [giggle, setGiggle] = useState(0);
+  const poke = () => {
+    if (creature?.state.alive && !creature.state.asleep) setGiggle((n) => n + 1);
+  };
+
   return (
     <div
       className="amarium"
@@ -141,9 +148,11 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
     >
       <div className="amarium-glow" />
       {creature && creature.state.alive ? <Environment uncanny={creature.state.uncanny} /> : null}
-      <div className="amarium-sprite">
+      <div className="amarium-sprite" onClick={poke}>
         {creature ? (
-          <Creature creature={creature} emote={emote} emoteNonce={emoteNonce} />
+          <span className={giggle ? 'is-giggling' : undefined} key={giggle}>
+            <Creature creature={creature} emote={emote} emoteNonce={emoteNonce} />
+          </span>
         ) : (
           <span className="amarium-empty">·</span>
         )}

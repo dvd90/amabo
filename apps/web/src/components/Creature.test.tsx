@@ -88,6 +88,13 @@ describe('<Creature> (visual fix)', () => {
     expect(container.querySelector('.creature-eyes')).toBeNull();
   });
 
+  it('marks a creature named after a touchstone (and leaves ordinary names plain)', () => {
+    const velveteen = render(<Creature creature={{ ...view(), name: 'Velveteen' }} />);
+    const plain = render(<Creature creature={{ ...view(), name: 'Pip' }} />);
+    expect(velveteen.container.querySelector('.egg-velveteen')).toBeTruthy();
+    expect(plain.container.querySelector('[class^="egg-"]')).toBeNull();
+  });
+
   it('droops when tired (low energy) and dims when its Ambra runs low', () => {
     const tired = render(
       <Creature creature={view({ stats: { ...view().state.stats, energy: 10 } })} />,
