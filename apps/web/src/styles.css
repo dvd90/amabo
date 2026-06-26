@@ -694,6 +694,13 @@ body {
   fill: hsl(var(--amber) / 0.7);
   font-family: ui-monospace, monospace;
 }
+/* The earned trait mark — a small bright freckle on the body (not a giant default glyph). */
+.creature-trait {
+  font-size: 6px;
+  fill: hsl(44 100% 82%);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
 /* Idle hover with a little squash & stretch — it stretches as it rises, settles as it
    sinks, so the bob feels like a living weight rather than a sliding sprite. */
 @keyframes bob {
