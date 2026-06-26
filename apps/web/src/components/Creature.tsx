@@ -218,6 +218,14 @@ export function Creature({
   const eyeDx = 9 * (uncanny ? 0.85 : 1);
   const eyeY = bodyCy - ry * 0.45;
 
+  // Living light & depth: the body is lit from within (a radial gradient from a bright
+  // core to a shaded edge), with a soft inner glow, a glossy specular highlight, and a
+  // contact shadow on the glass floor — so it reads as a luminous *thing*, not a sticker.
+  // Gradient/filter ids are scoped per-creature so many sprites can share the screen.
+  const uid = `cr-${String(creature.id).replace(/[^a-z0-9]/gi, '') || 'x'}-${Math.abs(Math.trunc(seed))}`;
+  const core = `hsl(${hue} ${Math.min(100, sat + 6)}% ${Math.min(94, light + 24)}%)`;
+  const glowTint = `hsl(${hue} 100% ${Math.min(96, light + 32)}%)`;
+
   return (
     <svg
       className={`creature${asleep ? ' is-asleep' : ''}${uncanny ? ' is-yim' : ''}${tired ? ' is-tired' : ''}${dim ? ' is-dim' : ''}${iridescent ? ' is-iridescent' : ''}`}
@@ -232,6 +240,38 @@ export function Creature({
           : 'none',
       }}
     >
+      <defs>
+        {/* lit-from-within body: bright core off-centre toward the light, shaded rim */}
+        <radialGradient id={`${uid}-body`} cx="38%" cy="30%" r="78%">
+          <stop offset="0%" stopColor={core} />
+          <stop offset="55%" stopColor={body} />
+          <stop offset="100%" stopColor={shade} />
+        </radialGradient>
+        {/* an inner glow that fades to nothing — the Ambra burning inside */}
+        <radialGradient id={`${uid}-glow`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={glowTint} stopOpacity={alive ? 0.7 : 0.12} />
+          <stop offset="100%" stopColor={glowTint} stopOpacity="0" />
+        </radialGradient>
+        {/* a soft blur for the contact shadow on the floor */}
+        <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.6" />
+        </filter>
+      </defs>
+
+      {/* contact shadow: grounds the creature on the glass floor (doesn't tilt/float) */}
+      {alive ? (
+        <ellipse
+          className="creature-shadow"
+          cx={cx}
+          cy={bodyCy + ry * 1.04}
+          rx={rx * 0.82}
+          ry={ry * 0.12}
+          fill="#000"
+          opacity={0.22 + 0.12 * ambra}
+          filter={`url(#${uid}-soft)`}
+        />
+      ) : null}
+
       {/* key on the nonce so the same reaction replays each time it fires */}
       <g className={`creature-float${emote ? ` fx-${emote}` : ''}`} key={emoteNonce}>
         {/* a static personality lean (kept off the float group so emotes still animate) */}
@@ -258,8 +298,29 @@ export function Creature({
             />
           ) : null}
 
-          {/* body */}
-          <ellipse cx={cx} cy={bodyCy} rx={rx} ry={ry} fill={body} />
+          {/* body — lit from within */}
+          <ellipse cx={cx} cy={bodyCy} rx={rx} ry={ry} fill={`url(#${uid}-body)`} />
+          {/* inner glow rising from the core */}
+          {alive ? (
+            <ellipse
+              className="creature-core"
+              cx={cx}
+              cy={bodyCy + ry * 0.12}
+              rx={rx * 0.72}
+              ry={ry * 0.72}
+              fill={`url(#${uid}-glow)`}
+            />
+          ) : null}
+          {/* glossy specular highlight near the top-left */}
+          <ellipse
+            cx={cx - rx * 0.32}
+            cy={bodyCy - ry * 0.44}
+            rx={rx * 0.3}
+            ry={ry * 0.18}
+            fill="#fff"
+            opacity={alive ? 0.22 : 0.06}
+            transform={`rotate(-20 ${cx - rx * 0.32} ${bodyCy - ry * 0.44})`}
+          />
 
           {/* antenna / tuft of light (Spark and up) */}
           {showAntenna ? (

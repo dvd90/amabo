@@ -594,6 +594,21 @@ body {
     transform: translateY(1px) scaleY(0.97);
   }
 }
+/* The inner Ambra glow breathes gently — luminous, alive. */
+.creature-core {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: corePulse 4.5s ease-in-out infinite;
+}
+@keyframes corePulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 
 /* ── Lifecycle flourishes (the ladder is felt, not just reported) ─────────────── */
 /* A burst of rays when a creature climbs a stage, behind the sprite, fading as it
