@@ -51,6 +51,16 @@ describe('<Amarium> environment (M-E)', () => {
   it('an empty glass has no scenery', () => {
     const { container } = render(<Amarium creature={null} />);
     expect(container.querySelector('.amarium-env')).toBeNull();
+    expect(container.querySelector('.amarium-scenery')).toBeNull();
+  });
+
+  it('gives a living creature a roaming habitat with its own scenery', () => {
+    const { container } = render(<Amarium creature={view()} />);
+    expect(container.querySelector('.amarium-scenery')).toBeTruthy();
+    expect(container.querySelector('.amarium-ground')).toBeTruthy();
+    expect(container.querySelector('.amarium-roamer.is-roaming')).toBeTruthy();
+    // the procedural scene drew at least a few props
+    expect(container.querySelectorAll('.amarium-scenery > g').length).toBeGreaterThan(0);
   });
 
   it('bursts a flourish when the creature climbs a stage (and a Real shimmer at Bloom)', () => {

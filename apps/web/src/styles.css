@@ -140,6 +140,151 @@ body {
   mix-blend-mode: multiply;
 }
 
+/* ── Ambient atmosphere: depth in the glass ──────────────────────────────────── */
+/* Soft god-rays falling from the top, brighter as the world's Ambra rises. */
+.amarium-rays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: calc(0.25 + 0.55 * var(--ambra, 0));
+  background:
+    linear-gradient(102deg, transparent 30%, hsl(44 100% 80% / 0.16) 42%, transparent 52%),
+    linear-gradient(86deg, transparent 56%, hsl(44 100% 82% / 0.12) 66%, transparent 74%);
+  mix-blend-mode: screen;
+  animation: rayswim 16s ease-in-out infinite;
+}
+@keyframes rayswim {
+  0%,
+  100% {
+    transform: translateX(-2%);
+    opacity: calc(0.2 + 0.5 * var(--ambra, 0));
+  }
+  50% {
+    transform: translateX(2%);
+    opacity: calc(0.32 + 0.6 * var(--ambra, 0));
+  }
+}
+/* Floating dust, sized + paced per speck so near ones drift faster (parallax). */
+.amarium-dust {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.amarium-dust span {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsl(44 100% 86% / 0.9), hsl(44 100% 80% / 0));
+  animation-name: dustdrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes dustdrift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(6px, -16px);
+    opacity: 0;
+  }
+}
+/* A radial vignette settling the edges of the LCD. */
+.amarium-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(120% 100% at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.42) 100%);
+}
+/* The curved glass: a soft top-left glare across the cover. */
+.amarium-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(133deg, hsl(0 0% 100% / 0.14), transparent 34%);
+  mix-blend-mode: screen;
+}
+
+/* A little landscape in the glass: layered hills receding into a horizon glow. */
+.amarium-scenery {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.scenery-horizon {
+  opacity: calc(0.12 + 0.26 * var(--ambra, 0));
+}
+
+/* ── Habitat: a ground to stand on, and a slow amble across it ────────────────── */
+/* A soft lit floor patch near the bottom — the creature has somewhere to *be*. */
+.amarium-ground {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 8%;
+  height: 26%;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(
+    60% 100% at 50% 100%,
+    hsl(38 90% 60% / calc(0.18 + 0.22 * var(--ambra, 0))),
+    transparent 72%
+  );
+}
+/* The roamer ambles left/right with pauses, so the creature explores its glass. The
+   inner sprite keeps its own bob/giggle; this only moves the whole creature around. */
+.amarium-roamer {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  transform-box: fill-box;
+  will-change: transform;
+}
+.amarium-roamer.is-roaming {
+  animation: wander 28s ease-in-out infinite;
+  animation-delay: var(--roam-delay, 0s);
+}
+@keyframes wander {
+  0% {
+    transform: translateX(0);
+  }
+  14% {
+    transform: translateX(-26%);
+  }
+  30% {
+    transform: translateX(-26%);
+  }
+  48% {
+    transform: translateX(18%);
+  }
+  64% {
+    transform: translateX(18%);
+  }
+  82% {
+    transform: translateX(30%);
+  }
+  92% {
+    transform: translateX(30%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
 .device-readout {
   min-height: 92px;
   margin: 12px 4px 4px;
