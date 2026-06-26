@@ -671,6 +671,85 @@ body {
   opacity: 0.92;
 }
 
+/* ── World & time eggs (the glass keeps the wall clock's hours) ──────────────── */
+/* Night: a cool, dim wash over the glass; the sprite stays lit but the world recedes. */
+.amarium-night {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 60%, transparent 30%, hsl(230 40% 8% / 0.55) 100%);
+  mix-blend-mode: multiply;
+}
+/* The midnight shooting star — a thin streak crossing the glass on a long loop. */
+.amarium-shootingstar {
+  position: absolute;
+  top: 14%;
+  left: -20%;
+  z-index: 1;
+  width: 26%;
+  height: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, hsl(48 100% 88%));
+  box-shadow: 0 0 6px hsl(48 100% 80%);
+  border-radius: 2px;
+  opacity: 0;
+  animation: shootingstar 9s ease-in 2s infinite;
+}
+@keyframes shootingstar {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(18deg);
+  }
+  6% {
+    opacity: 0.9;
+  }
+  16% {
+    opacity: 0;
+    transform: translate(360%, 150%) rotate(18deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(360%, 150%) rotate(18deg);
+  }
+}
+/* A Yim's raven shifts and flutters now and then — never quite still. */
+.yim-raven {
+  transform-origin: center;
+  animation: ravenFlutter 7s ease-in-out infinite;
+}
+@keyframes ravenFlutter {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  74% {
+    transform: translateY(-1.5px) scaleY(0.86);
+  }
+  78% {
+    transform: translateY(0) scaleY(1.04);
+  }
+  82% {
+    transform: translateY(-1px) scaleY(0.9);
+  }
+}
+/* The rare iridescent Mote slowly cycles its hue — a shimmering soul. */
+.creature.is-iridescent {
+  animation: iridesce 6s linear infinite;
+}
+@keyframes iridesce {
+  0% {
+    filter: hue-rotate(0deg) saturate(1.4) drop-shadow(0 0 10px hsl(280 90% 70% / 0.5));
+  }
+  50% {
+    filter: hue-rotate(180deg) saturate(1.5) drop-shadow(0 0 14px hsl(190 90% 70% / 0.6));
+  }
+  100% {
+    filter: hue-rotate(360deg) saturate(1.4) drop-shadow(0 0 10px hsl(280 90% 70% / 0.5));
+  }
+}
+
 /* The hidden credits card (tap the brand seven times). */
 .credits {
   position: fixed;

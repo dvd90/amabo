@@ -9,6 +9,7 @@ import { STAGES, type CreatureViewT } from '@amabo/shared';
 import { Creature } from './Creature.js';
 import { glow } from './sprite.js';
 import { useGame } from '../store/useGame.js';
+import { nightMood } from '../worldtime.js';
 
 /**
  * A one-shot flourish when a creature climbs the ladder (STORY.md §6): rays of light
@@ -111,6 +112,11 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
   const intensity = creature ? glow(creature) : 0.05;
   const climb = useStageClimb(creature);
 
+  // The glass keeps the wall clock's hours: it cools and dims at night, and around
+  // midnight a shooting star may cross (purely decorative; the engine's game-time is
+  // separate). Sampled once per mount — re-checked whenever the screen reopens.
+  const [{ night, witching }] = useState(() => nightMood(new Date()));
+
   // Pygmalion's gaze: the creature's eyes drift toward wherever the Light is touching
   // the glass. We translate the cursor/touch into a -1..1 offset on each axis and feed
   // it to the sprite as CSS vars; CSS does the easing so React doesn't re-render.
@@ -135,7 +141,7 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
 
   return (
     <div
-      className="amarium"
+      className={`amarium${night ? ' is-night' : ''}`}
       role="img"
       aria-label={
         creature
@@ -147,6 +153,8 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
       style={{ ['--ambra' as string]: intensity.toFixed(3) }}
     >
       <div className="amarium-glow" />
+      {night ? <div className="amarium-night" aria-hidden="true" /> : null}
+      {witching ? <div className="amarium-shootingstar" aria-hidden="true" /> : null}
       {creature && creature.state.alive ? <Environment uncanny={creature.state.uncanny} /> : null}
       <div className="amarium-sprite" onClick={poke}>
         {creature ? (
