@@ -365,11 +365,19 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
     e.currentTarget.style.setProperty('--look-y', '0');
   };
 
-  // Tap the creature and it giggles — a quick happy wiggle (a living thing reacts to
-  // being poked). Re-armed via a nonce so rapid taps each replay the animation.
+  // Tap the glass and it ripples where you touched; tap a living, awake creature and it
+  // also giggles (a quick happy wiggle). Ripples are short-lived overlay rings.
   const [giggle, setGiggle] = useState(0);
-  const poke = () => {
+  const rippleId = useRef(0);
+  const [ripples, setRipples] = useState<{ x: number; y: number; id: number }[]>([]);
+  const poke = (e: React.MouseEvent<HTMLDivElement>) => {
     if (creature?.state.alive && !creature.state.asleep) setGiggle((n) => n + 1);
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+    const id = (rippleId.current += 1);
+    setRipples((rs) => [...rs, { x, y, id }]);
+    window.setTimeout(() => setRipples((rs) => rs.filter((p) => p.id !== id)), 650);
   };
 
   // A living, awake creature ambles around its scene; a sleeping or gone one stays put.
@@ -386,6 +394,7 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
       }
       onPointerMove={track}
       onPointerLeave={release}
+      onClick={creature ? poke : undefined}
       style={{ ['--ambra' as string]: intensity.toFixed(3) }}
     >
       <div className="amarium-glow" />
@@ -396,7 +405,7 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
       {creature ? <Atmosphere /> : null}
       {creature ? <div className="amarium-ground" aria-hidden="true" /> : null}
       {creature && creature.state.alive ? <Environment uncanny={creature.state.uncanny} /> : null}
-      <div className="amarium-sprite" onClick={poke}>
+      <div className={`amarium-sprite${climb ? ' is-popping' : ''}`}>
         {creature ? (
           // The roamer ambles slowly across the scene (each creature on its own path via
           // a seed-derived delay); the inner span keeps the tap-giggle independent.
@@ -414,6 +423,14 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
           <span className="amarium-empty">·</span>
         )}
       </div>
+      {ripples.map((rp) => (
+        <span
+          key={rp.id}
+          className="amarium-ripple"
+          style={{ left: `${rp.x}%`, top: `${rp.y}%` }}
+          aria-hidden="true"
+        />
+      ))}
       {climb ? <EvolveFlourish real={climb === 'real'} /> : null}
       <div className="amarium-vignette" aria-hidden="true" />
       <div className="amarium-glass" aria-hidden="true" />

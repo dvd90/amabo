@@ -564,6 +564,25 @@ body {
     opacity: 0;
   }
 }
+/* A bright flash ring that punches out on the big care actions. */
+.p-flash {
+  transform-box: fill-box;
+  transform-origin: center;
+  stroke-width: 2.4;
+  animation: flashPunch 0.5s ease-out forwards;
+}
+@keyframes flashPunch {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+    stroke-width: 4;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+    stroke-width: 0.4;
+  }
+}
 
 /* The Codex / Story page */
 .codex {
@@ -866,6 +885,48 @@ body {
   }
   50% {
     transform: rotate(1.6deg);
+  }
+}
+
+/* ── Reactive juice: tap ripples + a pop on big moments ───────────────────────── */
+/* A ring that blooms outward from wherever the Light touches the glass. */
+.amarium-ripple {
+  position: absolute;
+  z-index: 4;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  border: 1.5px solid hsl(44 100% 80% / 0.9);
+  pointer-events: none;
+  animation: ripple 0.65s ease-out forwards;
+}
+@keyframes ripple {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(7);
+    opacity: 0;
+  }
+}
+/* A quick squash-pop when a creature climbs a stage (paired with the flourish). */
+.amarium-sprite.is-popping {
+  animation: bigpop 0.7s ease;
+}
+@keyframes bigpop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.16);
+  }
+  55% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 @keyframes giggle {
