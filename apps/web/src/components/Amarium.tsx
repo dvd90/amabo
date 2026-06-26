@@ -54,6 +54,22 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
   const emote = useGame((s) => s.emote);
   const emoteNonce = useGame((s) => s.emoteNonce);
   const intensity = creature ? glow(creature) : 0.05;
+
+  // Pygmalion's gaze: the creature's eyes drift toward wherever the Light is touching
+  // the glass. We translate the cursor/touch into a -1..1 offset on each axis and feed
+  // it to the sprite as CSS vars; CSS does the easing so React doesn't re-render.
+  const track = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+    const y = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height) * 2 - 1));
+    e.currentTarget.style.setProperty('--look-x', x.toFixed(3));
+    e.currentTarget.style.setProperty('--look-y', y.toFixed(3));
+  };
+  const release = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.style.setProperty('--look-x', '0');
+    e.currentTarget.style.setProperty('--look-y', '0');
+  };
+
   return (
     <div
       className="amarium"
@@ -63,6 +79,8 @@ export function Amarium({ creature }: { creature: CreatureViewT | null }) {
           ? `${creature.name}, a ${creature.state.uncanny ? 'Yim' : 'Amabo'} at the ${creature.state.stage} stage`
           : 'an empty, dark Amarium'
       }
+      onPointerMove={track}
+      onPointerLeave={release}
       style={{ ['--ambra' as string]: intensity.toFixed(3) }}
     >
       <div className="amarium-glow" />

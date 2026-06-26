@@ -540,6 +540,61 @@ body {
   }
 }
 
+/* ── Idle life (it's *someone*, even when you're not doing anything) ──────────── */
+/* Eyes blink on a per-creature offset (animationDelay) so a row never blinks in
+   unison, and drift toward wherever the Light is touching the glass (--look-x/-y). */
+.creature-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 5.4s ease-in-out infinite;
+}
+.creature.is-yim .creature-eyes {
+  animation-duration: 11s; /* a Yim's long, unblinking stare */
+}
+.creature-gaze {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: translate(calc(var(--look-x, 0) * 2.4px), calc(var(--look-y, 0) * 1.7px));
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+/* Tired: heavy, half-lidded eyes and a slower, sinking bob. */
+.creature.is-tired .creature-eyes {
+  transform: scaleY(0.62) translateY(0.6px);
+}
+.creature.is-tired .creature-float {
+  animation-duration: 6s;
+}
+/* Dim: when its inner light is low it droops — duller, heavier, slower. */
+.creature.is-dim {
+  opacity: 0.86;
+}
+.creature.is-dim .creature-float {
+  animation-duration: 7s;
+}
+/* Asleep: the whole body breathes slowly instead of bobbing. */
+.creature.is-asleep .creature-float {
+  animation: breathe 6.5s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(1px) scaleY(0.97);
+  }
+}
+
 /* Onboarding */
 .onboarding {
   width: 100%;

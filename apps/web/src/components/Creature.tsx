@@ -115,6 +115,13 @@ export function Creature({
   const shade = `hsl(${hue} ${sat}% ${Math.max(20, light - 18)}%)`;
   const tuftTip = `hsl(${hue} 95% 72%)`;
 
+  // Idle posture: droops & dims when its inner light is low, drowsy when tired.
+  const energy = creature.state.stats.energy;
+  const tired = alive && !asleep && energy < 25;
+  const dim = alive && !asleep && ambra < 0.25;
+  // A per-creature blink rhythm so a row of them doesn't blink in unison.
+  const blinkDelay = -((Math.abs(Math.trunc(seed)) % 55) / 10);
+
   const eyeR = uncanny ? 7.6 : 4.2; // a Yim's enormous, quiet wanting
   const cx = 50;
   const cy = 52;
@@ -128,7 +135,7 @@ export function Creature({
 
   return (
     <svg
-      className={`creature${asleep ? ' is-asleep' : ''}${uncanny ? ' is-yim' : ''}`}
+      className={`creature${asleep ? ' is-asleep' : ''}${uncanny ? ' is-yim' : ''}${tired ? ' is-tired' : ''}${dim ? ' is-dim' : ''}`}
       data-stage={stage}
       viewBox="0 0 100 100"
       width="100%"
@@ -196,22 +203,26 @@ export function Creature({
               </text>
             </>
           ) : (
-            <>
-              <circle cx={cx - eyeDx} cy={eyeY} r={eyeR} fill="#241a12" />
-              <circle cx={cx + eyeDx} cy={eyeY} r={eyeR} fill="#241a12" />
-              <circle
-                cx={cx - eyeDx + eyeR * 0.3}
-                cy={eyeY - eyeR * 0.3}
-                r={eyeR * 0.3}
-                fill="#fff"
-              />
-              <circle
-                cx={cx + eyeDx + eyeR * 0.3}
-                cy={eyeY - eyeR * 0.3}
-                r={eyeR * 0.3}
-                fill="#fff"
-              />
-            </>
+            // .creature-eyes blinks (scaleY); .creature-gaze drifts toward the last
+            // tap (--look-x/--look-y) so the creature looks back at the Light.
+            <g className="creature-eyes" style={{ animationDelay: `${blinkDelay}s` }}>
+              <g className="creature-gaze">
+                <circle cx={cx - eyeDx} cy={eyeY} r={eyeR} fill="#241a12" />
+                <circle cx={cx + eyeDx} cy={eyeY} r={eyeR} fill="#241a12" />
+                <circle
+                  cx={cx - eyeDx + eyeR * 0.3}
+                  cy={eyeY - eyeR * 0.3}
+                  r={eyeR * 0.3}
+                  fill="#fff"
+                />
+                <circle
+                  cx={cx + eyeDx + eyeR * 0.3}
+                  cy={eyeY - eyeR * 0.3}
+                  r={eyeR * 0.3}
+                  fill="#fff"
+                />
+              </g>
+            </g>
           )}
 
           {/* mouth: Amabo smiles; Yim is a flat, longing line (a Mote has none yet) */}
