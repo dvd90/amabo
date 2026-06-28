@@ -20,6 +20,8 @@ import { authRouter } from './routes/auth.js';
 import { creaturesRouter } from './routes/creatures.js';
 import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
+import { symposiumRouter } from './routes/symposium.js';
+import { localSymposiumNarrator, type SymposiumNarrator } from './narrate/symposium.js';
 
 export interface AppDeps {
   repo: Repository;
@@ -45,6 +47,8 @@ export interface AppDeps {
   magicSecret?: string;
   /** Echo the magic link in the POST response — local dev only; never in production. */
   magicDevEcho?: boolean;
+  /** Voices a Symposium gathering (defaults to the local templated narrator). */
+  symposiumNarrator?: SymposiumNarrator;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -62,6 +66,7 @@ const API_PREFIXES = [
   '/report',
   '/block',
   '/push',
+  '/symposium',
 ];
 const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 
@@ -146,6 +151,14 @@ export function createApp(deps: AppDeps): Express {
     }),
   );
   app.use(pushRouter({ repo: deps.repo, getOwner }));
+  app.use(
+    symposiumRouter({
+      repo: deps.repo,
+      clock: deps.clock,
+      narrator: deps.symposiumNarrator ?? localSymposiumNarrator,
+      getOwner,
+    }),
+  );
 
   const onError: ErrorRequestHandler = (_err, _req, res, _next) => {
     res.status(500).json({ error: 'internal error' });

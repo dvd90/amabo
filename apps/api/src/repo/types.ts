@@ -7,7 +7,7 @@
  * v1 and made required when auth lands (M5.5).
  */
 
-import type { CreatureState, SimEvent, Star } from '@amabo/engine';
+import type { CreatureState, GatherResult, SimEvent, Star } from '@amabo/engine';
 
 export interface CreatureRecord {
   id: string;
@@ -99,6 +99,32 @@ export interface IncomingRehome {
   at: number;
 }
 
+// ── M-S: the Symposium (STORY.md §6½) ────────────────────────────────────────────
+export interface TranscriptLine {
+  /** The creature's name (the speaker), or '' for stage directions. */
+  speaker: string;
+  text: string;
+}
+
+export interface GatheringRecord {
+  id: string;
+  ownerId: string | null;
+  at: number;
+  participantIds: string[];
+  outline: GatherResult;
+  transcript: TranscriptLine[] | null;
+}
+
+export interface BondRecord {
+  id: string;
+  ownerId: string | null;
+  creatureA: string;
+  creatureB: string;
+  strength: number;
+  metCount: number;
+  lastMetAt: number;
+}
+
 // ── M-C: web-push notifications ──────────────────────────────────────────────────
 export interface PushSubscriptionRecord {
   id: string;
@@ -160,6 +186,21 @@ export interface Repository {
   confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null>;
   addBlock(userId: string, blockedUserId: string, at: number): Promise<void>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
+
+  // The Symposium (M-S)
+  createGathering(input: Omit<GatheringRecord, 'id'>): Promise<GatheringRecord>;
+  /** Owner-scoped: null if it doesn't exist or isn't owned by `ownerId`. */
+  getGathering(id: string, ownerId: string | null): Promise<GatheringRecord | null>;
+  /** Set the narrated transcript once the AI (or local fallback) has voiced it. */
+  setGatheringTranscript(id: string, transcript: TranscriptLine[]): Promise<void>;
+  /** Upsert a bond per unordered pair: strengthen, count up, touch lastMetAt. */
+  recordBonds(
+    ownerId: string | null,
+    pairs: { a: string; b: string; strength: number }[],
+    at: number,
+  ): Promise<void>;
+  /** All of a creature's bonds (its friends), strongest first. */
+  listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]>;
 
   // Push notifications (M-C)
   /** Upsert a device subscription (keyed by endpoint). */

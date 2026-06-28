@@ -180,5 +180,37 @@ export const reports = pgTable('reports', {
   at: doublePrecision('at').notNull(),
 });
 
+// ── M-S: the Symposium (STORY.md §6½) ───────────────────────────────────────────
+// A held gathering of an owner's creatures: the engine outline + the narrated transcript.
+export const gatherings = pgTable(
+  'gatherings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id'),
+    at: doublePrecision('at').notNull(),
+    participantIds: jsonb('participant_ids').$type<string[]>().notNull(),
+    outline: jsonb('outline').$type<unknown>().notNull(),
+    transcript: jsonb('transcript').$type<unknown>(), // null until narrated
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('gatherings_owner_idx').on(t.ownerId, t.at)],
+);
+
+// A friendship two creatures formed by harmonising. Stored once per unordered pair
+// (a < b) per owner; strengthens and counts up each time they meet again.
+export const bonds = pgTable(
+  'bonds',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id'),
+    creatureA: uuid('creature_a').notNull(),
+    creatureB: uuid('creature_b').notNull(),
+    strength: doublePrecision('strength').notNull(),
+    metCount: doublePrecision('met_count').notNull(),
+    lastMetAt: doublePrecision('last_met_at').notNull(),
+  },
+  (t) => [index('bonds_pair_idx').on(t.ownerId, t.creatureA, t.creatureB)],
+);
+
 export type EventRow = typeof events.$inferSelect;
 export type SimEventForDb = SimEvent;
