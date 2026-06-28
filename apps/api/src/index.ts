@@ -63,7 +63,10 @@ function googleConfigured(): boolean {
 function buildMailer(): { mailer: Mailer; real: boolean } {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
-  if (key && from) return { mailer: resendMailer(key, from), real: true };
+  if (key && from) {
+    console.log(`[amabo] magic-link email via Resend (from: ${from})`);
+    return { mailer: resendMailer(key, from), real: true };
+  }
   console.warn(
     '[amabo] no email provider configured (set RESEND_API_KEY + MAIL_FROM) — magic-link emails will only be logged to the server console',
   );
