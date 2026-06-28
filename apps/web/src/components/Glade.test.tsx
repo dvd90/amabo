@@ -75,7 +75,7 @@ describe('<Glade> (the Symposium)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Bo/ }));
     fireEvent.click(screen.getByRole('button', { name: /Gather/ }));
 
-    await waitFor(() => expect(gather).toHaveBeenCalledWith(['c1', 'c2']));
+    await waitFor(() => expect(gather).toHaveBeenCalledWith(['c1', 'c2'], undefined));
     // the conversation + an outcome are shown
     await waitFor(() =>
       expect(screen.getByText(/attention that found somewhere to land/)).toBeTruthy(),

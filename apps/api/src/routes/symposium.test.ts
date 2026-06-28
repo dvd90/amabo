@@ -68,6 +68,19 @@ describe('the Symposium (M-S)', () => {
     expect(inbox.body.letters[0].text.length).toBeGreaterThan(0);
   });
 
+  it('lets the Light set a theme the talk circles', async () => {
+    const { app } = setup();
+    const u = await login(app, 'host');
+    const a = await makeCreature(u.agent, u.csrf, 'Pip');
+    const b = await makeCreature(u.agent, u.csrf, 'Bo');
+    const held = await u.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', u.csrf)
+      .send({ creatureIds: [a, b], topic: 'the dark' });
+    // the local narrator's opening names the theme
+    expect(held.body.transcript[0].text).toContain('the dark');
+  });
+
   it('needs at least two creatures, and only your own', async () => {
     const { app } = setup();
     const u = await login(app, 'host');

@@ -20,6 +20,8 @@ export interface SymposiumParticipant {
 export interface SymposiumContext {
   participants: SymposiumParticipant[];
   outline: GatherResult;
+  /** What the Light asked them to speak of (a short theme), if any. */
+  topic?: string;
 }
 
 export interface SymposiumNarrator {
@@ -34,9 +36,12 @@ const said = (speaker: string, text: string): TranscriptLine => ({ speaker, text
  * (derived purely from the outline), so tests and offline dev still read warmly.
  */
 export const localSymposiumNarrator: SymposiumNarrator = {
-  async narrate({ participants, outline }) {
+  async narrate({ participants, outline, topic }) {
     const name = (id: string) => participants.find((p) => p.id === id)?.name ?? 'someone';
-    const lines: TranscriptLine[] = [dir('The glade filled with a soft, gathering light.')];
+    const opening = topic
+      ? `The glade filled with a soft, gathering light. They had come to speak of ${topic}.`
+      : 'The glade filled with a soft, gathering light.';
+    const lines: TranscriptLine[] = [dir(opening)];
 
     // An elder takes up the old question first (the Skin Horse), if one sat with a Mote.
     const mentor = outline.moments.find((m) => m.tag === 'mentor');

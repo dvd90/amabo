@@ -16,6 +16,7 @@ export function aiSymposiumNarrator(
       const out = await narrateSymposium(
         {
           participants: ctx.participants,
+          topic: ctx.topic,
           outline: {
             connections: ctx.outline.connections,
             moments: ctx.outline.moments,

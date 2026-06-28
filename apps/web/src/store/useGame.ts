@@ -145,8 +145,8 @@ export interface GameState {
   openGlade(): void;
   /** Leave the Glade back to the dashboard. */
   closeGlade(): void;
-  /** Hold a gathering of the chosen creatures; on success shows the conversation. */
-  holdSymposium(ids: string[]): Promise<void>;
+  /** Hold a gathering of the chosen creatures (optionally on a theme); shows the scene. */
+  holdSymposium(ids: string[], topic?: string): Promise<void>;
   /** Open one creature into the device view (peeks, so the away-recap can show). */
   openCreature(id: string): Promise<void>;
   /** Dismiss the "while you were away" recap. */
@@ -228,10 +228,10 @@ export const useGame = create<GameState>((set, get) => ({
 
   openGlade: () => set({ route: 'glade', gathering: null }),
   closeGlade: () => set({ route: 'dashboard', gathering: null }),
-  holdSymposium: async (ids) => {
+  holdSymposium: async (ids, topic) => {
     set({ busy: true });
     try {
-      const gathering = await get().client.gather(ids);
+      const gathering = await get().client.gather(ids, topic);
       set({ gathering });
       await get().loadDashboard(); // the gathering changed everyone's stats
     } finally {
