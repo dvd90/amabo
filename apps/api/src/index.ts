@@ -18,6 +18,8 @@ import { makeDb } from './db/client.js';
 import { aiNarrator } from './narrate/ai.js';
 import { localNarrator } from './narrate/port.js';
 import type { Narrator } from './narrate/port.js';
+import { localSymposiumNarrator, type SymposiumNarrator } from './narrate/symposium.js';
+import { aiSymposiumNarrator } from './narrate/symposium-ai.js';
 import { DrizzleRepository } from './repo/drizzle.js';
 import { InMemoryRepository } from './repo/memory.js';
 import type { Repository } from './repo/types.js';
@@ -35,6 +37,13 @@ function buildNarrator(): Narrator {
   if (key) return aiNarrator(makeAnthropicClient(key));
   console.warn('[amabo] ANTHROPIC_API_KEY not set — using local templated narrator');
   return localNarrator;
+}
+
+/** The Symposium voice: AI when a key is set (with a local fallback), else local. */
+function buildSymposiumNarrator(): SymposiumNarrator {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (key) return aiSymposiumNarrator(makeAnthropicClient(key), localSymposiumNarrator);
+  return localSymposiumNarrator;
 }
 
 function buildRepo(): Repository {
@@ -116,6 +125,7 @@ if (process.env.NODE_ENV !== 'test') {
     clock: systemClock,
     seed: randomSeed,
     narrator: buildNarrator(),
+    symposiumNarrator: buildSymposiumNarrator(),
     authProvider: buildAuthProvider(),
     mailer,
     magicSecret: magicSecret(),
