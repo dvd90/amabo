@@ -11,6 +11,7 @@ import {
   type CareAction,
   type CreatureViewT,
   type GapSummary,
+  type GatheringView,
   type IncomingRehome,
   type JournalEntry,
   type NeedFlag,
@@ -88,7 +89,7 @@ function saveCreatureId(id: string | null): void {
 }
 
 /** Which top-level view is showing: the roster of amabos, or one open creature. */
-export type Route = 'dashboard' | 'device';
+export type Route = 'dashboard' | 'device' | 'glade';
 
 export interface GameState {
   client: ApiClient;
@@ -114,6 +115,8 @@ export interface GameState {
   mood: string | null;
   /** The "while you were away" recap shown when a creature is opened; null = dismissed. */
   reveal: GapSummary | null;
+  /** The held Symposium gathering shown in the Glade (null = none yet). */
+  gathering: GatheringView | null;
   /** Set the moment a creature ascends — drives the full-screen graduation ceremony. */
   graduation: StarView | null;
   /** Short "what just changed" feedback after a care action. */
@@ -138,6 +141,12 @@ export interface GameState {
   clearMagic(): void;
   /** Load the roster from the server (call after auth, and when returning to it). */
   loadDashboard(): Promise<void>;
+  /** Open the Glade (the Symposium) to choose who gathers. */
+  openGlade(): void;
+  /** Leave the Glade back to the dashboard. */
+  closeGlade(): void;
+  /** Hold a gathering of the chosen creatures; on success shows the conversation. */
+  holdSymposium(ids: string[]): Promise<void>;
   /** Open one creature into the device view (peeks, so the away-recap can show). */
   openCreature(id: string): Promise<void>;
   /** Dismiss the "while you were away" recap. */
@@ -174,6 +183,7 @@ export const useGame = create<GameState>((set, get) => ({
   authed: null,
   magicSent: null,
   magicDevLink: null,
+  gathering: null,
   creatures: [],
   incoming: [],
   creature: null,
@@ -215,6 +225,19 @@ export const useGame = create<GameState>((set, get) => ({
     set({ magicSent: addr, magicDevLink: r.devLink ?? null });
   },
   clearMagic: () => set({ magicSent: null, magicDevLink: null }),
+
+  openGlade: () => set({ route: 'glade', gathering: null }),
+  closeGlade: () => set({ route: 'dashboard', gathering: null }),
+  holdSymposium: async (ids) => {
+    set({ busy: true });
+    try {
+      const gathering = await get().client.gather(ids);
+      set({ gathering });
+      await get().loadDashboard(); // the gathering changed everyone's stats
+    } finally {
+      set({ busy: false });
+    }
+  },
 
   loadDashboard: async () => {
     try {
