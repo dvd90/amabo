@@ -52,6 +52,17 @@ describe('POST /creatures', () => {
     expect(res.body.state.stage).toBe('mote');
   });
 
+  it('keeps the Mote met at the door: an optional seed flows into the creature', async () => {
+    const { app } = setup();
+    const { agent, csrf } = await login(app);
+    const res = await agent
+      .post('/creatures')
+      .set('x-csrf-token', csrf)
+      .send({ name: 'Pip', seed: 99 });
+    expect(res.status).toBe(201);
+    expect(res.body.state.seed).toBe(99); // not the server's default seed()
+  });
+
   it('rejects a mutation without a CSRF token (403)', async () => {
     const { app } = setup();
     const { agent } = await login(app);

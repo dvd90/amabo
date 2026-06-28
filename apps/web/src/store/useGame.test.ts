@@ -39,6 +39,9 @@ function fakeClient(): ApiClient {
     logout: vi.fn().mockResolvedValue(undefined),
     listCreatures: vi.fn().mockResolvedValue([{ ...creature(), needs: [] }]),
     createCreature: vi.fn().mockResolvedValue(creature()),
+    demoBirth: vi
+      .fn()
+      .mockResolvedValue({ creature: creature(), needs: [], thought: 'Hello, Light.', seed: 7 }),
     getCreature: vi.fn().mockResolvedValue({ ...creature(), needs: [] }),
     multiply: vi.fn().mockResolvedValue({
       parent: { ...creature(), needs: [] },

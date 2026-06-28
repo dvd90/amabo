@@ -83,7 +83,8 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       const rec = await repo.createCreature({
         ownerId: getOwner(req),
         name: parsed.data.name,
-        state: condenseMote(seed(), now),
+        // Honour the seed of the Mote met at the door, if the client passed one (§ funnel).
+        state: condenseMote(parsed.data.seed ?? seed(), now),
       });
       // Condensing it is the first look-in, so the away-gap starts from now (not null).
       await repo.markSeen(rec.id, now);

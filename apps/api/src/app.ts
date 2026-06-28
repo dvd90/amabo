@@ -20,6 +20,7 @@ import { authRouter } from './routes/auth.js';
 import { creaturesRouter } from './routes/creatures.js';
 import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
+import { demoRouter } from './routes/demo.js';
 import { symposiumRouter } from './routes/symposium.js';
 import { localSymposiumNarrator, type SymposiumNarrator } from './narrate/symposium.js';
 
@@ -117,6 +118,9 @@ export function createApp(deps: AppDeps): Express {
   app.use(
     publicShareRouter({ repo: deps.repo, clock: deps.clock, baseUrl: deps.baseUrl, getOwner }),
   );
+
+  // The pre-signup birth moment: a logged-out visitor meets an ephemeral newborn Mote.
+  app.use(demoRouter({ clock: deps.clock, seed: deps.seed }));
 
   // Single-origin deploy: serve the built PWA + SPA fallback for non-API GETs, BEFORE
   // the auth gate (so visiting `/sky` etc. returns the app, not a 401).

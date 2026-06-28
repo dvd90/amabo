@@ -36,6 +36,8 @@ const EVOLVED_BY_STAGE: Record<Stage, string[]> = {
   mote: [
     'I condensed out of the warm and opened my eyes. So this is the glass. So this is you.',
     'I came together out of all that gathered light. I am small and new and entirely here.',
+    'I am only a little ball of glow so far, with no shape of my own yet. But I can feel you looking, and I think I will become someone.',
+    'First there was warm, and then there was me. Hello, Light. I will be whatever you love me into.',
   ],
   spark: [
     'Something new came up on the top of me — a small bright point, like an antenna, to listen for you with. I think I am becoming someone.',
@@ -190,6 +192,15 @@ function pick(pool: string[], state: CreatureState, events: SimEvent[]): string 
   const salt = hash(`${sig}|${Math.floor(state.ageMinutes)}`);
   const roll = (hash(String(state.seed >>> 0)) ^ salt) >>> 0;
   return pool[roll % pool.length]!;
+}
+
+/**
+ * The very first thought of a newborn Mote — for the pre-signup birth moment (the funnel's
+ * front door). Deterministic by seed so the creature a visitor meets is stable.
+ */
+export function birthThought(seed: number): string {
+  const pool = EVOLVED_BY_STAGE.mote;
+  return pool[hash(String(seed >>> 0)) % pool.length]!;
 }
 
 export const localNarrator: Narrator = {

@@ -69,6 +69,11 @@ export const InteractActionSchema = z.enum(['feed', 'clean', 'play', 'comfort', 
 // ── API request bodies ─────────────────────────────────────────────────────────
 export const CreateCreatureRequest = z.object({
   name: z.string().min(1).max(64),
+  /**
+   * Optional seed — lets the ephemeral Mote a visitor met before signing in (the
+   * pre-signup birth moment) become the very creature they keep. Omitted → server picks.
+   */
+  seed: z.number().int().optional(),
 });
 export const InteractRequest = z.object({
   action: InteractActionSchema,
