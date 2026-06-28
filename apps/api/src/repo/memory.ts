@@ -11,6 +11,7 @@ import type {
   CreatureRecord,
   GatheringRecord,
   JournalEntry,
+  LetterRecord,
   NewCreature,
   OAuthUpsert,
   PushSubscriptionRecord,
@@ -45,6 +46,7 @@ export class InMemoryRepository implements Repository {
   private pushSubs = new Map<string, PushSubscriptionRecord>();
   private gatherings = new Map<string, GatheringRecord>();
   private bonds: BondRecord[] = [];
+  private letters: LetterRecord[] = [];
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -349,5 +351,19 @@ export class InMemoryRepository implements Repository {
       )
       .sort((p, q) => q.strength - p.strength)
       .map((x) => structuredClone(x));
+  }
+
+  async createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord> {
+    const rec: LetterRecord = { ...input, id: randomUUID() };
+    this.letters.push(rec);
+    return structuredClone(rec);
+  }
+
+  async listLetters(ownerId: string | null, limit: number): Promise<LetterRecord[]> {
+    return this.letters
+      .filter((l) => l.ownerId === ownerId)
+      .sort((a, b) => b.at - a.at)
+      .slice(0, limit)
+      .map((l) => structuredClone(l));
   }
 }

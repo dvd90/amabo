@@ -83,6 +83,16 @@ export function Glade() {
             ))}
         </div>
 
+        {gathering.letters && gathering.letters.length > 0 ? (
+          <div className="glade-letters">
+            {gathering.letters.map((l, i) => (
+              <blockquote className="glade-letter" key={i}>
+                ✉ {l.text}
+              </blockquote>
+            ))}
+          </div>
+        ) : null}
+
         <button className="btn btn-b glade-again" onClick={openGlade}>
           Gather again
         </button>

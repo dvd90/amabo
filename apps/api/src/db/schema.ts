@@ -196,6 +196,22 @@ export const gatherings = pgTable(
   (t) => [index('gatherings_owner_idx').on(t.ownerId, t.at)],
 );
 
+// A short note one creature leaves a friend it bonded with — the pen-pal thread, so a
+// friendship goes on between gatherings (STORY.md §6½).
+export const letters = pgTable(
+  'letters',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id'),
+    fromCreature: uuid('from_creature').notNull(),
+    toCreature: uuid('to_creature').notNull(),
+    at: doublePrecision('at').notNull(),
+    text: text('text').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('letters_owner_idx').on(t.ownerId, t.at)],
+);
+
 // A friendship two creatures formed by harmonising. Stored once per unordered pair
 // (a < b) per owner; strengthens and counts up each time they meet again.
 export const bonds = pgTable(

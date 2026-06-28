@@ -21,6 +21,7 @@ import type { Clock } from '../clock.js';
 import { catchUp } from '../service/catchup.js';
 import type { CreatureRecord, GatheringRecord, Repository } from '../repo/types.js';
 import type { SymposiumNarrator, SymposiumParticipant } from '../narrate/symposium.js';
+import { writeLetter } from '../narrate/letter.js';
 
 export interface SymposiumDeps {
   repo: Repository;
@@ -115,6 +116,29 @@ export function symposiumRouter(deps: SymposiumDeps): Router {
         clock(),
       );
 
+      // Each new bond leaves a letter: the brighter creature reaches out to the other,
+      // so a friendship goes on between gatherings.
+      const letters: { from: string; to: string; text: string }[] = [];
+      for (const b of result.bonds) {
+        const ra = byId.get(b.a)!;
+        const rb = byId.get(b.b)!;
+        const author = ra.state.disposition >= rb.state.disposition ? ra : rb;
+        const recipient = author === ra ? rb : ra;
+        const text = writeLetter(
+          { name: author.name, uncanny: author.state.uncanny },
+          { name: recipient.name },
+          author.state.seed,
+        );
+        await repo.createLetter({
+          ownerId: owner,
+          fromCreature: author.id,
+          toCreature: recipient.id,
+          at: clock(),
+          text,
+        });
+        letters.push({ from: author.name, to: recipient.name, text });
+      }
+
       const symParts: SymposiumParticipant[] = records.map((r) => ({
         id: r.id,
         name: r.name,
@@ -131,7 +155,35 @@ export function symposiumRouter(deps: SymposiumDeps): Router {
         outline: result,
         transcript,
       });
-      return res.json(toView(rec, symParts));
+      return res.json({ ...toView(rec, symParts), letters });
+    }),
+  );
+
+  // The letters among an owner's creatures (the pen-pal inbox), most recent first.
+  router.get(
+    '/symposium/letters',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const rows = await repo.listLetters(owner, 50);
+      const nameOf = new Map<string, string>();
+      const resolve = async (id: string) => {
+        if (!nameOf.has(id)) {
+          const c = await repo.getCreature(id, owner);
+          nameOf.set(id, c?.name ?? 'someone');
+        }
+        return nameOf.get(id)!;
+      };
+      const out = [];
+      for (const l of rows) {
+        out.push({
+          id: l.id,
+          from: await resolve(l.fromCreature),
+          to: await resolve(l.toCreature),
+          text: l.text,
+          at: l.at,
+        });
+      }
+      return res.json({ letters: out });
     }),
   );
 

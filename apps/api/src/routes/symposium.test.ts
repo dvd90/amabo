@@ -60,6 +60,12 @@ describe('the Symposium (M-S)', () => {
     // a bond formed and shows on each creature's friends list
     const friends = await u.agent.get(`/symposium/friends/${a}`);
     expect(friends.body.friends.map((f: { id: string }) => f.id)).toContain(b);
+
+    // the bond left a letter, readable in the pen-pal inbox
+    expect(held.body.letters.length).toBeGreaterThan(0);
+    const inbox = await u.agent.get('/symposium/letters');
+    expect(inbox.body.letters.length).toBeGreaterThan(0);
+    expect(inbox.body.letters[0].text.length).toBeGreaterThan(0);
   });
 
   it('needs at least two creatures, and only your own', async () => {
