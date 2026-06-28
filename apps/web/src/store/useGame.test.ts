@@ -54,6 +54,7 @@ function fakeClient(): ApiClient {
       outcomes: [],
       transcript: [],
     }),
+    letters: vi.fn().mockResolvedValue([]),
     vapidKey: vi.fn().mockResolvedValue(null),
     subscribePush: vi.fn().mockResolvedValue(undefined),
     share: vi

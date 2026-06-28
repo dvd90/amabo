@@ -125,6 +125,15 @@ export interface BondRecord {
   lastMetAt: number;
 }
 
+export interface LetterRecord {
+  id: string;
+  ownerId: string | null;
+  fromCreature: string;
+  toCreature: string;
+  at: number;
+  text: string;
+}
+
 // ── M-C: web-push notifications ──────────────────────────────────────────────────
 export interface PushSubscriptionRecord {
   id: string;
@@ -201,6 +210,10 @@ export interface Repository {
   ): Promise<void>;
   /** All of a creature's bonds (its friends), strongest first. */
   listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]>;
+  /** Leave a short note from one creature to a friend (the pen-pal thread). */
+  createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord>;
+  /** All letters among an owner's creatures, most recent first. */
+  listLetters(ownerId: string | null, limit: number): Promise<LetterRecord[]>;
 
   // Push notifications (M-C)
   /** Upsert a device subscription (keyed by endpoint). */

@@ -43,6 +43,13 @@
       "when": 1782673649663,
       "tag": "0005_wakeful_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782674584764,
+      "tag": "0006_lumpy_golden_guardian",
+      "breakpoints": true
     }
   ]
 }

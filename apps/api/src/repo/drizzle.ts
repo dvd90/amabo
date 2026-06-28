@@ -15,6 +15,7 @@ import {
   events as eventsTable,
   gatherings,
   interactions,
+  letters,
   memories as memoriesTable,
   pushSubscriptions,
   rehomes,
@@ -29,6 +30,7 @@ import type {
   CreatureRecord,
   GatheringRecord,
   JournalEntry,
+  LetterRecord,
   NewCreature,
   OAuthUpsert,
   PushSubscriptionRecord,
@@ -513,6 +515,41 @@ export class DrizzleRepository implements Repository {
       .orderBy(desc(bonds.strength));
     return rows.map(toBond);
   }
+
+  async createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord> {
+    const [row] = await this.db
+      .insert(letters)
+      .values({
+        ownerId: input.ownerId,
+        fromCreature: input.fromCreature,
+        toCreature: input.toCreature,
+        at: input.at,
+        text: input.text,
+      })
+      .returning();
+    return toLetter(row!);
+  }
+
+  async listLetters(ownerId: string | null, limit: number): Promise<LetterRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(letters)
+      .where(ownerScope(letters.ownerId, ownerId))
+      .orderBy(desc(letters.at))
+      .limit(limit);
+    return rows.map(toLetter);
+  }
+}
+
+function toLetter(row: typeof letters.$inferSelect): LetterRecord {
+  return {
+    id: row.id,
+    ownerId: row.ownerId,
+    fromCreature: row.fromCreature,
+    toCreature: row.toCreature,
+    at: row.at,
+    text: row.text,
+  };
 }
 
 function toGathering(row: typeof gatherings.$inferSelect): GatheringRecord {

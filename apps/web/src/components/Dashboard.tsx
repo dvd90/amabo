@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { Creature } from './Creature.js';
 import { useGame } from '../store/useGame.js';
-import type { NeedFlag, RosterItem } from '../api/client.js';
+import type { LetterView, NeedFlag, RosterItem } from '../api/client.js';
 import { enableNotifications, type EnableResult } from '../push.js';
 
 const NOTIFY_NOTE: Record<EnableResult, string> = {
@@ -112,6 +112,7 @@ export function Dashboard() {
   const [meetMode, setMeetMode] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [note, setNote] = useState<string | null>(null);
+  const [letters, setLetters] = useState<LetterView[] | null>(null);
 
   const exitMeet = () => {
     setMeetMode(false);
@@ -151,6 +152,11 @@ export function Dashboard() {
           {creatures.length >= 2 && !meetMode ? (
             <button className="linkish" onClick={() => openGlade()}>
               ❀ The Symposium
+            </button>
+          ) : null}
+          {creatures.length >= 2 && !meetMode ? (
+            <button className="linkish" onClick={() => void client.letters().then(setLetters)}>
+              ✉ Letters
             </button>
           ) : null}
           <button
@@ -234,6 +240,31 @@ export function Dashboard() {
           </button>
         )}
       </div>
+
+      {letters ? (
+        <div className="letters-modal" role="dialog" aria-label="Letters between your creatures">
+          <div className="letters-sheet">
+            <button className="codex-close" onClick={() => setLetters(null)} aria-label="Close">
+              ✕
+            </button>
+            <p className="codex-kicker">The pen-pal thread</p>
+            {letters.length === 0 ? (
+              <p className="letters-empty">
+                No letters yet. Gather friends in the Symposium and they’ll begin to write.
+              </p>
+            ) : (
+              letters.map((l) => (
+                <blockquote className="letters-item" key={l.id}>
+                  <span className="letters-meta">
+                    {l.from} → {l.to}
+                  </span>
+                  {l.text}
+                </blockquote>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

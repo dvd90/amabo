@@ -58,6 +58,7 @@ describe('<Glade> (the Symposium)', () => {
     const gather = vi.fn().mockResolvedValue(gatheringView());
     const client = {
       gather,
+      letters: vi.fn().mockResolvedValue([]),
       listCreatures: vi.fn().mockResolvedValue([creature('c1', 'Pip'), creature('c2', 'Bo')]),
       incomingRehomes: vi.fn().mockResolvedValue([]),
     } as unknown as ApiClient;

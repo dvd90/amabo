@@ -125,6 +125,17 @@ export interface GatheringView {
   moments: { tag: 'play' | 'shareAmbra' | 'mentor'; participants: [string, string] }[];
   outcomes: { id: string; warmed: boolean; comfortedById: string | null; bondedWith: string[] }[];
   transcript: TranscriptLine[];
+  /** Notes left between newly-bonded creatures at this gathering. */
+  letters?: { from: string; to: string; text: string }[];
+}
+
+/** A pen-pal note between two of your creatures. */
+export interface LetterView {
+  id: string;
+  from: string;
+  to: string;
+  text: string;
+  at: number;
 }
 
 /** A minted share link. */
@@ -173,6 +184,8 @@ export interface ApiClient {
   meet(id: string, otherId: string): Promise<MeetResult>;
   /** Hold a Symposium — gather 2–6 of your own creatures to speak of love (STORY.md §6½). */
   gather(creatureIds: string[]): Promise<GatheringView>;
+  /** The pen-pal letters among your creatures, most recent first. */
+  letters(): Promise<LetterView[]>;
   /** Mint a scoped, expiring share link for a creature. */
   share(id: string, kind: 'visit' | 'postcard'): Promise<ShareLink>;
   /** Fetch a shared creature's public, read-only postcard (no session needed). */
@@ -268,6 +281,10 @@ export class HttpApiClient implements ApiClient {
   }
   gather(creatureIds: string[]) {
     return this.req<GatheringView>('/symposium/gather', 'POST', { creatureIds });
+  }
+  async letters() {
+    const r = await this.req<{ letters: LetterView[] }>('/symposium/letters');
+    return r.letters;
   }
   share(id: string, kind: 'visit' | 'postcard') {
     return this.req<ShareLink>(`/creatures/${id}/share`, 'POST', { kind });
