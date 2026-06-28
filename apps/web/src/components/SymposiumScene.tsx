@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Creature } from './Creature.js';
 import { useGame } from '../store/useGame.js';
+import { setMusicMood } from '../audio.js';
 import { buildScript, beatDuration, type Beat } from '../symposium-script.js';
 import type { GatheringView } from '../api/client.js';
 
@@ -49,9 +50,23 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
   const name = (id: string) => gathering.participants.find((p) => p.id === id)?.name ?? 'someone';
 
   const beats = useMemo(() => buildScript(gathering), [gathering]);
+  const layout = useMemo(
+    () =>
+      gathering.participants.map((p, i) => ({
+        id: p.id,
+        ...place(i, gathering.participants.length),
+      })),
+    [gathering],
+  );
+  const at = (id: string) => layout.find((l) => l.id === id);
   const [idx, setIdx] = useState(0);
   const done = idx >= beats.length;
   const beat = done ? null : beats[idx]!;
+
+  // A warmer theme plays while the gathering does (the Light already gestured to gather).
+  useEffect(() => {
+    setMusicMood('amabo');
+  }, []);
 
   useEffect(() => {
     if (done) return;
@@ -61,6 +76,8 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
 
   const speakingId = beat?.kind === 'say' ? beat.speakerId : null;
   const warming = beat?.kind === 'warm' ? beat : null;
+  const spark = beat?.kind === 'spark' ? beat : null;
+  const toasting = beat?.kind === 'toast';
   const caption = beat && beat.kind !== 'say' ? captionFor(beat, name) : null;
 
   // ── The summary (after the scene plays, or on Skip) ────────────────────────────
@@ -133,7 +150,7 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
       </div>
 
       <div
-        className="sym-stage"
+        className={`sym-stage${toasting ? ' is-toasting' : ''}`}
         onClick={() => setIdx((i) => Math.min(beats.length, i + 1))}
         role="img"
         aria-label="your creatures gathered around a lantern"
@@ -141,6 +158,39 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
         <div className="sym-lantern" aria-hidden="true">
           <span className="sym-flame" />
         </div>
+
+        {/* resonance you can see: a thread of light between two who connect */}
+        {spark || warming ? (
+          <svg
+            className="sym-fx"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            {(() => {
+              const pair = spark ? [at(spark.a), at(spark.b)] : [at(warming!.by), at(warming!.who)];
+              const [p1, p2] = pair;
+              if (!p1 || !p2) return null;
+              const mx = (p1.left + p2.left) / 2;
+              const my = (p1.top + p2.top) / 2;
+              return (
+                <>
+                  <line
+                    className="sym-thread"
+                    x1={p1.left}
+                    y1={p1.top}
+                    x2={p2.left}
+                    y2={p2.top}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <text className={spark ? 'sym-heart' : 'sym-heart is-warm'} x={mx} y={my}>
+                    {spark ? '♥' : '✦'}
+                  </text>
+                </>
+              );
+            })()}
+          </svg>
+        ) : null}
 
         {gathering.participants.map((p, i) => {
           const c = byId.get(p.id);
