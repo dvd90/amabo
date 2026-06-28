@@ -424,8 +424,10 @@ Chosen for personal-project simplicity; deploys this stack with near-zero config
   - **Web** — serve the built PWA (`apps/web` Vite static output) either as a Railway
     static service or any CDN/static host; the API is a separate service.
 - **Config via env (12-factor, never in code):** `DATABASE_URL` (from Railway),
-  `ANTHROPIC_API_KEY`, `SESSION_SECRET`, `GOOGLE_OAUTH_ID/SECRET`. The optional `chain`
-  layer adds its own and stays a separate concern.
+  `ANTHROPIC_API_KEY`, `SESSION_SECRET`, `GOOGLE_OAUTH_ID/SECRET`. Magic-link sign-in
+  adds `AUTH_SECRET` (signs the tokens — required in prod) and `RESEND_API_KEY` +
+  `MAIL_FROM` (email delivery via Resend; without them links only hit the server log).
+  See `apps/api/.env.example`. The optional `chain` layer adds its own and stays separate.
 - **Deploy flow:** `git push` → Railway builds with pnpm → **release step runs
   `drizzle-kit` migrations** → start the API. PWA build deploys alongside.
 - **Why it's cheap here:** the lazy simulate-on-read model needs **no always-on
