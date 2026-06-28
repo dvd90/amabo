@@ -224,6 +224,13 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
           <span className="sym-flame" />
         </div>
 
+        {/* the rounds of the Symposium: each creature's turn to speak is announced */}
+        {beat?.kind === 'say' && beat.roundStart ? (
+          <div className="sym-round" key={`r-${idx}`}>
+            ✦ {beat.speaker} speaks ✦
+          </div>
+        ) : null}
+
         {/* resonance you can see: a thread of light between two who connect */}
         {spark || warming ? (
           <svg
