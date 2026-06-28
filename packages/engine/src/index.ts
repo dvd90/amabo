@@ -17,6 +17,7 @@ export * from './events.js';
 export * from './interact.js';
 export * from './lifecycle.js';
 export * from './resonate.js';
+export * from './gather.js';
 export * from './advance.js';
 export * from './gap.js';
 export * from './needs.js';
