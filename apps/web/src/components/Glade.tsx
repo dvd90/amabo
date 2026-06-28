@@ -8,7 +8,9 @@
 import { useState } from 'react';
 import { Creature } from './Creature.js';
 import { SymposiumScene } from './SymposiumScene.js';
+import { FriendshipSky } from './FriendshipSky.js';
 import { useGame } from '../store/useGame.js';
+import type { SkyView } from '../api/client.js';
 
 const MIN = 2;
 const MAX = 6;
@@ -20,8 +22,10 @@ export function Glade() {
   const busy = useGame((s) => s.busy);
   const hold = useGame((s) => s.holdSymposium);
   const close = useGame((s) => s.closeGlade);
+  const client = useGame((s) => s.client);
   const [picked, setPicked] = useState<string[]>([]);
   const [topic, setTopic] = useState<string | null>(null);
+  const [sky, setSky] = useState<SkyView | null>(null);
 
   const toggle = (id: string) =>
     setPicked((p) =>
@@ -39,7 +43,9 @@ export function Glade() {
           ◂ all
         </button>
         <span className="glade-title">the Symposium</span>
-        <span />
+        <button className="linkish" onClick={() => void client.sky().then(setSky)}>
+          ✦ the sky
+        </button>
       </div>
       <p className="glade-lede">
         Gather {MIN}–{MAX} of your creatures in the glade to be together and speak of love.
@@ -85,6 +91,8 @@ export function Glade() {
       >
         {busy ? 'Gathering…' : `Gather ${picked.length || ''} ✦`}
       </button>
+
+      {sky ? <FriendshipSky sky={sky} onClose={() => setSky(null)} /> : null}
     </div>
   );
 }

@@ -129,6 +129,12 @@ export interface GatheringView {
   letters?: { from: string; to: string; text: string }[];
 }
 
+/** The friendship sky: every creature that has bonded, and the threads between them. */
+export interface SkyView {
+  stars: { id: string; name: string; uncanny: boolean }[];
+  threads: { a: string; b: string; strength: number; metCount: number }[];
+}
+
 /** A pen-pal note between two of your creatures. */
 export interface LetterView {
   id: string;
@@ -186,6 +192,8 @@ export interface ApiClient {
   gather(creatureIds: string[], topic?: string): Promise<GatheringView>;
   /** The pen-pal letters among your creatures, most recent first. */
   letters(): Promise<LetterView[]>;
+  /** The friendship sky — every bond among your creatures. */
+  sky(): Promise<SkyView>;
   /** Mint a scoped, expiring share link for a creature. */
   share(id: string, kind: 'visit' | 'postcard'): Promise<ShareLink>;
   /** Fetch a shared creature's public, read-only postcard (no session needed). */
@@ -285,6 +293,9 @@ export class HttpApiClient implements ApiClient {
   async letters() {
     const r = await this.req<{ letters: LetterView[] }>('/symposium/letters');
     return r.letters;
+  }
+  sky() {
+    return this.req<SkyView>('/symposium/sky');
   }
   share(id: string, kind: 'visit' | 'postcard') {
     return this.req<ShareLink>(`/creatures/${id}/share`, 'POST', { kind });

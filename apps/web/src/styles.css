@@ -2333,3 +2333,56 @@ body {
     transform: translate(-50%, -6px);
   }
 }
+
+/* ── The Friendship Sky ──────────────────────────────────────────────────────── */
+.sky-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(6, 5, 8, 0.86);
+  backdrop-filter: blur(3px);
+}
+.sky-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: radial-gradient(120% 90% at 50% 0%, #1a1726, #0e0c14);
+  border: 1px solid hsl(var(--amber) / 0.25);
+  border-radius: 16px;
+  padding: 1.6rem 1.4rem;
+  color: #f3ece0;
+}
+.sky-svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+.sky-thread {
+  stroke: hsl(45 100% 78%);
+  vector-effect: non-scaling-stroke;
+}
+.sky-star {
+  fill: hsl(45 100% 80%);
+  filter: drop-shadow(0 0 3px hsl(45 100% 72%));
+  animation: starTwinkle 3s ease-in-out infinite;
+}
+.sky-star.is-yim {
+  fill: hsl(254 60% 80%);
+  filter: drop-shadow(0 0 3px hsl(254 70% 74%));
+}
+.sky-label {
+  fill: #e7dcc6;
+  font-size: 4px;
+  text-anchor: middle;
+  font-family: ui-monospace, monospace;
+}
+.sky-empty {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  text-align: center;
+  padding: 1rem 0;
+}

@@ -193,6 +193,39 @@ export function symposiumRouter(deps: SymposiumDeps): Router {
     }),
   );
 
+  // The whole friendship sky: every bond among an owner's creatures, as stars + threads.
+  // (Registered before /:id so the literal path isn't captured as an id.)
+  router.get(
+    '/symposium/sky',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const bonds = await repo.listAllBonds(owner, 200);
+      const ids = new Set<string>();
+      for (const b of bonds) {
+        ids.add(b.creatureA);
+        ids.add(b.creatureB);
+      }
+      const stars: { id: string; name: string; uncanny: boolean }[] = [];
+      const known = new Set<string>();
+      for (const id of ids) {
+        const c = await repo.getCreature(id, owner);
+        if (c) {
+          stars.push({ id: c.id, name: c.name, uncanny: c.state.uncanny });
+          known.add(c.id);
+        }
+      }
+      const threads = bonds
+        .filter((b) => known.has(b.creatureA) && known.has(b.creatureB))
+        .map((b) => ({
+          a: b.creatureA,
+          b: b.creatureB,
+          strength: b.strength,
+          metCount: b.metCount,
+        }));
+      return res.json({ stars, threads });
+    }),
+  );
+
   // Read a past gathering (owner-scoped).
   router.get(
     '/symposium/:id',

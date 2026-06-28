@@ -353,6 +353,14 @@ export class InMemoryRepository implements Repository {
       .map((x) => structuredClone(x));
   }
 
+  async listAllBonds(ownerId: string | null, limit: number): Promise<BondRecord[]> {
+    return this.bonds
+      .filter((x) => x.ownerId === ownerId)
+      .sort((p, q) => q.strength - p.strength)
+      .slice(0, limit)
+      .map((x) => structuredClone(x));
+  }
+
   async createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord> {
     const rec: LetterRecord = { ...input, id: randomUUID() };
     this.letters.push(rec);

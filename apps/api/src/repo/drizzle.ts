@@ -516,6 +516,16 @@ export class DrizzleRepository implements Repository {
     return rows.map(toBond);
   }
 
+  async listAllBonds(ownerId: string | null, limit: number): Promise<BondRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(bonds)
+      .where(ownerScope(bonds.ownerId, ownerId))
+      .orderBy(desc(bonds.strength))
+      .limit(limit);
+    return rows.map(toBond);
+  }
+
   async createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord> {
     const [row] = await this.db
       .insert(letters)

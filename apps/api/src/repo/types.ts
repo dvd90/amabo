@@ -210,6 +210,8 @@ export interface Repository {
   ): Promise<void>;
   /** All of a creature's bonds (its friends), strongest first. */
   listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]>;
+  /** Every bond an owner has — the whole friendship sky, strongest first. */
+  listAllBonds(ownerId: string | null, limit: number): Promise<BondRecord[]>;
   /** Leave a short note from one creature to a friend (the pen-pal thread). */
   createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord>;
   /** All letters among an owner's creatures, most recent first. */
