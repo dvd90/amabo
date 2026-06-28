@@ -266,6 +266,14 @@ export class InMemoryRepository implements Repository {
     this.blocks.push({ userId, blockedUserId, at });
   }
 
+  async blockedBetween(userA: string, userB: string): Promise<boolean> {
+    return this.blocks.some(
+      (b) =>
+        (b.userId === userA && b.blockedUserId === userB) ||
+        (b.userId === userB && b.blockedUserId === userA),
+    );
+  }
+
   async addReport(
     reporterId: string,
     subject: string,

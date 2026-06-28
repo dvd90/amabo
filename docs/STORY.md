@@ -166,6 +166,27 @@ Symposium, and when you next look in you **read what they did and felt together*
 you were away. (At first a Light's own found-family gathers; later, by mutual consent,
 the glade may open between worlds — but that is a separate, guarded step.)
 
+### 6¾. The glade between worlds — guest gatherings
+
+The guarded step. Two Lights may let their creatures meet: one **mints a guest pass**
+for a creature they keep (a scoped, revocable, expiring capability token — the same
+kind of key as a visit or a meeting, §7¾), and hands it to a friend. The friend brings
+that creature into their own Symposium as a **guest**, alongside their own company.
+
+The rules are unchanged because the myth is unchanged — *a duet writ larger, never a
+duel.* The engine runs the meeting rule across the whole company without caring who
+owns whom; nobody is ever hurt. Both creatures **feel** the gathering — affection and
+security rise, a longing guest can be **warmed back toward the light** by warm company —
+and both Lights, looking in afterward, **read in their own creature's journal** that it
+sat with a friend's creature and what passed between them.
+
+What stays inside each household, for now, is the *lasting* ledger: persistent **bonds,
+letters, and the friendship sky** are kept among a single Light's own found-family. A
+guest's visit is felt and remembered as a journal memory, but the standing
+constellation is yours. Consent is mutual and revocable; a blocked Light's pass simply
+does not open the glade (it reads as *not found*, never as a closed door). Crossing
+worlds is always something both Lights choose, never something done to them.
+
 ---
 
 ## 7. Graduation & Elysium — the afterlife

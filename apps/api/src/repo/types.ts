@@ -67,7 +67,9 @@ export interface OAuthUpsert {
 }
 
 // ── M9.5: sharing ────────────────────────────────────────────────────────────────
-export type ShareKind = 'visit' | 'meet' | 'postcard';
+// 'gather' is a guest pass: it lets another Light bring this creature into their
+// Symposium as a guest (STORY.md §6¾, the glade between worlds).
+export type ShareKind = 'visit' | 'meet' | 'postcard' | 'gather';
 
 export interface ShareLinkRecord {
   id: string;
@@ -194,6 +196,8 @@ export interface Repository {
   /** Confirm one side; when both sides have confirmed, ownership transfers atomically. */
   confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null>;
   addBlock(userId: string, blockedUserId: string, at: number): Promise<void>;
+  /** True if either Light has blocked the other (used to gate cross-owner gatherings). */
+  blockedBetween(userA: string, userB: string): Promise<boolean>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
 
   // The Symposium (M-S)

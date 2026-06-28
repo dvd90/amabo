@@ -75,7 +75,7 @@ describe('<Glade> (the Symposium)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Bo/ }));
     fireEvent.click(screen.getByRole('button', { name: /Gather/ }));
 
-    await waitFor(() => expect(gather).toHaveBeenCalledWith(['c1', 'c2'], undefined));
+    await waitFor(() => expect(gather).toHaveBeenCalledWith(['c1', 'c2'], undefined, []));
     // the held gathering plays as a scene; skip to its summary
     await waitFor(() => expect(screen.getByText(/Skip/)).toBeTruthy());
     fireEvent.click(screen.getByText(/Skip/));

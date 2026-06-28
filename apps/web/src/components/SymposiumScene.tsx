@@ -293,8 +293,26 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
               {bubbleText ? (
                 <span className={`sym-bubble${bubbleAlign(pos.left)}`}>{bubbleText}</span>
               ) : null}
-              <span className="sym-art">{c ? <Creature creature={c} /> : null}</span>
-              <span className="sym-name">{p.name}</span>
+              <span className="sym-art">
+                {c ? (
+                  <Creature creature={c} />
+                ) : (
+                  // A guest from another world appears as a glimmer (we don't hold its full art).
+                  <span
+                    className={`sym-guest-orb${p.uncanny ? ' is-yim' : ''}`}
+                    aria-hidden="true"
+                  />
+                )}
+              </span>
+              <span className="sym-name">
+                {p.name}
+                {p.guest ? (
+                  <span className="sym-guest" title="a friend’s creature, visiting">
+                    {' '}
+                    ✦
+                  </span>
+                ) : null}
+              </span>
             </div>
           );
         })}

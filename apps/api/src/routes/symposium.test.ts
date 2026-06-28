@@ -131,6 +131,78 @@ describe('the Symposium (M-S)', () => {
     expect(theirs.body.threads).toHaveLength(0);
   });
 
+  it('opens the glade between worlds: a guest joins on a gather pass, felt but not bonded', async () => {
+    const { app } = setup();
+    const host = await login(app, 'host');
+    const mine = await makeCreature(host.agent, host.csrf, 'Pip');
+
+    const friend = await login(app, 'friend');
+    const theirs = await makeCreature(friend.agent, friend.csrf, 'Bo');
+    // The friend mints a guest pass for their creature and hands it over.
+    const pass = await friend.agent
+      .post(`/creatures/${theirs}/share`)
+      .set('x-csrf-token', friend.csrf)
+      .send({ kind: 'gather' });
+    expect(pass.status).toBe(201);
+    const token = pass.body.token as string;
+
+    const held = await host.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', host.csrf)
+      .send({ creatureIds: [mine], guestTokens: [token] });
+    expect(held.status).toBe(200);
+    expect(held.body.participants).toHaveLength(2);
+    const guest = held.body.participants.find((p: { guest: boolean }) => p.guest);
+    expect(guest.id).toBe(theirs);
+
+    // Both creatures felt it — the guest's Light reads it in their own journal later.
+    const guestJournal = await friend.agent.get(`/creatures/${theirs}/journal`);
+    expect(guestJournal.body.entries.some((e: { kind: string }) => e.kind === 'resonance')).toBe(
+      true,
+    );
+
+    // But the lasting constellation stays within each household: no cross-owner bond.
+    const hostSky = await host.agent.get('/symposium/sky');
+    expect(hostSky.body.stars).toHaveLength(0);
+    const friendSky = await friend.agent.get('/symposium/sky');
+    expect(friendSky.body.stars).toHaveLength(0);
+  });
+
+  it('a block closes the glade between worlds (404, never leaked)', async () => {
+    const { app } = setup();
+    const host = await login(app, 'host');
+    const mine = await makeCreature(host.agent, host.csrf, 'Pip');
+    const friend = await login(app, 'friend');
+    const theirs = await makeCreature(friend.agent, friend.csrf, 'Bo');
+    const pass = await friend.agent
+      .post(`/creatures/${theirs}/share`)
+      .set('x-csrf-token', friend.csrf)
+      .send({ kind: 'gather' });
+    const token = pass.body.token as string;
+
+    // The friend blocks the host; the pass no longer opens the glade.
+    await friend.agent
+      .post('/block')
+      .set('x-csrf-token', friend.csrf)
+      .send({ blockedUserId: host.userId });
+    const blocked = await host.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', host.csrf)
+      .send({ creatureIds: [mine], guestTokens: [token] });
+    expect(blocked.status).toBe(404);
+
+    // A pass of the wrong kind (a postcard) is never a guest pass either.
+    const postcard = await friend.agent
+      .post(`/creatures/${theirs}/share`)
+      .set('x-csrf-token', friend.csrf)
+      .send({ kind: 'postcard' });
+    const wrongKind = await host.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', host.csrf)
+      .send({ creatureIds: [mine], guestTokens: [postcard.body.token] });
+    expect(wrongKind.status).toBe(404);
+  });
+
   it("warms a Yim back toward the light by its companions' company", async () => {
     const { app, repo, now } = setup();
     const u = await login(app, 'host');
