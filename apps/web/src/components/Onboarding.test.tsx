@@ -38,6 +38,6 @@ describe('<Onboarding> (story + naming)', () => {
     fireEvent.change(input, { target: { value: 'Bel' } });
     fireEvent.click(screen.getByText(/Condense the light/i));
 
-    expect(client.createCreature).toHaveBeenCalledWith('Bel');
+    expect(client.createCreature).toHaveBeenCalledWith('Bel', undefined);
   });
 });

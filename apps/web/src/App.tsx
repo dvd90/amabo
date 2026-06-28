@@ -11,6 +11,7 @@ import { Device } from './components/Device.js';
 import { Glade } from './components/Glade.js';
 import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
+import { Welcome } from './components/Welcome.js';
 import { PublicLook } from './components/PublicLook.js';
 import { useGame } from './store/useGame.js';
 
@@ -28,6 +29,7 @@ export function App() {
   const creature = useGame((s) => s.creature);
   const creatures = useGame((s) => s.creatures);
   const route = useGame((s) => s.route);
+  const authView = useGame((s) => s.authView);
 
   useEffect(() => {
     if (!lookToken) void checkSession();
@@ -35,7 +37,8 @@ export function App() {
 
   if (lookToken) return <PublicLook token={lookToken} />;
   if (authed === null) return <main className="boot">Warming the glass…</main>;
-  if (!authed) return <Login />;
+  // Logged out: meet a newborn Mote first (the hook), then the sign-in form.
+  if (!authed) return authView === 'login' ? <Login /> : <Welcome />;
 
   // Inside the device for the open creature; the Glade for the Symposium; otherwise the
   // roster (or the first-run myth).

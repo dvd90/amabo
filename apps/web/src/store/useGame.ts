@@ -88,13 +88,43 @@ function saveCreatureId(id: string | null): void {
   }
 }
 
+// The pre-signup birth moment (the funnel's front door). "Seen" distinguishes a brand-new
+// visitor from a returning-but-logged-out one; "demo seed" lets the Mote met at the door
+// become the very creature kept after signup (the one you met is the one you keep).
+const SEEN_BIRTH_KEY = 'amabo:seenBirth';
+const DEMO_SEED_KEY = 'amabo:demoSeed';
+
+function readLocal(key: string): string | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeLocal(key: string, value: string | null): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    /* ignore (private mode etc.) */
+  }
+}
+
 /** Which top-level view is showing: the roster of amabos, or one open creature. */
 export type Route = 'dashboard' | 'device' | 'glade';
+
+/** Which logged-out view: the birth-moment welcome (the hook) or the sign-in form. */
+export type AuthView = 'welcome' | 'login';
 
 export interface GameState {
   client: ApiClient;
   /** Session state: null while the first check is in flight, then true/false. */
   authed: boolean | null;
+  /** While logged out: the birth-moment welcome (the hook) or the sign-in form. */
+  authView: AuthView;
+  /** True if this device has met the birth moment before (logged-out return visit). */
+  returningVisitor: boolean;
   /** The address a magic link was just sent to (drives the "check your inbox" panel). */
   magicSent: string | null;
   /** Only set in local dev (no real mailer): the magic link, surfaced for one-click testing. */
@@ -135,6 +165,10 @@ export interface GameState {
   toggleContrast(): void;
   /** On boot: check for an existing session and load the roster if signed in. */
   checkSession(): Promise<void>;
+  /** Leave the birth-moment welcome for the sign-in form ("keep this light"). */
+  showLogin(): void;
+  /** Remember the seed of the Mote met at the door, so signup keeps that very creature. */
+  rememberDemoSeed(seed: number): void;
   /** Request a magic sign-in link; sets `magicSent` (the user must follow the email). */
   signInWithEmail(email: string): Promise<void>;
   /** Clear the "check your inbox" panel (e.g. to try a different address). */
@@ -186,6 +220,8 @@ export interface GameState {
 export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
   authed: null,
+  authView: 'welcome',
+  returningVisitor: false,
   magicSent: null,
   magicDevLink: null,
   gathering: null,
@@ -220,9 +256,18 @@ export const useGame = create<GameState>((set, get) => ({
       await get().loadDashboard();
       set({ authed: true });
     } else {
-      set({ authed: false });
+      // Logged out → the birth moment. A device that has met it before sees a warmer welcome.
+      set({
+        authed: false,
+        authView: 'welcome',
+        returningVisitor: readLocal(SEEN_BIRTH_KEY) === '1',
+      });
+      writeLocal(SEEN_BIRTH_KEY, '1');
     }
   },
+
+  showLogin: () => set({ authView: 'login' }),
+  rememberDemoSeed: (seed) => writeLocal(DEMO_SEED_KEY, String(seed)),
 
   signInWithEmail: async (email) => {
     const addr = email.trim();
@@ -394,7 +439,12 @@ export const useGame = create<GameState>((set, get) => ({
   start: async (name = 'Mote') => {
     set({ busy: true, error: null });
     try {
-      const creature = await get().client.createCreature(name.trim() || 'Mote');
+      // If the visitor met a Mote at the door before signing in, keep that very one.
+      const stashed = readLocal(DEMO_SEED_KEY);
+      const seed =
+        stashed !== null && Number.isFinite(Number(stashed)) ? Number(stashed) : undefined;
+      const creature = await get().client.createCreature(name.trim() || 'Mote', seed);
+      writeLocal(DEMO_SEED_KEY, null);
       saveCreatureId(creature.id);
       set((s) => ({
         creature,

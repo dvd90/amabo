@@ -2466,3 +2466,90 @@ body {
   text-align: center;
   padding: 1rem 0;
 }
+
+/* ── The pre-signup birth moment (the funnel's front door) ─────────────────────── */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2rem 1.4rem 2.6rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+.welcome-kicker {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--amber) / 0.75);
+}
+.welcome-title {
+  margin: 0.1rem 0 0.4rem;
+  font-size: 1.5rem;
+  color: #f3ece0;
+}
+.welcome-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 17rem;
+  border-radius: 1rem;
+  background: radial-gradient(circle at 50% 42%, hsl(38 90% 55% / 0.18), transparent 68%);
+}
+.welcome-orb {
+  width: 64%;
+  height: 64%;
+  display: grid;
+  place-items: center;
+  animation: welcomeBob 5s ease-in-out infinite;
+}
+@keyframes welcomeBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+.welcome-spark {
+  width: 38%;
+  height: 38%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 45%,
+    hsl(45 100% 82% / 0.95),
+    hsl(38 90% 60% / 0.4) 55%,
+    transparent 72%
+  );
+  filter: drop-shadow(0 0 14px hsl(45 100% 70% / 0.7));
+  animation: starTwinkle 2.4s ease-in-out infinite;
+}
+.welcome-thought {
+  margin: 0.4rem 0 0;
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: #f6efe2;
+  max-width: 24rem;
+}
+.welcome-thought-dim {
+  color: hsl(var(--amber) / 0.6);
+}
+.welcome-lede {
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #d9cdb6;
+  max-width: 25rem;
+}
+.welcome-cta {
+  margin-top: 0.4rem;
+  min-width: 13rem;
+}
+.welcome-skip {
+  font-size: 0.85rem;
+}

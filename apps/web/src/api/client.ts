@@ -169,8 +169,19 @@ export interface IncomingRehome {
   at: number;
 }
 
+/** The pre-signup birth moment: an ephemeral newborn Mote and its first thought. */
+export interface DemoBirth {
+  creature: CreatureViewT;
+  needs: NeedFlag[];
+  thought: string;
+  /** Stash this so the creature kept after signup is the very one met here. */
+  seed: number;
+}
+
 export interface ApiClient {
   me(): Promise<MeResult | null>;
+  /** Meet an ephemeral newborn Mote before signing in (no account, nothing stored). */
+  demoBirth(): Promise<DemoBirth>;
   /** Which sign-in methods the server offers (Google only when configured). */
   authConfig(): Promise<AuthConfig>;
   /**
@@ -180,7 +191,7 @@ export interface ApiClient {
   loginWithEmail(email: string): Promise<{ sent: boolean; devLink?: string }>;
   logout(): Promise<void>;
   listCreatures(): Promise<RosterItem[]>;
-  createCreature(name: string): Promise<CreatureViewT>;
+  createCreature(name: string, seed?: number): Promise<CreatureViewT>;
   getCreature(id: string): Promise<RosterItem>;
   peek(id: string): Promise<PeekResult>;
   interact(id: string, action: CareAction): Promise<InteractResult>;
@@ -272,8 +283,11 @@ export class HttpApiClient implements ApiClient {
   async listCreatures() {
     return (await this.req<{ creatures: RosterItem[] }>('/creatures')).creatures;
   }
-  createCreature(name: string) {
-    return this.req<CreatureViewT>('/creatures', 'POST', { name });
+  createCreature(name: string, seed?: number) {
+    return this.req<CreatureViewT>('/creatures', 'POST', { name, seed });
+  }
+  demoBirth() {
+    return this.req<DemoBirth>('/demo/birth');
   }
   getCreature(id: string) {
     return this.req<RosterItem>(`/creatures/${id}`);
