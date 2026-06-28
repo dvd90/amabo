@@ -67,7 +67,9 @@ export interface OAuthUpsert {
 }
 
 // ── M9.5: sharing ────────────────────────────────────────────────────────────────
-export type ShareKind = 'visit' | 'meet' | 'postcard';
+// 'gather' is a guest pass: it lets another Light bring this creature into their
+// Symposium as a guest (STORY.md §6¾, the glade between worlds).
+export type ShareKind = 'visit' | 'meet' | 'postcard' | 'gather';
 
 export interface ShareLinkRecord {
   id: string;
@@ -194,6 +196,8 @@ export interface Repository {
   /** Confirm one side; when both sides have confirmed, ownership transfers atomically. */
   confirmRehome(id: string, userId: string, at: number): Promise<RehomeRecord | null>;
   addBlock(userId: string, blockedUserId: string, at: number): Promise<void>;
+  /** True if either Light has blocked the other (used to gate cross-owner gatherings). */
+  blockedBetween(userA: string, userB: string): Promise<boolean>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
 
   // The Symposium (M-S)
@@ -210,6 +214,8 @@ export interface Repository {
   ): Promise<void>;
   /** All of a creature's bonds (its friends), strongest first. */
   listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]>;
+  /** Every bond an owner has — the whole friendship sky, strongest first. */
+  listAllBonds(ownerId: string | null, limit: number): Promise<BondRecord[]>;
   /** Leave a short note from one creature to a friend (the pen-pal thread). */
   createLetter(input: Omit<LetterRecord, 'id'>): Promise<LetterRecord>;
   /** All letters among an owner's creatures, most recent first. */

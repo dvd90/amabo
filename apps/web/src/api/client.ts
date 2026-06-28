@@ -120,13 +120,19 @@ export interface TranscriptLine {
 export interface GatheringView {
   id: string;
   at: number;
-  participants: { id: string; name: string; stage: string; uncanny: boolean }[];
+  participants: { id: string; name: string; stage: string; uncanny: boolean; guest?: boolean }[];
   connections: { a: string; b: string; kind: 'harmony' | 'clash' }[];
   moments: { tag: 'play' | 'shareAmbra' | 'mentor'; participants: [string, string] }[];
   outcomes: { id: string; warmed: boolean; comfortedById: string | null; bondedWith: string[] }[];
   transcript: TranscriptLine[];
   /** Notes left between newly-bonded creatures at this gathering. */
   letters?: { from: string; to: string; text: string }[];
+}
+
+/** The friendship sky: every creature that has bonded, and the threads between them. */
+export interface SkyView {
+  stars: { id: string; name: string; uncanny: boolean }[];
+  threads: { a: string; b: string; strength: number; metCount: number }[];
 }
 
 /** A pen-pal note between two of your creatures. */
@@ -182,12 +188,17 @@ export interface ApiClient {
   multiply(id: string): Promise<MultiplyResult>;
   /** A resonance meeting between two of your own creatures (a duet, never a duel). */
   meet(id: string, otherId: string): Promise<MeetResult>;
-  /** Hold a Symposium — gather 2–6 of your own creatures to speak of love (STORY.md §6½). */
-  gather(creatureIds: string[], topic?: string): Promise<GatheringView>;
+  /**
+   * Hold a Symposium — gather 2–6 of your own creatures to speak of love (STORY.md §6½),
+   * optionally bringing in friends' creatures as guests via their 'gather' passes (§6¾).
+   */
+  gather(creatureIds: string[], topic?: string, guestTokens?: string[]): Promise<GatheringView>;
   /** The pen-pal letters among your creatures, most recent first. */
   letters(): Promise<LetterView[]>;
-  /** Mint a scoped, expiring share link for a creature. */
-  share(id: string, kind: 'visit' | 'postcard'): Promise<ShareLink>;
+  /** The friendship sky — every bond among your creatures. */
+  sky(): Promise<SkyView>;
+  /** Mint a scoped, expiring share link for a creature (incl. a 'gather' guest pass). */
+  share(id: string, kind: 'visit' | 'postcard' | 'gather'): Promise<ShareLink>;
   /** Fetch a shared creature's public, read-only postcard (no session needed). */
   postcard(token: string): Promise<PostcardView>;
   /** Entrust a creature to another Light by email (they must accept). */
@@ -279,12 +290,19 @@ export class HttpApiClient implements ApiClient {
   meet(id: string, otherId: string) {
     return this.req<MeetResult>(`/creatures/${id}/meet/${otherId}`, 'POST', {});
   }
-  gather(creatureIds: string[], topic?: string) {
-    return this.req<GatheringView>('/symposium/gather', 'POST', { creatureIds, topic });
+  gather(creatureIds: string[], topic?: string, guestTokens?: string[]) {
+    return this.req<GatheringView>('/symposium/gather', 'POST', {
+      creatureIds,
+      topic,
+      guestTokens,
+    });
   }
   async letters() {
     const r = await this.req<{ letters: LetterView[] }>('/symposium/letters');
     return r.letters;
+  }
+  sky() {
+    return this.req<SkyView>('/symposium/sky');
   }
   share(id: string, kind: 'visit' | 'postcard') {
     return this.req<ShareLink>(`/creatures/${id}/share`, 'POST', { kind });

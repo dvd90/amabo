@@ -15,6 +15,8 @@ export interface SymposiumParticipant {
   uncanny: boolean;
   stage: string;
   disposition: number;
+  /** True when this creature belongs to another Light (a guest; STORY.md §6¾). */
+  guest?: boolean;
 }
 
 export interface SymposiumContext {

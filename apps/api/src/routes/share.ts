@@ -128,7 +128,7 @@ export function authedShareRouter(deps: ShareDeps): Router {
         const rec = await repo.getCreature(req.params.id!, owner);
         if (!rec) return res.status(404).json({ error: 'not found' });
         const kind = req.body?.kind as ShareKind;
-        if (kind !== 'visit' && kind !== 'meet' && kind !== 'postcard') {
+        if (kind !== 'visit' && kind !== 'meet' && kind !== 'postcard' && kind !== 'gather') {
           return res.status(400).json({ error: 'invalid share kind' });
         }
         const ttl =

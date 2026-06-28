@@ -2049,6 +2049,33 @@ body {
   opacity: 0.85;
   color: #f3ece0;
 }
+.sym-guest {
+  color: hsl(var(--amber));
+}
+/* A visiting creature from another world — shown as a soft glimmer, not full art. */
+.sym-guest-orb {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 45%,
+    hsl(45 100% 80% / 0.95),
+    hsl(38 90% 60% / 0.5) 45%,
+    transparent 70%
+  );
+  filter: drop-shadow(0 0 10px hsl(45 100% 70% / 0.7));
+  animation: starTwinkle 3s ease-in-out infinite;
+}
+.sym-guest-orb.is-yim {
+  background: radial-gradient(
+    circle at 50% 45%,
+    hsl(265 60% 85% / 0.9),
+    hsl(265 45% 60% / 0.45) 45%,
+    transparent 70%
+  );
+  filter: drop-shadow(0 0 10px hsl(265 60% 72% / 0.65));
+}
 .sym-figure.is-listening {
   opacity: 0.66;
 }
@@ -2271,6 +2298,59 @@ body {
   border-color: hsl(var(--amber));
   color: hsl(var(--amber));
 }
+
+/* The glade between worlds — guest passes (STORY.md §6¾). */
+.glade-guests {
+  margin: 0.4rem auto 0;
+  max-width: 30rem;
+  text-align: center;
+}
+.glade-guests-toggle {
+  font-size: 0.8rem;
+}
+.glade-guests-body {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+.glade-guests-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: hsl(var(--amber) / 0.75);
+}
+.glade-guests-input {
+  font: inherit;
+  font-size: 0.8rem;
+  color: #f3ece0;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid hsl(var(--amber) / 0.3);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+.glade-guests-lend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.glade-lend {
+  font: inherit;
+  font-size: 0.75rem;
+  color: #f3ece0;
+  cursor: pointer;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--amber) / 0.3);
+  background: rgba(0, 0, 0, 0.2);
+}
+.glade-lend:hover {
+  border-color: hsl(var(--amber));
+  color: hsl(var(--amber));
+}
 .sym-controls {
   display: flex;
   gap: 0.8rem;
@@ -2332,4 +2412,57 @@ body {
     opacity: 0;
     transform: translate(-50%, -6px);
   }
+}
+
+/* ── The Friendship Sky ──────────────────────────────────────────────────────── */
+.sky-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(6, 5, 8, 0.86);
+  backdrop-filter: blur(3px);
+}
+.sky-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: radial-gradient(120% 90% at 50% 0%, #1a1726, #0e0c14);
+  border: 1px solid hsl(var(--amber) / 0.25);
+  border-radius: 16px;
+  padding: 1.6rem 1.4rem;
+  color: #f3ece0;
+}
+.sky-svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+.sky-thread {
+  stroke: hsl(45 100% 78%);
+  vector-effect: non-scaling-stroke;
+}
+.sky-star {
+  fill: hsl(45 100% 80%);
+  filter: drop-shadow(0 0 3px hsl(45 100% 72%));
+  animation: starTwinkle 3s ease-in-out infinite;
+}
+.sky-star.is-yim {
+  fill: hsl(254 60% 80%);
+  filter: drop-shadow(0 0 3px hsl(254 70% 74%));
+}
+.sky-label {
+  fill: #e7dcc6;
+  font-size: 4px;
+  text-anchor: middle;
+  font-family: ui-monospace, monospace;
+}
+.sky-empty {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  text-align: center;
+  padding: 1rem 0;
 }

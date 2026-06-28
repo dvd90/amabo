@@ -266,6 +266,14 @@ export class InMemoryRepository implements Repository {
     this.blocks.push({ userId, blockedUserId, at });
   }
 
+  async blockedBetween(userA: string, userB: string): Promise<boolean> {
+    return this.blocks.some(
+      (b) =>
+        (b.userId === userA && b.blockedUserId === userB) ||
+        (b.userId === userB && b.blockedUserId === userA),
+    );
+  }
+
   async addReport(
     reporterId: string,
     subject: string,
@@ -350,6 +358,14 @@ export class InMemoryRepository implements Repository {
         (x) => x.ownerId === ownerId && (x.creatureA === creatureId || x.creatureB === creatureId),
       )
       .sort((p, q) => q.strength - p.strength)
+      .map((x) => structuredClone(x));
+  }
+
+  async listAllBonds(ownerId: string | null, limit: number): Promise<BondRecord[]> {
+    return this.bonds
+      .filter((x) => x.ownerId === ownerId)
+      .sort((p, q) => q.strength - p.strength)
+      .slice(0, limit)
       .map((x) => structuredClone(x));
   }
 

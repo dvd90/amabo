@@ -5,7 +5,7 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
-import { and, desc, eq, isNull, sql, type AnyColumn } from 'drizzle-orm';
+import { and, desc, eq, isNull, or, sql, type AnyColumn } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
 import {
@@ -395,6 +395,20 @@ export class DrizzleRepository implements Repository {
     await this.db.insert(blocks).values({ userId, blockedUserId, at });
   }
 
+  async blockedBetween(userA: string, userB: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: blocks.id })
+      .from(blocks)
+      .where(
+        or(
+          and(eq(blocks.userId, userA), eq(blocks.blockedUserId, userB)),
+          and(eq(blocks.userId, userB), eq(blocks.blockedUserId, userA)),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  }
+
   async addReport(
     reporterId: string,
     subject: string,
@@ -513,6 +527,16 @@ export class DrizzleRepository implements Repository {
         ),
       )
       .orderBy(desc(bonds.strength));
+    return rows.map(toBond);
+  }
+
+  async listAllBonds(ownerId: string | null, limit: number): Promise<BondRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(bonds)
+      .where(ownerScope(bonds.ownerId, ownerId))
+      .orderBy(desc(bonds.strength))
+      .limit(limit);
     return rows.map(toBond);
   }
 

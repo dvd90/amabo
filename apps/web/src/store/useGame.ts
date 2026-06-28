@@ -145,8 +145,13 @@ export interface GameState {
   openGlade(): void;
   /** Leave the Glade back to the dashboard. */
   closeGlade(): void;
-  /** Hold a gathering of the chosen creatures (optionally on a theme); shows the scene. */
-  holdSymposium(ids: string[], topic?: string): Promise<void>;
+  /**
+   * Hold a gathering of the chosen creatures (optionally on a theme), optionally bringing
+   * friends' creatures in as guests via their 'gather' passes (STORY.md §6¾); shows the scene.
+   */
+  holdSymposium(ids: string[], topic?: string, guestTokens?: string[]): Promise<void>;
+  /** Mint a guest pass (a scoped, revocable link) so a friend can bring this creature. */
+  mintGuestPass(creatureId: string): Promise<string | null>;
   /** Open one creature into the device view (peeks, so the away-recap can show). */
   openCreature(id: string): Promise<void>;
   /** Dismiss the "while you were away" recap. */
@@ -228,14 +233,23 @@ export const useGame = create<GameState>((set, get) => ({
 
   openGlade: () => set({ route: 'glade', gathering: null }),
   closeGlade: () => set({ route: 'dashboard', gathering: null }),
-  holdSymposium: async (ids, topic) => {
+  holdSymposium: async (ids, topic, guestTokens) => {
     set({ busy: true });
     try {
-      const gathering = await get().client.gather(ids, topic);
+      const gathering = await get().client.gather(ids, topic, guestTokens);
       set({ gathering });
       await get().loadDashboard(); // the gathering changed everyone's stats
     } finally {
       set({ busy: false });
+    }
+  },
+
+  mintGuestPass: async (creatureId) => {
+    try {
+      return (await get().client.share(creatureId, 'gather')).url;
+    } catch (e) {
+      set({ error: friendlyError(e) });
+      return null;
     }
   },
 

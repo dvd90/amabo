@@ -128,7 +128,7 @@ export const shareLinks = pgTable(
       .notNull()
       .references(() => creatures.id, { onDelete: 'cascade' }),
     ownerId: uuid('owner_id'),
-    kind: text('kind').notNull(), // 'visit' | 'meet' | 'postcard'
+    kind: text('kind').notNull(), // 'visit' | 'meet' | 'postcard' | 'gather'
     token: text('token').notNull().unique(),
     expiresAt: doublePrecision('expires_at').notNull(),
     revokedAt: doublePrecision('revoked_at'),
