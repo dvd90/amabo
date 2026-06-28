@@ -80,6 +80,29 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
   const toasting = beat?.kind === 'toast';
   const caption = beat && beat.kind !== 'say' ? captionFor(beat, name) : null;
 
+  // Tap a creature to let it speak its mind: a transient echo of one of its lines.
+  const linesBy = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const b of beats) {
+      if (b.kind === 'say' && b.speakerId) {
+        const arr = m.get(b.speakerId) ?? [];
+        arr.push(b.text);
+        m.set(b.speakerId, arr);
+      }
+    }
+    return m;
+  }, [beats]);
+  const [echo, setEcho] = useState<{ id: string; text: string } | null>(null);
+  const speak = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // don't also advance the scene
+    const ls = linesBy.get(id);
+    if (!ls || ls.length === 0) return;
+    const text = ls[Math.floor(Math.random() * ls.length)]!;
+    setEcho({ id, text });
+    window.setTimeout(() => setEcho((cur) => (cur?.id === id ? null : cur)), 2600);
+  };
+  const toastIdx = beats.findIndex((b) => b.kind === 'toast');
+
   // ── The summary (after the scene plays, or on Skip) ────────────────────────────
   if (done) {
     return (
@@ -91,6 +114,41 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
           <span className="glade-title">the Symposium</span>
           <span />
         </div>
+
+        {gathering.connections.some((c) => c.kind === 'harmony') ? (
+          <div className="glade-constellation">
+            <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              {gathering.connections
+                .filter((c) => c.kind === 'harmony')
+                .map((c, i) => {
+                  const a = at(c.a);
+                  const b = at(c.b);
+                  if (!a || !b) return null;
+                  return (
+                    <line
+                      key={i}
+                      x1={a.left}
+                      y1={a.top * 0.6}
+                      x2={b.left}
+                      y2={b.top * 0.6}
+                      className="constellation-thread"
+                    />
+                  );
+                })}
+              {layout.map((l) => (
+                <circle
+                  key={l.id}
+                  cx={l.left}
+                  cy={l.top * 0.6}
+                  r={2.4}
+                  className="constellation-star"
+                />
+              ))}
+            </svg>
+            <p className="glade-constellation-cap">the friendships that formed</p>
+          </div>
+        ) : null}
+
         <div className="glade-transcript">
           {gathering.transcript.map((line, i) =>
             line.speaker ? (
@@ -144,9 +202,16 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
           ◂ all
         </button>
         <span className="glade-title">the Symposium</span>
-        <button className="linkish sym-skip" onClick={() => setIdx(beats.length)}>
-          Skip ⤓
-        </button>
+        <span className="sym-controls">
+          {toastIdx >= 0 && idx < toastIdx ? (
+            <button className="linkish" onClick={() => setIdx(toastIdx)} title="Raise a toast">
+              🥂 Toast
+            </button>
+          ) : null}
+          <button className="linkish" onClick={() => setIdx(beats.length)}>
+            Skip ⤓
+          </button>
+        </span>
       </div>
 
       <div
@@ -204,14 +269,22 @@ export function SymposiumScene({ gathering }: { gathering: GatheringView }) {
           ]
             .filter(Boolean)
             .join(' ');
+          const bubbleText =
+            beat?.kind === 'say' && beat.speakerId === p.id
+              ? beat.text
+              : echo?.id === p.id
+                ? echo.text
+                : null;
           return (
             <div
               key={p.id}
               className={cls}
               style={{ left: `${pos.left}%`, top: `${pos.top}%`, ['--s' as string]: pos.scale }}
+              onClick={(e) => speak(p.id, e)}
+              title={`Let ${p.name} speak`}
             >
-              {beat?.kind === 'say' && beat.speakerId === p.id ? (
-                <span className={`sym-bubble${bubbleAlign(pos.left)}`}>{beat.text}</span>
+              {bubbleText ? (
+                <span className={`sym-bubble${bubbleAlign(pos.left)}`}>{bubbleText}</span>
               ) : null}
               <span className="sym-art">{c ? <Creature creature={c} /> : null}</span>
               <span className="sym-name">{p.name}</span>
