@@ -12,6 +12,7 @@ import { useGame } from '../store/useGame.js';
 
 const MIN = 2;
 const MAX = 6;
+const TOPICS = ['love', 'the dark', 'becoming Real', 'home', 'the Light'] as const;
 
 export function Glade() {
   const creatures = useGame((s) => s.creatures);
@@ -20,6 +21,7 @@ export function Glade() {
   const hold = useGame((s) => s.holdSymposium);
   const close = useGame((s) => s.closeGlade);
   const [picked, setPicked] = useState<string[]>([]);
+  const [topic, setTopic] = useState<string | null>(null);
 
   const toggle = (id: string) =>
     setPicked((p) =>
@@ -62,10 +64,24 @@ export function Glade() {
         })}
       </div>
 
+      <p className="glade-topic-lede">Speak of…</p>
+      <div className="glade-topics">
+        {TOPICS.map((t) => (
+          <button
+            key={t}
+            className={`glade-topic${topic === t ? ' is-on' : ''}`}
+            aria-pressed={topic === t}
+            onClick={() => setTopic((cur) => (cur === t ? null : t))}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
       <button
         className="btn btn-b glade-gather"
         disabled={picked.length < MIN || busy}
-        onClick={() => void hold(picked)}
+        onClick={() => void hold(picked, topic ?? undefined)}
       >
         {busy ? 'Gathering…' : `Gather ${picked.length || ''} ✦`}
       </button>
