@@ -10,6 +10,7 @@ import type { CreatureViewT } from '@amabo/shared';
 import type { StarView } from '../api/client.js';
 import { elderLine, todayLine } from '../flavor.js';
 import { useGame } from '../store/useGame.js';
+import { ShareCardButton } from './ShareCardButton.js';
 
 /** A graduated soul's plaque: name + how long it shone (Mnemosyne). */
 function StarDetail({ star }: { star: StarView }) {
@@ -132,6 +133,7 @@ export function Screen() {
               · {e.text ?? e.tag ?? e.kind}
             </p>
           ))}
+          <ShareCardButton />
           {feedback}
         </div>
       );
