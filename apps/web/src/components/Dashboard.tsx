@@ -105,6 +105,7 @@ export function Dashboard() {
   const client = useGame((s) => s.client);
   const incoming = useGame((s) => s.incoming);
   const acceptRehome = useGame((s) => s.acceptRehome);
+  const openGlade = useGame((s) => s.openGlade);
   const busy = useGame((s) => s.busy);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
@@ -145,6 +146,11 @@ export function Dashboard() {
               }}
             >
               {meetMode ? 'Cancel' : '✦ Introduce two'}
+            </button>
+          ) : null}
+          {creatures.length >= 2 && !meetMode ? (
+            <button className="linkish" onClick={() => openGlade()}>
+              ❀ The Symposium
             </button>
           ) : null}
           <button

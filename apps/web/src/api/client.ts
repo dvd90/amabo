@@ -110,6 +110,23 @@ export interface MeetResult {
   names: [string, string] | string[];
 }
 
+/** One line of a gathering's conversation ('' speaker = a stage direction). */
+export interface TranscriptLine {
+  speaker: string;
+  text: string;
+}
+
+/** The Symposium — a held gathering of your own creatures (STORY.md §6½). */
+export interface GatheringView {
+  id: string;
+  at: number;
+  participants: { id: string; name: string; stage: string; uncanny: boolean }[];
+  connections: { a: string; b: string; kind: 'harmony' | 'clash' }[];
+  moments: { tag: 'play' | 'shareAmbra' | 'mentor'; participants: [string, string] }[];
+  outcomes: { id: string; warmed: boolean; comfortedById: string | null; bondedWith: string[] }[];
+  transcript: TranscriptLine[];
+}
+
 /** A minted share link. */
 export interface ShareLink {
   token: string;
@@ -154,6 +171,8 @@ export interface ApiClient {
   multiply(id: string): Promise<MultiplyResult>;
   /** A resonance meeting between two of your own creatures (a duet, never a duel). */
   meet(id: string, otherId: string): Promise<MeetResult>;
+  /** Hold a Symposium — gather 2–6 of your own creatures to speak of love (STORY.md §6½). */
+  gather(creatureIds: string[]): Promise<GatheringView>;
   /** Mint a scoped, expiring share link for a creature. */
   share(id: string, kind: 'visit' | 'postcard'): Promise<ShareLink>;
   /** Fetch a shared creature's public, read-only postcard (no session needed). */
@@ -246,6 +265,9 @@ export class HttpApiClient implements ApiClient {
   }
   meet(id: string, otherId: string) {
     return this.req<MeetResult>(`/creatures/${id}/meet/${otherId}`, 'POST', {});
+  }
+  gather(creatureIds: string[]) {
+    return this.req<GatheringView>('/symposium/gather', 'POST', { creatureIds });
   }
   share(id: string, kind: 'visit' | 'postcard') {
     return this.req<ShareLink>(`/creatures/${id}/share`, 'POST', { kind });

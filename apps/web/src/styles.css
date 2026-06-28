@@ -1774,3 +1774,139 @@ body {
   cursor: pointer;
   opacity: 0.8;
 }
+
+/* ── The Glade (the Symposium) ───────────────────────────────────────────────── */
+.glade {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  color: #f3ece0;
+  padding-bottom: 2rem;
+}
+.glade-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.glade-title {
+  letter-spacing: 0.2em;
+  font-size: 0.95rem;
+  color: hsl(var(--amber));
+}
+.glade-lede {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.85;
+  margin: 0.4rem 0 1.2rem;
+}
+.glade-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 12px;
+}
+.glade-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.1s;
+}
+.glade-pick.is-on {
+  border-color: hsl(var(--amber));
+  background: hsl(var(--amber) / 0.14);
+  transform: translateY(-2px);
+}
+.glade-pick-art {
+  width: 60px;
+  height: 60px;
+  display: block;
+}
+.glade-pick-name {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+.glade-gather,
+.glade-again {
+  display: block;
+  width: 100%;
+  margin-top: 1.4rem;
+}
+
+/* the held scene */
+.glade-scene {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 140px;
+  padding: 1rem;
+  border-radius: 16px;
+  background:
+    radial-gradient(80% 60% at 50% 100%, hsl(38 80% 55% / 0.28), transparent 70%),
+    linear-gradient(#241d16, #16110c);
+  border: 1px solid hsl(var(--amber) / 0.2);
+}
+.glade-creature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  animation: gladeArrive 0.6s ease both;
+}
+@keyframes gladeArrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.glade-creature > :first-child {
+  width: 64px;
+  height: 64px;
+}
+.glade-name {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+.glade-transcript {
+  margin: 1.2rem 0 0.6rem;
+  line-height: 1.55;
+}
+.glade-line {
+  font-size: 0.92rem;
+  margin: 0.5rem 0;
+}
+.glade-speaker {
+  color: hsl(var(--amber));
+  font-weight: 600;
+}
+.glade-dir {
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.7;
+  text-align: center;
+  margin: 0.6rem 0;
+}
+.glade-outcomes {
+  margin-top: 0.6rem;
+  border-top: 1px solid hsl(var(--amber) / 0.15);
+  padding-top: 0.8rem;
+}
+.glade-outcome {
+  font-size: 0.85rem;
+  margin: 0.3rem 0;
+  opacity: 0.9;
+}
+.glade-bond {
+  color: hsl(348 70% 78%);
+}
