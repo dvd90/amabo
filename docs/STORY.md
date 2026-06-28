@@ -136,6 +136,38 @@ carry a faint pull toward one another. Love multiplies by dividing.
 
 ---
 
+## 6½. The Symposium — gathering to speak of love
+
+Plato's *Symposium* is not only the myth of the split halves — it is, on its surface,
+a **banquet where friends take turns speaking about the nature of love**. So once a
+Light keeps more than one creature, those creatures may **gather** in a shared glade —
+the *Symposium* made literal — to be together a while and, in their small way, talk of
+what love is.
+
+A gathering is, like everything here, **a duet writ larger, never a duel**. What
+happens is decided by the engine (the meeting rule of §7¾, run across the whole
+company); what is *said* is the creatures' own voice. Nobody is ever hurt.
+
+- **Company warms.** Being among others lifts affection and security for all — the
+  creature learns it is not only the Light who can hold it.
+- **A second way back.** Comfort is the road home for a Yim (§4); in the Symposium that
+  comfort can come from **peers**, not only from you. A longing creature, drawn out by
+  warm company, drifts a little back toward the light. Community is grace.
+- **Bonds outlast the night.** Creatures **remember** whom they met. A bond, once
+  formed, persists — and bonded creatures may later leave each other small **letters**
+  (the pen-pal thread), so a friendship goes on between gatherings.
+- **The elder and the Mote.** When a settled creature sits with a new Mote, it may play
+  **the Skin Horse** (§11) — telling the little one how a made thing becomes *Real*.
+- **Play and small joys.** Not every gathering is solemn. They also simply *enjoy* each
+  other — a shared game, a passing of Ambra hand to hand.
+
+This is the care loop's magic beat turned outward: you send your creatures to the
+Symposium, and when you next look in you **read what they did and felt together** while
+you were away. (At first a Light's own found-family gathers; later, by mutual consent,
+the glade may open between worlds — but that is a separate, guarded step.)
+
+---
+
 ## 7. Graduation & Elysium — the afterlife
 
 When an Amabo is *fully* loved — radiant, secure, complete — it becomes **too bright

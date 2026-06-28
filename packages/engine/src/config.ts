@@ -166,6 +166,28 @@ export const VISIT = {
 } as const;
 
 /**
+ * The Symposium — many creatures gather to be together and speak of love (STORY.md §6½).
+ * Built on the same meeting rule as `resonate`, run across the whole company. A gathering
+ * is a little richer than a single meeting, but averaged so a crowd never balloons the
+ * rewards; and warm company is a SECOND way back for a Yim (peers, not only the Light).
+ */
+export const GATHER = {
+  minParticipants: 2,
+  /** Multiplies each creature's averaged pairwise gain (company is worth a bit more). */
+  companyBonus: 1.4,
+  /** Extra disposition pull toward the light for a Yim warmed by harmonious company. */
+  companyComfortDisposition: 4,
+  /** Base strength of a bond formed when two creatures harmonise. */
+  bondStrengthBase: 1,
+  /** A settled creature at/above this stage index can mentor a Mote (the Skin Horse). */
+  mentorEldestStageIndex: 2, // velveteen and up
+  /** Disposition at/above which a creature reads as "settled" enough to mentor. */
+  mentorDisposition: 40,
+  /** An Ambra gap at/above which a fuller creature can pass some hand-to-hand. */
+  shareAmbraGap: 35,
+} as const;
+
+/**
  * "While you were away" recap (STORY.md §2 — the magic beat). Thresholds for turning a
  * before/after gap into a few factual highlights the device reveals on return. The
  * creature's *voice* still comes from the AI; the engine only says what changed.
