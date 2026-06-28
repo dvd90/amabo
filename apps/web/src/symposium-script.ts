@@ -10,7 +10,7 @@ import type { GatheringView } from './api/client.js';
 
 export type Beat =
   | { kind: 'dir'; text: string }
-  | { kind: 'say'; speakerId: string | null; speaker: string; text: string }
+  | { kind: 'say'; speakerId: string | null; speaker: string; text: string; roundStart: boolean }
   | { kind: 'spark'; a: string; b: string }
   | { kind: 'warm'; who: string; by: string }
   | { kind: 'toast' };
@@ -19,14 +19,19 @@ export function buildScript(g: GatheringView): Beat[] {
   const idByName = new Map(g.participants.map((p) => [p.name, p.id]));
   const beats: Beat[] = [];
 
-  // The conversation, in order (a stage direction has an empty speaker).
+  // The conversation, in order (a stage direction has an empty speaker). The first time
+  // each creature takes the floor opens a new "round" (a speech), per the Symposium.
+  const spoken = new Set<string>();
   for (const line of g.transcript) {
     if (line.speaker) {
+      const roundStart = !spoken.has(line.speaker);
+      spoken.add(line.speaker);
       beats.push({
         kind: 'say',
         speakerId: idByName.get(line.speaker) ?? null,
         speaker: line.speaker,
         text: line.text,
+        roundStart,
       });
     } else {
       beats.push({ kind: 'dir', text: line.text });
@@ -44,6 +49,15 @@ export function buildScript(g: GatheringView): Beat[] {
 
   beats.push({ kind: 'toast' });
   return beats;
+}
+
+/** The speakers, in the order they first take the floor (the rounds of the Symposium). */
+export function speakerOrder(beats: Beat[]): string[] {
+  const order: string[] = [];
+  for (const b of beats) {
+    if (b.kind === 'say' && b.roundStart) order.push(b.speaker);
+  }
+  return order;
 }
 
 /** How long (ms) a beat lingers before the scene auto-advances. */

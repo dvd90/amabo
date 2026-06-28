@@ -31,6 +31,26 @@ export interface SymposiumNarrator {
 const dir = (text: string): TranscriptLine => ({ speaker: '', text });
 const said = (speaker: string, text: string): TranscriptLine => ({ speaker, text });
 
+// A short toast each creature offers in turn — the round of speeches (STORY.md §6½).
+const AMABO_TOASTS = [
+  'I think love is just attention that found somewhere warm to land.',
+  'To the dark made smaller by company.',
+  'I practiced being a rounder shape today. It is easier, near you all.',
+  'Even alone in the glass, I am not really alone. Not after this.',
+];
+const YIM_TOASTS = [
+  'I keep a light I do not have. Tonight it is a little less heavy.',
+  'The clock stopped, but the hour feels kinder with you in it.',
+  'I am poor company for no one, usually. You make me almost good at it.',
+];
+
+/** A deterministic toast for a participant, by register, varied by name + topic length. */
+function toastFor(p: SymposiumParticipant, topic: string | undefined): string {
+  const pool = p.uncanny ? YIM_TOASTS : AMABO_TOASTS;
+  const seed = (p.name.length + (topic?.length ?? 0)) % pool.length;
+  return pool[seed]!;
+}
+
 /**
  * A small, safe, voice-appropriate transcript built without any model call. Deterministic
  * (derived purely from the outline), so tests and offline dev still read warmly.
@@ -42,6 +62,9 @@ export const localSymposiumNarrator: SymposiumNarrator = {
       ? `The glade filled with a soft, gathering light. They had come to speak of ${topic}.`
       : 'The glade filled with a soft, gathering light.';
     const lines: TranscriptLine[] = [dir(opening)];
+
+    // The round of speeches: each creature, in turn, offers a short toast.
+    for (const p of participants) lines.push(said(p.name, toastFor(p, topic)));
 
     // An elder takes up the old question first (the Skin Horse), if one sat with a Mote.
     const mentor = outline.moments.find((m) => m.tag === 'mentor');

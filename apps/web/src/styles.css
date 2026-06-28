@@ -2309,3 +2309,27 @@ body {
   opacity: 0.7;
   margin: 0.2rem 0 0;
 }
+
+/* Symposium rounds — each speaker's turn is announced (M-SS5) */
+.sym-round {
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: hsl(var(--amber));
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid hsl(var(--amber) / 0.3);
+  white-space: nowrap;
+  animation: symRound 0.5s ease;
+}
+@keyframes symRound {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildScript, beatDuration } from './symposium-script.js';
+import { buildScript, beatDuration, speakerOrder } from './symposium-script.js';
 import type { GatheringView } from './api/client.js';
 
 const g: GatheringView = {
@@ -30,6 +30,7 @@ describe('buildScript (the Symposium beats)', () => {
       speakerId: 'c1',
       speaker: 'Pip',
       text: 'Love is attention that found somewhere to land.',
+      roundStart: true,
     });
     expect(beats).toContainEqual({ kind: 'spark', a: 'c1', b: 'c2' });
     expect(beats).toContainEqual({ kind: 'warm', who: 'c2', by: 'c1' });
@@ -38,5 +39,23 @@ describe('buildScript (the Symposium beats)', () => {
 
   it('gives each beat a positive on-screen duration', () => {
     for (const b of buildScript(g)) expect(beatDuration(b)).toBeGreaterThan(0);
+  });
+
+  it('opens a round the first time each creature speaks (the speeches, in order)', () => {
+    const two: GatheringView = {
+      ...g,
+      transcript: [
+        { speaker: 'Pip', text: 'first' },
+        { speaker: 'Bo', text: 'second' },
+        { speaker: 'Pip', text: 'again' },
+      ],
+    };
+    const beats = buildScript(two);
+    const says = beats.filter((b) => b.kind === 'say') as Extract<
+      (typeof beats)[number],
+      { kind: 'say' }
+    >[];
+    expect(says.map((s) => s.roundStart)).toEqual([true, true, false]);
+    expect(speakerOrder(beats)).toEqual(['Pip', 'Bo']);
   });
 });
