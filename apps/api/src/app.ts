@@ -11,6 +11,7 @@ import path from 'node:path';
 import type { Clock, SeedSource } from './clock.js';
 import type { AuthProvider } from './auth/provider.js';
 import { attachUser, requireAuth, requireCsrf } from './auth/middleware.js';
+import { consoleMailer, type Mailer } from './auth/mailer.js';
 import { cors } from './cors.js';
 import type { SameSite } from './auth/session.js';
 import type { Narrator } from './narrate/port.js';
@@ -38,6 +39,12 @@ export interface AppDeps {
   googleCallbackUrl?: string;
   /** VAPID public key for web-push; served to the client so it can subscribe. */
   vapidPublicKey?: string;
+  /** Sends the magic-link email (defaults to logging the link to the console). */
+  mailer?: Mailer;
+  /** HMAC secret for magic-link tokens (AUTH_SECRET). A dev default is used if unset. */
+  magicSecret?: string;
+  /** Echo the magic link in the POST response — local dev only; never in production. */
+  magicDevEcho?: boolean;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -91,6 +98,10 @@ export function createApp(deps: AppDeps): Express {
       postLoginRedirect: deps.webOrigin ?? '/',
       googleEnabled: deps.googleEnabled ?? false,
       callbackOverride: deps.googleCallbackUrl,
+      mailer: deps.mailer ?? consoleMailer,
+      magicSecret: deps.magicSecret ?? 'amabo-dev-magic-secret',
+      // Default on for local/test convenience; index.ts forces it false in production.
+      magicDevEcho: deps.magicDevEcho ?? true,
     }),
   );
 

@@ -17,7 +17,12 @@ import {
   type SameSite,
 } from '../auth/session.js';
 import { requireAuth, requireCsrf } from '../auth/middleware.js';
+import { makeMagicToken, verifyMagicToken } from '../auth/magic.js';
+import type { Mailer } from '../auth/mailer.js';
 import type { Repository, UserRecord } from '../repo/types.js';
+
+/** How long a magic-link is valid for. */
+const MAGIC_TTL_MS = 15 * 60 * 1000;
 
 export interface AuthDeps {
   repo: Repository;
@@ -30,6 +35,16 @@ export interface AuthDeps {
   postLoginRedirect: string;
   /** True only when real Google credentials are configured (controls the UI button). */
   googleEnabled: boolean;
+  /** Delivers the magic sign-in link by email. */
+  mailer: Mailer;
+  /** HMAC secret that signs magic-link tokens (AUTH_SECRET). */
+  magicSecret: string;
+  /**
+   * Only in local dev (no real mail provider) do we return the magic link in the POST
+   * response so testing works without an inbox. MUST be false in production — echoing the
+   * link would re-open the very hole we're closing (anyone could sign in as any address).
+   */
+  magicDevEcho: boolean;
   /**
    * Exact OAuth redirect URI to use, if you want to pin it (GOOGLE_CALLBACK_URL). Must
    * match what's registered in the provider console. When unset we derive it from the
@@ -71,8 +86,18 @@ export function authRouter(deps: AuthDeps): Router {
     return csrf;
   };
 
-  // Passwordless email sign-in: the launch path. A direct POST (no third-party redirect)
-  // so it works reliably cross-origin. The email is the identity; no password is stored.
+  // The origin to build the magic link on — the host the browser actually hit (honouring
+  // the proxy's X-Forwarded-*), so the link reaches THIS API and its cookies are first-party.
+  const requestOrigin = (req: Request): string => {
+    const host = req.get('host');
+    return host ? `${req.protocol}://${host}` : baseUrl;
+  };
+
+  // Passwordless email sign-in (magic link). This does NOT sign anyone in: it mails a
+  // short-lived signed link, and only following that link (the GET below) establishes a
+  // session — so possession of the address is proven and you can't claim an account that
+  // isn't yours. The response is deliberately neutral (never reveals whether the address
+  // is known); only in dev (no real mailer) is the link echoed back for testing.
   router.post('/auth/email', (req: Request, res: Response, next) => {
     void (async () => {
       try {
@@ -82,17 +107,15 @@ export function authRouter(deps: AuthDeps): Router {
           return;
         }
         const email = parsed.data.email.toLowerCase();
-        const user = await repo.upsertUser({
-          provider: 'email',
-          subject: email,
-          email,
-          displayName: email.split('@')[0] || email,
-        });
-        const csrf = await establishSession(res, user);
-        res.json({
-          user: { id: user.id, email: user.email, displayName: user.displayName },
-          csrfToken: csrf,
-        });
+        const token = makeMagicToken(email, clock() + MAGIC_TTL_MS, deps.magicSecret);
+        const link = `${requestOrigin(req)}/auth/email/callback?token=${encodeURIComponent(token)}`;
+        try {
+          await deps.mailer.sendMagicLink(email, link);
+        } catch (e) {
+          // Don't leak delivery state to the caller; log it for ops and still answer 200.
+          console.error('[amabo] failed to send magic link:', (e as Error).message);
+        }
+        res.json({ sent: true, ...(deps.magicDevEcho ? { devLink: link } : {}) });
       } catch (err) {
         next(err);
       }
@@ -159,6 +182,28 @@ export function authRouter(deps: AuthDeps): Router {
   };
   router.get('/auth/callback', handleCallback);
   router.get('/auth/google/callback', handleCallback);
+
+  // Magic-link callback: verify the signed token, then upsert by email (provider 'email',
+  // subject = the address) so an EXISTING email user lands back in their own account with
+  // all their amabos. A bad/expired link bounces to login flagged, never a session.
+  router.get('/auth/email/callback', (req: Request, res: Response, next) => {
+    void (async () => {
+      try {
+        const email = verifyMagicToken(String(req.query.token ?? ''), clock(), deps.magicSecret);
+        if (!email) return backToLogin(res, 'link');
+        const user = await repo.upsertUser({
+          provider: 'email',
+          subject: email,
+          email,
+          displayName: email.split('@')[0] || email,
+        });
+        await establishSession(res, user);
+        res.redirect(postLoginRedirect);
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
 
   // Current user (and the CSRF token to use for mutations).
   router.get('/me', requireAuth, (req: Request, res: Response) => {

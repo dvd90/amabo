@@ -7,10 +7,12 @@
 
 import { makeAnthropicClient } from '@amabo/ai';
 import { existsSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
+import { consoleMailer, resendMailer, type Mailer } from './auth/mailer.js';
 import { randomSeed, systemClock } from './clock.js';
 import { makeDb } from './db/client.js';
 import { aiNarrator } from './narrate/ai.js';
@@ -57,6 +59,27 @@ function googleConfigured(): boolean {
   return Boolean(id && secret);
 }
 
+/** Email delivery for magic links. Real provider when configured, else log to console. */
+function buildMailer(): { mailer: Mailer; real: boolean } {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.MAIL_FROM;
+  if (key && from) return { mailer: resendMailer(key, from), real: true };
+  console.warn(
+    '[amabo] no email provider configured (set RESEND_API_KEY + MAIL_FROM) — magic-link emails will only be logged to the server console',
+  );
+  return { mailer: consoleMailer, real: false };
+}
+
+/** The secret that signs magic-link tokens. Stable across restarts only if AUTH_SECRET is set. */
+function magicSecret(): string {
+  const s = process.env.AUTH_SECRET ?? process.env.SESSION_SECRET;
+  if (s) return s;
+  console.warn(
+    '[amabo] AUTH_SECRET not set — magic-link tokens use a random per-boot secret (links break on restart). Set AUTH_SECRET in production.',
+  );
+  return randomBytes(32).toString('hex');
+}
+
 function buildAuthProvider(): AuthProvider {
   const { id, secret } = googleCreds();
   if (id && secret) return new GoogleAuthProvider(id, secret);
@@ -83,12 +106,19 @@ if (process.env.NODE_ENV !== 'test') {
     );
   }
 
+  const { mailer, real: realMailer } = buildMailer();
+
   const app = createApp({
     repo: buildRepo(),
     clock: systemClock,
     seed: randomSeed,
     narrator: buildNarrator(),
     authProvider: buildAuthProvider(),
+    mailer,
+    magicSecret: magicSecret(),
+    // Echo the link in the response ONLY in local dev with no real mailer. Never in prod:
+    // a public link-for-any-email would re-open the hole.
+    magicDevEcho: process.env.NODE_ENV !== 'production' && !realMailer,
     cookieSecure,
     baseUrl,
     // Two-service deploy: set WEB_ORIGIN to the web app's URL (enables CORS +

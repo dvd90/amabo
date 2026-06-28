@@ -94,6 +94,10 @@ export interface GameState {
   client: ApiClient;
   /** Session state: null while the first check is in flight, then true/false. */
   authed: boolean | null;
+  /** The address a magic link was just sent to (drives the "check your inbox" panel). */
+  magicSent: string | null;
+  /** Only set in local dev (no real mailer): the magic link, surfaced for one-click testing. */
+  magicDevLink: string | null;
   /** The signed-in Light's whole roster (the dashboard), each with its urgency signals. */
   creatures: RosterItem[];
   /** Pending rehomes addressed to me — the accept inbox on the dashboard. */
@@ -128,8 +132,10 @@ export interface GameState {
   toggleContrast(): void;
   /** On boot: check for an existing session and load the roster if signed in. */
   checkSession(): Promise<void>;
-  /** Passwordless sign-in; on success loads the roster and flips `authed` true. */
+  /** Request a magic sign-in link; sets `magicSent` (the user must follow the email). */
   signInWithEmail(email: string): Promise<void>;
+  /** Clear the "check your inbox" panel (e.g. to try a different address). */
+  clearMagic(): void;
   /** Load the roster from the server (call after auth, and when returning to it). */
   loadDashboard(): Promise<void>;
   /** Open one creature into the device view (peeks, so the away-recap can show). */
@@ -166,6 +172,8 @@ export interface GameState {
 export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
   authed: null,
+  magicSent: null,
+  magicDevLink: null,
   creatures: [],
   incoming: [],
   creature: null,
@@ -202,10 +210,11 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   signInWithEmail: async (email) => {
-    await get().client.loginWithEmail(email.trim());
-    await get().loadDashboard();
-    set({ authed: true, route: 'dashboard' });
+    const addr = email.trim();
+    const r = await get().client.loginWithEmail(addr);
+    set({ magicSent: addr, magicDevLink: r.devLink ?? null });
   },
+  clearMagic: () => set({ magicSent: null, magicDevLink: null }),
 
   loadDashboard: async () => {
     try {

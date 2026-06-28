@@ -139,8 +139,11 @@ export interface ApiClient {
   me(): Promise<MeResult | null>;
   /** Which sign-in methods the server offers (Google only when configured). */
   authConfig(): Promise<AuthConfig>;
-  /** Passwordless sign-in; resolves to the session (and caches the CSRF token). */
-  loginWithEmail(email: string): Promise<MeResult>;
+  /**
+   * Request a magic sign-in link by email. Does NOT sign in — the user must follow the
+   * emailed link. `devLink` is only present in local dev (no real mail provider).
+   */
+  loginWithEmail(email: string): Promise<{ sent: boolean; devLink?: string }>;
   logout(): Promise<void>;
   listCreatures(): Promise<RosterItem[]>;
   createCreature(name: string): Promise<CreatureViewT>;
@@ -213,10 +216,8 @@ export class HttpApiClient implements ApiClient {
   authConfig() {
     return this.req<AuthConfig>('/auth/config');
   }
-  async loginWithEmail(email: string) {
-    const r = await this.req<MeResult>('/auth/email', 'POST', { email });
-    this.csrf = r.csrfToken ?? '';
-    return r;
+  loginWithEmail(email: string) {
+    return this.req<{ sent: boolean; devLink?: string }>('/auth/email', 'POST', { email });
   }
   async logout() {
     try {
