@@ -7,7 +7,9 @@
 import type { SimEvent } from '@amabo/engine';
 import { randomUUID } from 'node:crypto';
 import type {
+  BondRecord,
   CreatureRecord,
+  GatheringRecord,
   JournalEntry,
   NewCreature,
   OAuthUpsert,
@@ -17,6 +19,7 @@ import type {
   SessionRecord,
   ShareLinkRecord,
   StarRecord,
+  TranscriptLine,
   UserRecord,
 } from './types.js';
 
@@ -40,6 +43,8 @@ export class InMemoryRepository implements Repository {
   private reports: { reporterId: string; subject: string; reason: string | null; at: number }[] =
     [];
   private pushSubs = new Map<string, PushSubscriptionRecord>();
+  private gatherings = new Map<string, GatheringRecord>();
+  private bonds: BondRecord[] = [];
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -289,5 +294,60 @@ export class InMemoryRepository implements Repository {
 
   async touchPushNotified(id: string, at: number): Promise<void> {
     for (const s of this.pushSubs.values()) if (s.id === id) s.lastNotifiedAt = at;
+  }
+
+  // ── The Symposium (M-S) ─────────────────────────────────────────────────────────
+  async createGathering(input: Omit<GatheringRecord, 'id'>): Promise<GatheringRecord> {
+    const rec: GatheringRecord = { ...structuredClone(input), id: randomUUID() };
+    this.gatherings.set(rec.id, rec);
+    return structuredClone(rec);
+  }
+
+  async getGathering(id: string, ownerId: string | null): Promise<GatheringRecord | null> {
+    const rec = this.gatherings.get(id);
+    if (!rec || rec.ownerId !== ownerId) return null;
+    return structuredClone(rec);
+  }
+
+  async setGatheringTranscript(id: string, transcript: TranscriptLine[]): Promise<void> {
+    const rec = this.gatherings.get(id);
+    if (rec) rec.transcript = structuredClone(transcript);
+  }
+
+  async recordBonds(
+    ownerId: string | null,
+    pairs: { a: string; b: string; strength: number }[],
+    at: number,
+  ): Promise<void> {
+    for (const { a, b, strength } of pairs) {
+      const [ca, cb] = a < b ? [a, b] : [b, a];
+      const existing = this.bonds.find(
+        (x) => x.ownerId === ownerId && x.creatureA === ca && x.creatureB === cb,
+      );
+      if (existing) {
+        existing.strength += strength;
+        existing.metCount += 1;
+        existing.lastMetAt = at;
+      } else {
+        this.bonds.push({
+          id: randomUUID(),
+          ownerId,
+          creatureA: ca,
+          creatureB: cb,
+          strength,
+          metCount: 1,
+          lastMetAt: at,
+        });
+      }
+    }
+  }
+
+  async listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]> {
+    return this.bonds
+      .filter(
+        (x) => x.ownerId === ownerId && (x.creatureA === creatureId || x.creatureB === creatureId),
+      )
+      .sort((p, q) => q.strength - p.strength)
+      .map((x) => structuredClone(x));
   }
 }

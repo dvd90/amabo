@@ -5,13 +5,15 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql, type AnyColumn } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
 import {
   blocks,
+  bonds,
   creatures,
   events as eventsTable,
+  gatherings,
   interactions,
   memories as memoriesTable,
   pushSubscriptions,
@@ -23,7 +25,9 @@ import {
   users,
 } from '../db/schema.js';
 import type {
+  BondRecord,
   CreatureRecord,
+  GatheringRecord,
   JournalEntry,
   NewCreature,
   OAuthUpsert,
@@ -34,6 +38,7 @@ import type {
   ShareKind,
   ShareLinkRecord,
   StarRecord,
+  TranscriptLine,
   UserRecord,
 } from './types.js';
 
@@ -69,6 +74,11 @@ function rowToRecord(row: Row): CreatureRecord {
 /** Owner filter that treats a null owner as "the single-user world" (IS NULL). */
 function ownedBy(ownerId: string | null) {
   return ownerId === null ? isNull(creatures.ownerId) : eq(creatures.ownerId, ownerId);
+}
+
+/** The same null-aware owner scope, for any table's owner column. */
+function ownerScope(col: AnyColumn, ownerId: string | null) {
+  return ownerId === null ? isNull(col) : eq(col, ownerId);
 }
 
 function stateColumns(state: CreatureState) {
@@ -421,6 +431,111 @@ export class DrizzleRepository implements Repository {
       .set({ lastNotifiedAt: at })
       .where(eq(pushSubscriptions.id, id));
   }
+
+  // ── The Symposium (M-S) ─────────────────────────────────────────────────────────
+  async createGathering(input: Omit<GatheringRecord, 'id'>): Promise<GatheringRecord> {
+    const [row] = await this.db
+      .insert(gatherings)
+      .values({
+        ownerId: input.ownerId,
+        at: input.at,
+        participantIds: input.participantIds,
+        outline: input.outline,
+        transcript: input.transcript,
+      })
+      .returning();
+    return toGathering(row!);
+  }
+
+  async getGathering(id: string, ownerId: string | null): Promise<GatheringRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(gatherings)
+      .where(and(eq(gatherings.id, id), ownerScope(gatherings.ownerId, ownerId)))
+      .limit(1);
+    return row ? toGathering(row) : null;
+  }
+
+  async setGatheringTranscript(id: string, transcript: TranscriptLine[]): Promise<void> {
+    await this.db.update(gatherings).set({ transcript }).where(eq(gatherings.id, id));
+  }
+
+  async recordBonds(
+    ownerId: string | null,
+    pairs: { a: string; b: string; strength: number }[],
+    at: number,
+  ): Promise<void> {
+    for (const { a, b, strength } of pairs) {
+      const [ca, cb] = a < b ? [a, b] : [b, a];
+      const [existing] = await this.db
+        .select()
+        .from(bonds)
+        .where(
+          and(
+            ownerScope(bonds.ownerId, ownerId),
+            eq(bonds.creatureA, ca!),
+            eq(bonds.creatureB, cb!),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        await this.db
+          .update(bonds)
+          .set({
+            strength: existing.strength + strength,
+            metCount: existing.metCount + 1,
+            lastMetAt: at,
+          })
+          .where(eq(bonds.id, existing.id));
+      } else {
+        await this.db.insert(bonds).values({
+          ownerId,
+          creatureA: ca!,
+          creatureB: cb!,
+          strength,
+          metCount: 1,
+          lastMetAt: at,
+        });
+      }
+    }
+  }
+
+  async listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(bonds)
+      .where(
+        and(
+          ownerScope(bonds.ownerId, ownerId),
+          sql`(${bonds.creatureA} = ${creatureId} OR ${bonds.creatureB} = ${creatureId})`,
+        ),
+      )
+      .orderBy(desc(bonds.strength));
+    return rows.map(toBond);
+  }
+}
+
+function toGathering(row: typeof gatherings.$inferSelect): GatheringRecord {
+  return {
+    id: row.id,
+    ownerId: row.ownerId,
+    at: row.at,
+    participantIds: row.participantIds,
+    outline: row.outline as GatheringRecord['outline'],
+    transcript: (row.transcript as TranscriptLine[] | null) ?? null,
+  };
+}
+
+function toBond(row: typeof bonds.$inferSelect): BondRecord {
+  return {
+    id: row.id,
+    ownerId: row.ownerId,
+    creatureA: row.creatureA,
+    creatureB: row.creatureB,
+    strength: row.strength,
+    metCount: row.metCount,
+    lastMetAt: row.lastMetAt,
+  };
 }
 
 function toPushSub(row: typeof pushSubscriptions.$inferSelect): PushSubscriptionRecord {
