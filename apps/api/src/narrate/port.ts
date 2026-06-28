@@ -28,28 +28,9 @@ export interface Narrator {
   ): Promise<NarrateOutput>;
 }
 
-/** A small, safe, voice-appropriate line built without any model call. */
-export const localNarrator: Narrator = {
-  async narrate(ctx) {
-    const { state } = ctx;
-    if (!state.alive) {
-      return { journal: 'The glass is quiet now.', mood: 'still' };
-    }
-    if (state.uncanny) {
-      return {
-        journal: 'The clock stopped at the same soft hour again. I kept a light I do not have.',
-        mood: 'longing',
-      };
-    }
-    if (state.asleep) {
-      return {
-        journal: 'I held the warm spot by the wall and slept. It was alright.',
-        mood: 'calm',
-      };
-    }
-    return {
-      journal: 'The day went soft and gold. I practiced being a rounder shape.',
-      mood: 'content',
-    };
-  },
-};
+/**
+ * A varied, event-driven, voice-appropriate diary built without any model call — the
+ * launch-time voice for a keyless deploy. The pools + register logic live in `local.ts`;
+ * re-exported here so the long-standing `narrate/port.js` import keeps working.
+ */
+export { localNarrator } from './local.js';
