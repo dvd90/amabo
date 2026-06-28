@@ -2553,3 +2553,55 @@ body {
 .welcome-skip {
   font-size: 0.85rem;
 }
+
+/* ── The shareable journal card (GTM #3) ──────────────────────────────────────── */
+.sharecard {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid hsl(var(--amber) / 0.18);
+  text-align: center;
+}
+.sharecard-lede {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--amber) / 0.7);
+}
+.sharecard-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.sharecard-btn {
+  font: inherit;
+  font-size: 0.8rem;
+  color: #f3ece0;
+  cursor: pointer;
+  padding: 0.32rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--amber) / 0.35);
+  background: rgba(0, 0, 0, 0.2);
+}
+.sharecard-btn:hover {
+  border-color: hsl(var(--amber));
+  color: hsl(var(--amber));
+}
+.sharecard-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.sharecard-status {
+  margin: 0.4rem 0 0;
+  font-size: 0.74rem;
+  color: hsl(var(--amber));
+}
+/* offscreen source art (sized so the creature SVG has a box to serialise) */
+.sharecard-src {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 240px;
+  height: 240px;
+  pointer-events: none;
+}
