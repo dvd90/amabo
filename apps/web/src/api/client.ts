@@ -183,7 +183,7 @@ export interface ApiClient {
   /** A resonance meeting between two of your own creatures (a duet, never a duel). */
   meet(id: string, otherId: string): Promise<MeetResult>;
   /** Hold a Symposium — gather 2–6 of your own creatures to speak of love (STORY.md §6½). */
-  gather(creatureIds: string[]): Promise<GatheringView>;
+  gather(creatureIds: string[], topic?: string): Promise<GatheringView>;
   /** The pen-pal letters among your creatures, most recent first. */
   letters(): Promise<LetterView[]>;
   /** Mint a scoped, expiring share link for a creature. */
@@ -279,8 +279,8 @@ export class HttpApiClient implements ApiClient {
   meet(id: string, otherId: string) {
     return this.req<MeetResult>(`/creatures/${id}/meet/${otherId}`, 'POST', {});
   }
-  gather(creatureIds: string[]) {
-    return this.req<GatheringView>('/symposium/gather', 'POST', { creatureIds });
+  gather(creatureIds: string[], topic?: string) {
+    return this.req<GatheringView>('/symposium/gather', 'POST', { creatureIds, topic });
   }
   async letters() {
     const r = await this.req<{ letters: LetterView[] }>('/symposium/letters');

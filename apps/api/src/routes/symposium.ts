@@ -79,8 +79,14 @@ export function symposiumRouter(deps: SymposiumDeps): Router {
     '/symposium/gather',
     asyncHandler(async (req, res) => {
       const owner = getOwner(req);
-      const raw = (req.body as { creatureIds?: unknown }).creatureIds;
+      const body = req.body as { creatureIds?: unknown; topic?: unknown };
+      const raw = body.creatureIds;
       const ids = Array.isArray(raw) ? [...new Set(raw.filter((x) => typeof x === 'string'))] : [];
+      // An optional theme the talk circles; trimmed + capped so it stays a short phrase.
+      const topic =
+        typeof body.topic === 'string' && body.topic.trim()
+          ? body.topic.trim().slice(0, 60)
+          : undefined;
       if (ids.length < MIN_PARTICIPANTS || ids.length > MAX_PARTICIPANTS) {
         return res
           .status(400)
@@ -146,7 +152,7 @@ export function symposiumRouter(deps: SymposiumDeps): Router {
         stage: r.state.stage,
         disposition: r.state.disposition,
       }));
-      const transcript = await narrator.narrate({ participants: symParts, outline: result });
+      const transcript = await narrator.narrate({ participants: symParts, outline: result, topic });
 
       const rec = await repo.createGathering({
         ownerId: owner,
