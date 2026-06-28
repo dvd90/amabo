@@ -1975,3 +1975,168 @@ body {
   font-size: 0.88rem;
   opacity: 0.85;
 }
+
+/* ── The Symposium scene (the gathering, played) ─────────────────────────────── */
+.sym-skip {
+  margin-left: auto;
+}
+.sym-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-top: 0.4rem;
+  border-radius: 16px;
+  /* visible so a speaker's bubble near the edge is never clipped; the rounded gradient
+     background still clips to the radius, and the hill (::after) sits inside the bounds. */
+  overflow: visible;
+  cursor: pointer;
+  border: 1px solid hsl(var(--amber) / 0.2);
+  background:
+    radial-gradient(70% 55% at 50% 26%, hsl(40 85% 55% / 0.34), transparent 70%),
+    linear-gradient(#241d16, #120e0a);
+}
+.sym-stage::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36%;
+  background: radial-gradient(130% 100% at 50% 100%, hsl(32 45% 20%), transparent 74%);
+}
+/* the lantern they gather around */
+.sym-flame {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  transform: translate(-50%, -50%);
+  width: 15px;
+  height: 21px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 60%, hsl(48 100% 80%), hsl(36 95% 52%));
+  box-shadow: 0 0 26px 9px hsl(40 95% 58% / 0.55);
+  animation: symFlame 2.4s ease-in-out infinite;
+  z-index: 1;
+}
+@keyframes symFlame {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -54%) scale(1.1);
+  }
+}
+.sym-figure {
+  position: absolute;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -50%) scale(var(--s, 1));
+  transition:
+    filter 0.4s ease,
+    opacity 0.4s ease,
+    transform 0.4s ease;
+  z-index: 2;
+}
+.sym-art {
+  width: 64px;
+  height: 64px;
+}
+.sym-name {
+  font-size: 0.72rem;
+  opacity: 0.85;
+  color: #f3ece0;
+}
+.sym-figure.is-listening {
+  opacity: 0.66;
+}
+.sym-figure.is-speaking {
+  z-index: 5;
+  filter: drop-shadow(0 0 11px hsl(45 100% 66% / 0.75));
+  transform: translate(-50%, -50%) scale(calc(var(--s, 1) * 1.12));
+}
+.sym-figure.is-comforter {
+  filter: drop-shadow(0 0 9px hsl(45 100% 70% / 0.6));
+}
+.sym-figure.is-warming {
+  filter: drop-shadow(0 0 13px hsl(40 100% 66% / 0.85));
+}
+.sym-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 7px;
+  width: max-content;
+  max-width: 170px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 11px;
+  background: #f4eee2;
+  color: #241a12;
+  font-size: 0.76rem;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45);
+  animation: symBubble 0.3s ease;
+  z-index: 6;
+}
+.sym-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #f4eee2;
+}
+.sym-bubble.is-left {
+  left: 0;
+  transform: none;
+}
+.sym-bubble.is-left::after {
+  left: 28px;
+  transform: none;
+}
+.sym-bubble.is-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.sym-bubble.is-right::after {
+  left: auto;
+  right: 28px;
+  transform: none;
+}
+@keyframes symBubble {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px) scale(0.92);
+  }
+}
+.sym-caption {
+  text-align: center;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: #f3ece0;
+  opacity: 0.92;
+  min-height: 2.6em;
+  margin: 0.8rem 0 0.2rem;
+}
+.sym-progress {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 0.3rem;
+}
+.sym-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: hsl(var(--amber) / 0.25);
+  transition: background 0.3s ease;
+}
+.sym-dot.is-on {
+  background: hsl(var(--amber));
+}
