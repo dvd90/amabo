@@ -1648,8 +1648,24 @@ body {
 /* Meetings: "introduce two" selection (M-H) */
 .dash-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+/* On a phone the title and the action links can't share one row — stack them, and let
+   the links wrap instead of overflowing off the screen edge. */
+@media (max-width: 560px) {
+  .dash-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+  }
+  .dash-title {
+    font-size: 1.5rem;
+  }
+  .dash-actions {
+    justify-content: flex-start;
+  }
 }
 .dash-hint,
 .dash-note {
