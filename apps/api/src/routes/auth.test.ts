@@ -83,22 +83,57 @@ describe('auth (M5.5)', () => {
     expect((await agent.get('/me')).body.user.email).toBe('pip@example.com');
   });
 
-  it('email sign-in establishes a session and is idempotent per email', async () => {
+  it('email POST does NOT sign you in — it only sends a magic link', async () => {
     const { app } = setup();
     const agent = request.agent(app);
 
-    const login = await agent.post('/auth/email').send({ email: 'Pip@Example.com' });
-    expect(login.status).toBe(200);
-    expect(login.body.user.email).toBe('pip@example.com'); // normalised
-    expect(login.body.csrfToken).toBeTruthy();
+    const sent = await agent.post('/auth/email').send({ email: 'Pip@Example.com' });
+    expect(sent.status).toBe(200);
+    expect(sent.body.sent).toBe(true);
+    expect(sent.body.user).toBeUndefined(); // no account leaked, no session minted
+    expect(sent.body.csrfToken).toBeUndefined();
+    expect((await agent.get('/me')).status).toBe(401); // still signed out
 
+    // The link normalises the address; following it establishes the session.
+    expect(sent.body.devLink).toContain('/auth/email/callback?token=');
+    const link = new URL(sent.body.devLink);
+    const cb = await agent.get(link.pathname + link.search);
+    expect(cb.status).toBe(302);
     const me = await agent.get('/me');
     expect(me.status).toBe(200);
-    expect(me.body.user.email).toBe('pip@example.com');
+    expect(me.body.user.email).toBe('pip@example.com'); // normalised
+  });
 
-    // Signing in again with the same email returns the same account.
-    const again = await request.agent(app).post('/auth/email').send({ email: 'pip@example.com' });
-    expect(again.body.user.id).toBe(login.body.user.id);
+  it('is idempotent per email — the same address always lands in the same account', async () => {
+    const { app } = setup();
+    const follow = async (email: string) => {
+      const agent = request.agent(app);
+      const sent = await agent.post('/auth/email').send({ email });
+      const link = new URL(sent.body.devLink);
+      await agent.get(link.pathname + link.search);
+      return (await agent.get('/me')).body.user.id as string;
+    };
+    expect(await follow('pip@example.com')).toBe(await follow('PIP@example.com'));
+  });
+
+  it('rejects a tampered or expired magic link (no session)', async () => {
+    const { app, setNow } = setup();
+    const agent = request.agent(app);
+    const sent = await agent.post('/auth/email').send({ email: 'pip@example.com' });
+    const link = new URL(sent.body.devLink);
+
+    // tampered token → bounced to login flagged, not signed in
+    const forged = await agent.get(`${link.pathname}?token=not.a.valid.token`);
+    expect(forged.status).toBe(302);
+    expect(forged.headers.location).toContain('auth_error=link');
+    expect((await agent.get('/me')).status).toBe(401);
+
+    // valid token but past its 15-minute window → rejected
+    setNow(1_000_000 + 16 * 60 * 1000);
+    const expired = await agent.get(link.pathname + link.search);
+    expect(expired.status).toBe(302);
+    expect(expired.headers.location).toContain('auth_error=link');
+    expect((await agent.get('/me')).status).toBe(401);
   });
 
   it('rejects a malformed email with 400', async () => {

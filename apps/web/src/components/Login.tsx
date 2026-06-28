@@ -12,6 +12,7 @@ import { useGame } from '../store/useGame.js';
 const AUTH_ERRORS: Record<string, string> = {
   google: 'Google sign-in failed. Please try again, or continue with email.',
   state: 'That sign-in link expired. Please try again.',
+  link: 'That sign-in link is invalid or has expired. Request a fresh one below.',
   access_denied: 'Google sign-in was cancelled.',
 };
 
@@ -27,6 +28,9 @@ function readAuthError(): string | null {
 export function Login() {
   const client = useGame((s) => s.client);
   const signInWithEmail = useGame((s) => s.signInWithEmail);
+  const magicSent = useGame((s) => s.magicSent);
+  const magicDevLink = useGame((s) => s.magicDevLink);
+  const clearMagic = useGame((s) => s.clearMagic);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -53,6 +57,30 @@ export function Login() {
     }
   };
 
+  // After a link is requested, show a "check your inbox" panel instead of the form — no
+  // session exists yet; the user signs in by following the email.
+  if (magicSent) {
+    return (
+      <main className="boot">
+        <div className="boot-orb" aria-hidden="true" />
+        <h1>Check your inbox</h1>
+        <p>
+          We sent a sign-in link to <strong>{magicSent}</strong>. Tap it to open your glass. The
+          link expires in 15 minutes.
+        </p>
+        {magicDevLink ? (
+          <p className="login-devlink">
+            Dev mode (no mail provider configured):{' '}
+            <a href={magicDevLink}>follow your sign-in link</a>
+          </p>
+        ) : null}
+        <button className="linkish login-watch" onClick={clearMagic}>
+          ← Use a different email
+        </button>
+      </main>
+    );
+  }
+
   return (
     <main className="boot">
       <div className="boot-orb" aria-hidden="true" />
@@ -70,7 +98,7 @@ export function Login() {
           aria-label="Email address"
         />
         <button className="btn btn-login" type="submit" disabled={busy}>
-          {busy ? 'Opening the glass…' : 'Continue with email'}
+          {busy ? 'Sending the link…' : 'Email me a sign-in link'}
         </button>
       </form>
       {error ? (
