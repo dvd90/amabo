@@ -11,9 +11,10 @@
  */
 
 import { STAGES, type CreatureViewT } from '@amabo/shared';
-import type { Emote } from '../store/useGame.js';
+import { useGame, type Emote } from '../store/useGame.js';
 import { nameEgg, type NameEgg } from '../eggs.js';
 import { isIridescent } from '../worldtime.js';
+import { PixelCreature } from './PixelCreature.js';
 
 const STAGE_SCALE: Record<string, number> = {
   mote: 0.5,
@@ -222,6 +223,10 @@ export function Creature({
   emote?: Emote | null;
   emoteNonce?: number;
 }) {
+  // The opt-in pixel-art skin (default off, reversible) — a pure render swap.
+  const pixelMode = useGame((g) => g.pixelMode);
+  if (pixelMode) return <PixelCreature creature={creature} />;
+
   const { stage, uncanny, asleep, ill, alive, seed, traits } = creature.state;
   const ambra = Math.max(0, Math.min(100, creature.state.stats.ambra)) / 100;
   const scale = STAGE_SCALE[stage] ?? 1;

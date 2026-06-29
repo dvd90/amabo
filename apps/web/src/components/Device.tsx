@@ -26,6 +26,8 @@ export function Device() {
     toggleMute,
     highContrast,
     toggleContrast,
+    pixelMode,
+    togglePixel,
     openDashboard,
     creatureNeeds,
     multiply,
@@ -162,6 +164,15 @@ export function Device() {
             aria-label="Toggle high-contrast text mode"
           >
             Aa
+          </button>
+          <button
+            className="toggle"
+            onClick={() => togglePixel()}
+            aria-pressed={pixelMode}
+            aria-label={pixelMode ? 'Switch to smooth art' : 'Switch to pixel art'}
+            title="Pixel-art skin"
+          >
+            ▦
           </button>
         </span>
       </div>
