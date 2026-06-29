@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { Creature } from './Creature.js';
+import { DesignSwitch } from './DesignSwitch.js';
 import { useGame } from '../store/useGame.js';
 import type { CreatureViewT } from '../api/client.js';
 
@@ -69,6 +70,9 @@ export function Welcome() {
       <button className="linkish welcome-skip" onClick={showLogin}>
         or just sign in
       </button>
+      <span className="welcome-design">
+        Art style: <DesignSwitch />
+      </span>
     </main>
   );
 }

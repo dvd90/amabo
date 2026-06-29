@@ -2605,3 +2605,46 @@ body {
   height: 240px;
   pointer-events: none;
 }
+
+/* ── Design switch (Smooth ⟷ Pixel) — a plainly-labelled art-style toggle ───────── */
+.design-switch {
+  display: inline-flex;
+  border: 1px solid hsl(var(--amber) / 0.35);
+  border-radius: 999px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.design-opt {
+  font: inherit;
+  font-size: 0.72rem;
+  color: #f3ece0;
+  cursor: pointer;
+  padding: 0.22rem 0.6rem;
+  border: none;
+  background: transparent;
+  opacity: 0.75;
+}
+.design-opt.is-on {
+  background: hsl(var(--amber) / 0.22);
+  color: hsl(var(--amber));
+  opacity: 1;
+}
+.welcome-design {
+  margin-top: 0.6rem;
+  font-size: 0.74rem;
+  color: hsl(var(--amber) / 0.7);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Let the device top-bar toggles wrap instead of clipping off-screen on narrow phones. */
+.device-toggles {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.device-topbar {
+  gap: 6px;
+}

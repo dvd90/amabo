@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Creature } from './Creature.js';
+import { DesignSwitch } from './DesignSwitch.js';
 import { useGame } from '../store/useGame.js';
 import type { LetterView, NeedFlag, RosterItem } from '../api/client.js';
 import { enableNotifications, type EnableResult } from '../push.js';
@@ -137,6 +138,7 @@ export function Dashboard() {
           <h1 className="dash-title">The lights you tend</h1>
         </div>
         <span className="dash-actions">
+          <DesignSwitch />
           {creatures.length >= 2 ? (
             <button
               className="linkish"
