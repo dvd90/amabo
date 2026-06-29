@@ -93,6 +93,8 @@ function saveCreatureId(id: string | null): void {
 // become the very creature kept after signup (the one you met is the one you keep).
 const SEEN_BIRTH_KEY = 'amabo:seenBirth';
 const DEMO_SEED_KEY = 'amabo:demoSeed';
+/** Opt-in pixel-art skin (default off, fully reversible — purely a render swap). */
+const PIXEL_KEY = 'amabo:pixel';
 
 function readLocal(key: string): string | null {
   try {
@@ -159,10 +161,14 @@ export interface GameState {
   lastPeekAt: number;
   muted: boolean;
   highContrast: boolean;
+  /** Opt-in pixel-art creature skin (default off; persisted; fully reversible). */
+  pixelMode: boolean;
 
   setClient(client: ApiClient): void;
   toggleMute(): void;
   toggleContrast(): void;
+  /** Flip the pixel-art skin on/off (persists to localStorage). */
+  togglePixel(): void;
   /** On boot: check for an existing session and load the roster if signed in. */
   checkSession(): Promise<void>;
   /** Leave the birth-moment welcome for the sign-in form ("keep this light"). */
@@ -245,10 +251,17 @@ export const useGame = create<GameState>((set, get) => ({
   lastPeekAt: 0,
   muted: false,
   highContrast: false,
+  pixelMode: readLocal(PIXEL_KEY) === '1',
 
   setClient: (client) => set({ client }),
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   toggleContrast: () => set((s) => ({ highContrast: !s.highContrast })),
+  togglePixel: () =>
+    set((s) => {
+      const pixelMode = !s.pixelMode;
+      writeLocal(PIXEL_KEY, pixelMode ? '1' : null);
+      return { pixelMode };
+    }),
 
   checkSession: async () => {
     const me = await get().client.me();
