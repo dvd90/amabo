@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { Creature } from './Creature.js';
-import { DesignSwitch } from './DesignSwitch.js';
+import { Settings } from './Settings.js';
 import { useGame } from '../store/useGame.js';
 import type { LetterView, NeedFlag, RosterItem } from '../api/client.js';
 import { enableNotifications, type EnableResult } from '../push.js';
@@ -114,6 +114,7 @@ export function Dashboard() {
   const [picked, setPicked] = useState<string[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [letters, setLetters] = useState<LetterView[] | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const exitMeet = () => {
     setMeetMode(false);
@@ -138,7 +139,9 @@ export function Dashboard() {
           <h1 className="dash-title">The lights you tend</h1>
         </div>
         <span className="dash-actions">
-          <DesignSwitch />
+          <button className="linkish" onClick={() => setSettingsOpen(true)}>
+            ⚙ Settings
+          </button>
           {creatures.length >= 2 ? (
             <button
               className="linkish"
@@ -242,6 +245,8 @@ export function Dashboard() {
           </button>
         )}
       </div>
+
+      {settingsOpen ? <Settings onClose={() => setSettingsOpen(false)} /> : null}
 
       {letters ? (
         <div className="letters-modal" role="dialog" aria-label="Letters between your creatures">

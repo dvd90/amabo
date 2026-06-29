@@ -2,6 +2,30 @@
 :root {
   --amber: 38 90% 55%;
   --shell: #cdb89a;
+  --bg: #1a1714;
+}
+/* Color themes — retint the accent (and the page wash). The creatures keep their own
+   disposition-driven palette; themes recolour the UI around them. Applied as a
+   data-theme attribute on <html> (see the store). Default (ember) lives in :root. */
+:root[data-theme='solar'] {
+  --amber: 14 95% 58%;
+  --bg: #1d0c06;
+}
+:root[data-theme='candy'] {
+  --amber: 330 95% 64%;
+  --bg: #1f0917;
+}
+:root[data-theme='grape'] {
+  --amber: 270 92% 67%;
+  --bg: #140b22;
+}
+:root[data-theme='aqua'] {
+  --amber: 187 92% 52%;
+  --bg: #05181c;
+}
+:root[data-theme='neon'] {
+  --amber: 150 88% 48%;
+  --bg: #06150e;
 }
 * {
   box-sizing: border-box;
@@ -12,7 +36,7 @@ html {
 body {
   margin: 0;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  background: #1a1714;
+  background: var(--bg);
   color: #f3ece0;
   /* Fill the screen and stack top-level views; center horizontally only. Vertical
      centering lives per-screen so tall pages (the dashboard) scroll from the top
@@ -2647,4 +2671,60 @@ body {
 }
 .device-topbar {
   gap: 6px;
+}
+
+/* ── Settings modal (Appearance: theme + art style) ───────────────────────────── */
+.settings-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1.2rem;
+}
+.settings-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 24rem;
+  background: linear-gradient(#241d16, #1a1410);
+  border: 1px solid hsl(var(--amber) / 0.3);
+  border-radius: 1rem;
+  padding: 1.4rem 1.3rem 1.6rem;
+}
+.settings-h {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--amber) / 0.85);
+  font-weight: 600;
+}
+.settings-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.theme-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #f3ece0;
+  cursor: pointer;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--amber) / 0.3);
+  background: rgba(0, 0, 0, 0.2);
+}
+.theme-swatch.is-on {
+  border-color: hsl(var(--amber));
+  color: hsl(var(--amber));
+}
+.theme-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
 }

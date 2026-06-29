@@ -95,6 +95,24 @@ const SEEN_BIRTH_KEY = 'amabo:seenBirth';
 const DEMO_SEED_KEY = 'amabo:demoSeed';
 /** Opt-in pixel-art skin (default off, fully reversible — purely a render swap). */
 const PIXEL_KEY = 'amabo:pixel';
+/** The chosen colour theme (retints the UI accent; see styles.css [data-theme]). */
+const THEME_KEY = 'amabo:theme';
+
+/** The colour themes offered in Settings. `swatch` is just the dot shown in the picker. */
+export const THEMES = [
+  { id: 'ember', label: 'Ember', swatch: 'hsl(38 90% 55%)' },
+  { id: 'solar', label: 'Solar', swatch: 'hsl(14 95% 58%)' },
+  { id: 'candy', label: 'Candy', swatch: 'hsl(330 95% 64%)' },
+  { id: 'grape', label: 'Grape', swatch: 'hsl(270 92% 67%)' },
+  { id: 'aqua', label: 'Aqua', swatch: 'hsl(187 92% 52%)' },
+  { id: 'neon', label: 'Neon', swatch: 'hsl(150 88% 48%)' },
+] as const;
+export type ThemeId = (typeof THEMES)[number]['id'];
+
+function readTheme(): ThemeId {
+  const t = readLocal(THEME_KEY);
+  return (THEMES.find((x) => x.id === t)?.id ?? 'ember') as ThemeId;
+}
 
 function readLocal(key: string): string | null {
   try {
@@ -163,12 +181,16 @@ export interface GameState {
   highContrast: boolean;
   /** Opt-in pixel-art creature skin (default off; persisted; fully reversible). */
   pixelMode: boolean;
+  /** The chosen colour theme (retints the UI accent; persisted). */
+  theme: ThemeId;
 
   setClient(client: ApiClient): void;
   toggleMute(): void;
   toggleContrast(): void;
   /** Flip the pixel-art skin on/off (persists to localStorage). */
   togglePixel(): void;
+  /** Choose a colour theme (persists to localStorage). */
+  setTheme(theme: ThemeId): void;
   /** On boot: check for an existing session and load the roster if signed in. */
   checkSession(): Promise<void>;
   /** Leave the birth-moment welcome for the sign-in form ("keep this light"). */
@@ -252,6 +274,7 @@ export const useGame = create<GameState>((set, get) => ({
   muted: false,
   highContrast: false,
   pixelMode: readLocal(PIXEL_KEY) === '1',
+  theme: readTheme(),
 
   setClient: (client) => set({ client }),
   toggleMute: () => set((s) => ({ muted: !s.muted })),
@@ -262,6 +285,10 @@ export const useGame = create<GameState>((set, get) => ({
       writeLocal(PIXEL_KEY, pixelMode ? '1' : null);
       return { pixelMode };
     }),
+  setTheme: (theme) => {
+    writeLocal(THEME_KEY, theme === 'ember' ? null : theme);
+    set({ theme });
+  },
 
   checkSession: async () => {
     const me = await get().client.me();
