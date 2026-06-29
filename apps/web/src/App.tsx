@@ -30,10 +30,16 @@ export function App() {
   const creatures = useGame((s) => s.creatures);
   const route = useGame((s) => s.route);
   const authView = useGame((s) => s.authView);
+  const theme = useGame((s) => s.theme);
 
   useEffect(() => {
     if (!lookToken) void checkSession();
   }, [checkSession, lookToken]);
+
+  // Apply the chosen colour theme app-wide (retints --amber / --bg via [data-theme]).
+  useEffect(() => {
+    if (typeof document !== 'undefined') document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   if (lookToken) return <PublicLook token={lookToken} />;
   if (authed === null) return <main className="boot">Warming the glass…</main>;
