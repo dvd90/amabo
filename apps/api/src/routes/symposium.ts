@@ -18,6 +18,7 @@ import {
 } from '@amabo/engine';
 import { Router, type Request, type Response } from 'express';
 import type { Clock } from '../clock.js';
+import { byIp, rateLimit } from '../rateLimit.js';
 import { catchUp } from '../service/catchup.js';
 import type { CreatureRecord, GatheringRecord, Repository } from '../repo/types.js';
 import type { SymposiumNarrator, SymposiumParticipant } from '../narrate/symposium.js';
@@ -32,6 +33,10 @@ export interface SymposiumDeps {
 
 const MIN_PARTICIPANTS = 2;
 const MAX_PARTICIPANTS = 6;
+// A gathering narrates the whole company (real AI spend once the model is on) — generous
+// for any real evening of tending, a wall against scripted abuse.
+const GATHER_MAX = 20;
+const GATHER_WINDOW_MS = 60 * 60 * 1000;
 
 /** A share link is usable while it is neither revoked nor expired. */
 function linkLive(link: { revokedAt: number | null; expiresAt: number }, now: number): boolean {
@@ -79,11 +84,19 @@ const asyncHandler =
 export function symposiumRouter(deps: SymposiumDeps): Router {
   const { repo, clock, narrator, getOwner } = deps;
   const router = Router();
+  const gatherLimiter = rateLimit({
+    windowMs: GATHER_WINDOW_MS,
+    max: GATHER_MAX,
+    keyOf: (req) => getOwner(req) ?? byIp(req),
+    clock,
+    message: 'too many gatherings at once — slow down and try again shortly',
+  });
 
   // Hold a gathering of the signed-in Light's own creatures — and, by mutual consent,
   // guests from another Light's Amarium, brought in on a 'gather' pass (STORY.md §6¾).
   router.post(
     '/symposium/gather',
+    gatherLimiter,
     asyncHandler(async (req, res) => {
       const owner = getOwner(req);
       const body = req.body as { creatureIds?: unknown; topic?: unknown; guestTokens?: unknown };

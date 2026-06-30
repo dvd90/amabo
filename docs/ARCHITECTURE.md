@@ -384,11 +384,17 @@ Add `owner_id` to `creatures` (and keep `stars`/journal owner-scoped via the cre
 | POST | `/report` · `/block` | safety |
 
 ### Security & safety
-httpOnly/SameSite cookies + CSRF; per-route rate limits; capability tokens for all
-shares (scoped, revocable, expiring); visits read-mostly; rehome double-confirmed and
-audited; report/block on every social surface; owner-scoped queries everywhere;
-age-gating where required. The engine stays pure — only `resonate` is added there, and
-it touches no I/O.
+httpOnly/SameSite cookies + CSRF; capability tokens for all shares (scoped, revocable,
+expiring); visits read-mostly; rehome double-confirmed and audited; report/block on
+every social surface; owner-scoped queries everywhere; age-gating where required. The
+engine stays pure — only `resonate` is added there, and it touches no I/O.
+
+**Rate limits** (`apps/api/src/rateLimit.ts` — an in-process sliding window, no
+dependency; counts reset per instance, the right tradeoff while there's a single API
+service): `POST /auth/email` 5/15min per IP (mail-bomb guard); `GET /demo/birth`
+30/min per IP; `POST /creatures` 10/hour per owner; `POST /creatures/:id/peek`
+30/hour per owner (the ceiling on AI spend once narration is model-backed);
+`POST /symposium/gather` 20/hour per owner. A blocked request gets `429`.
 
 ## 15. Client platform — decision
 

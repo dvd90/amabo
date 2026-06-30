@@ -36,4 +36,12 @@ describe('the pre-signup birth moment (GET /demo/birth)', () => {
     const listed = await request(app).get('/creatures');
     expect(listed.status).toBe(401);
   });
+
+  it('rate-limits a scripted hammer (30/min per IP)', async () => {
+    const app = setup();
+    for (let i = 0; i < 30; i++) {
+      expect((await request(app).get('/demo/birth')).status).toBe(200);
+    }
+    expect((await request(app).get('/demo/birth')).status).toBe(429);
+  });
 });

@@ -227,4 +227,24 @@ describe('the Symposium (M-S)', () => {
     const after = (await repo.getCreature(yimId, u.userId))!;
     expect(after.state.disposition).toBeGreaterThan(-35);
   });
+
+  it('caps gatherings per account (20/hour) — narration cost guard', async () => {
+    const { app } = setup();
+    const u = await login(app, 'host');
+    const a = await makeCreature(u.agent, u.csrf, 'Pip');
+    const b = await makeCreature(u.agent, u.csrf, 'Bo');
+
+    for (let i = 0; i < 20; i++) {
+      const res = await u.agent
+        .post('/symposium/gather')
+        .set('x-csrf-token', u.csrf)
+        .send({ creatureIds: [a, b] });
+      expect(res.status).toBe(200);
+    }
+    const blocked = await u.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', u.csrf)
+      .send({ creatureIds: [a, b] });
+    expect(blocked.status).toBe(429);
+  });
 });

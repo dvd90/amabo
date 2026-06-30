@@ -26,7 +26,23 @@ import { Router, type Request } from 'express';
 import type { Clock, SeedSource } from '../clock.js';
 import type { Narrator } from '../narrate/port.js';
 import type { CreatureRecord, Repository } from '../repo/types.js';
+import { byIp, rateLimit } from '../rateLimit.js';
 import { catchUp } from '../service/catchup.js';
+
+/** Key a limiter by the signed-in Light (these routes all sit behind requireAuth). */
+const byOwner =
+  (getOwner: (req: Request) => string | null) =>
+  (req: Request): string =>
+    getOwner(req) ?? byIp(req);
+
+// Generous for any real session (nobody condenses a dozen Motes a session), a wall
+// against scripted account/DB flooding.
+const CREATE_MAX = 10;
+const CREATE_WINDOW_MS = 60 * 60 * 1000;
+// Matches the client's own peek debounce (PEEK_DEBOUNCE_MS), now also enforced
+// server-side — the real ceiling on AI spend once narration is model-backed.
+const PEEK_MAX = 30;
+const PEEK_WINDOW_MS = 60 * 60 * 1000;
 
 export interface CreatureDeps {
   repo: Repository;
@@ -56,6 +72,20 @@ const asyncHandler =
 export function creaturesRouter(deps: CreatureDeps): Router {
   const { repo, clock, seed, narrator, getOwner } = deps;
   const router = Router();
+  const createLimiter = rateLimit({
+    windowMs: CREATE_WINDOW_MS,
+    max: CREATE_MAX,
+    keyOf: byOwner(getOwner),
+    clock,
+    message: 'too many new amabos at once — slow down and try again shortly',
+  });
+  const peekLimiter = rateLimit({
+    windowMs: PEEK_WINDOW_MS,
+    max: PEEK_MAX,
+    keyOf: byOwner(getOwner),
+    clock,
+    message: 'too many peeks at once — slow down and try again shortly',
+  });
 
   // The dashboard: all of the signed-in Light's creatures (caught up to now).
   router.get(
@@ -76,6 +106,7 @@ export function creaturesRouter(deps: CreatureDeps): Router {
   // Condense a Mote.
   router.post(
     '/creatures',
+    createLimiter,
     asyncHandler(async (req, res) => {
       const parsed = CreateCreatureRequest.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -107,6 +138,7 @@ export function creaturesRouter(deps: CreatureDeps): Router {
   // Catch-up + narrate the gap.
   router.post(
     '/creatures/:id/peek',
+    peekLimiter,
     asyncHandler(async (req, res) => {
       const rec = await repo.getCreature(req.params.id!, getOwner(req));
       if (!rec) return res.status(404).json({ error: 'not found' });

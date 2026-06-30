@@ -190,6 +190,19 @@ describe('auth (M5.5)', () => {
     expect((await agent.get('/me')).status).toBe(401);
   });
 
+  it('rate-limits magic-link requests (mail-bomb guard)', async () => {
+    const { app } = setup();
+    // The limit is 5 per 15 minutes per IP; all of supertest's requests share one IP.
+    for (let i = 0; i < 5; i++) {
+      const res = await request(app)
+        .post('/auth/email')
+        .send({ email: `p${i}@example.com` });
+      expect(res.status).toBe(200);
+    }
+    const blocked = await request(app).post('/auth/email').send({ email: 'one-too-many@x.com' });
+    expect(blocked.status).toBe(429);
+  });
+
   it('rejects a malformed email with 400', async () => {
     const { app } = setup();
     const res = await request(app).post('/auth/email').send({ email: 'not-an-email' });

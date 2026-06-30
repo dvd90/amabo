@@ -283,3 +283,43 @@ describe('ownership scoping', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('rate limits (abuse/cost guards)', () => {
+  it('caps Mote creation per account (10/hour)', async () => {
+    const { app } = setup();
+    const { agent, csrf } = await login(app);
+    for (let i = 0; i < 10; i++) {
+      const res = await agent
+        .post('/creatures')
+        .set('x-csrf-token', csrf)
+        .send({ name: `M${i}` });
+      expect(res.status).toBe(201);
+    }
+    const blocked = await agent
+      .post('/creatures')
+      .set('x-csrf-token', csrf)
+      .send({ name: 'one-more' });
+    expect(blocked.status).toBe(429);
+
+    // a DIFFERENT account is unaffected — the limit is per-owner, not global
+    const other = await login(app, 'other-light');
+    const res = await other.agent
+      .post('/creatures')
+      .set('x-csrf-token', other.csrf)
+      .send({ name: 'Pip' });
+    expect(res.status).toBe(201);
+  });
+
+  it('caps peeks per account (30/hour) — the ceiling on AI spend once narration is on', async () => {
+    const { app } = setup();
+    const { agent, csrf } = await login(app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    const id = created.body.id as string;
+    for (let i = 0; i < 30; i++) {
+      expect((await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf)).status).toBe(
+        200,
+      );
+    }
+    expect((await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf)).status).toBe(429);
+  });
+});

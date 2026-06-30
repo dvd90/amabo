@@ -10,19 +10,25 @@ import { CreatureView } from '@amabo/shared';
 import { Router, type Request } from 'express';
 import type { Clock, SeedSource } from '../clock.js';
 import { birthThought } from '../narrate/local.js';
+import { byIp, rateLimit } from '../rateLimit.js';
 
 export interface DemoDeps {
   clock: Clock;
   seed: SeedSource;
 }
 
+// Generous for a curious visitor replaying the birth moment; a wall against scripted abuse.
+const DEMO_MAX = 30;
+const DEMO_WINDOW_MS = 60 * 1000;
+
 export function demoRouter(deps: DemoDeps): Router {
   const { clock, seed } = deps;
   const router = Router();
+  const limiter = rateLimit({ windowMs: DEMO_WINDOW_MS, max: DEMO_MAX, keyOf: byIp, clock });
 
   // A newborn Mote and its very first thought — never stored. The client may stash the
   // returned `seed` so the creature kept after signup is the one met here.
-  router.get('/demo/birth', (_req: Request, res) => {
+  router.get('/demo/birth', limiter, (_req: Request, res) => {
     const s = seed();
     const state = condenseMote(s, clock());
     const creature = CreatureView.parse({

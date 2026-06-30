@@ -20,9 +20,14 @@ import { requireAuth, requireCsrf } from '../auth/middleware.js';
 import { makeMagicToken, verifyMagicToken } from '../auth/magic.js';
 import type { Mailer } from '../auth/mailer.js';
 import type { Repository, UserRecord } from '../repo/types.js';
+import { byIp, rateLimit } from '../rateLimit.js';
 
 /** How long a magic-link is valid for. */
 const MAGIC_TTL_MS = 15 * 60 * 1000;
+// A real mail send per request — generous for a Light retrying a missed email, a wall
+// against using this endpoint to mail-bomb arbitrary addresses from our domain.
+const MAGIC_REQUEST_MAX = 5;
+const MAGIC_REQUEST_WINDOW_MS = 15 * 60 * 1000;
 
 export interface AuthDeps {
   repo: Repository;
@@ -59,6 +64,13 @@ const STATE_COOKIE = 'amabo_oauth_state';
 export function authRouter(deps: AuthDeps): Router {
   const { repo, authProvider, clock, cookieSecure, sameSite, baseUrl, postLoginRedirect } = deps;
   const router = Router();
+  const magicLimiter = rateLimit({
+    windowMs: MAGIC_REQUEST_WINDOW_MS,
+    max: MAGIC_REQUEST_MAX,
+    keyOf: byIp,
+    clock,
+    message: 'too many sign-in requests — wait a bit and try again',
+  });
 
   // What sign-in methods the client should offer (email is always on).
   router.get('/auth/config', (_req: Request, res: Response) => {
@@ -98,7 +110,7 @@ export function authRouter(deps: AuthDeps): Router {
   // session — so possession of the address is proven and you can't claim an account that
   // isn't yours. The response is deliberately neutral (never reveals whether the address
   // is known); only in dev (no real mailer) is the link echoed back for testing.
-  router.post('/auth/email', (req: Request, res: Response, next) => {
+  router.post('/auth/email', magicLimiter, (req: Request, res: Response, next) => {
     void (async () => {
       try {
         const parsed = EmailLoginRequest.safeParse(req.body);
