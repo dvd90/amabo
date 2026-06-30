@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ApiClient } from '../api/client.js';
 import { useGame } from '../store/useGame.js';
 import { Settings } from './Settings.js';
 
 afterEach(() => {
   cleanup();
-  useGame.setState({ theme: 'ember', pixelMode: false });
+  useGame.setState({ theme: 'ember', pixelMode: false, authed: null });
 });
 
 describe('<Settings>', () => {
@@ -28,5 +29,30 @@ describe('<Settings>', () => {
     render(<Settings onClose={onClose} />);
     fireEvent.click(screen.getByRole('button', { name: /Close/ }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('saves a picked theme to the account when signed in, beside the local cache', () => {
+    const updatePreferences = vi.fn().mockResolvedValue({});
+    useGame.setState({
+      theme: 'ember',
+      authed: true,
+      client: { updatePreferences } as unknown as ApiClient,
+    });
+    render(<Settings onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Grape/ }));
+    expect(updatePreferences).toHaveBeenCalledWith({ theme: 'grape' });
+    expect(localStorage.getItem('amabo:theme')).toBe('grape');
+  });
+
+  it('does not call the server while signed out — local-only', () => {
+    const updatePreferences = vi.fn();
+    useGame.setState({
+      theme: 'ember',
+      authed: false,
+      client: { updatePreferences } as unknown as ApiClient,
+    });
+    render(<Settings onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Grape/ }));
+    expect(updatePreferences).not.toHaveBeenCalled();
   });
 });
