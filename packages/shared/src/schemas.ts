@@ -83,6 +83,17 @@ export const EmailLoginRequest = z.object({
   email: z.string().trim().email().max(254),
 });
 
+/**
+ * A Light's appearance preferences (the colour theme + the pixel/smooth art switch),
+ * saved at the account level so they follow you to any device. `theme` is kept as an
+ * opaque short id (not an enum) so the web can add themes without an API release.
+ */
+export const UserPreferences = z.object({
+  theme: z.string().min(1).max(32).optional(),
+  pixelMode: z.boolean().optional(),
+});
+export type UserPreferencesT = z.infer<typeof UserPreferences>;
+
 // ── API response views ─────────────────────────────────────────────────────────
 export const CreatureView = z.object({
   id: z.string(),

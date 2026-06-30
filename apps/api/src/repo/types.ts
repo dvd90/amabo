@@ -8,6 +8,7 @@
  */
 
 import type { CreatureState, GatherResult, SimEvent, Star } from '@amabo/engine';
+import type { UserPreferencesT } from '@amabo/shared';
 
 export interface CreatureRecord {
   id: string;
@@ -48,6 +49,8 @@ export interface UserRecord {
   oauthProvider: string;
   oauthSubject: string;
   ageBand: string | null;
+  /** Appearance prefs (theme, pixel/smooth art) — account-level, follows any device. */
+  preferences: UserPreferencesT;
   createdAt: number;
 }
 
@@ -64,6 +67,13 @@ export interface OAuthUpsert {
   email: string;
   displayName: string;
   ageBand?: string | null;
+  /**
+   * True (the default if omitted) when the provider has itself verified this email —
+   * a magic link proves it by possession, and Google sets `email_verified`. Only a
+   * verified email may merge into an existing account; an unverified one (e.g. some
+   * non-Google OAuth providers) always gets its own account, never hijacks another.
+   */
+  emailVerified?: boolean;
 }
 
 // ── M9.5: sharing ────────────────────────────────────────────────────────────────
@@ -179,6 +189,8 @@ export interface Repository {
   getUserById(id: string): Promise<UserRecord | null>;
   /** Find a Light by email (case-insensitive) — used to rehome to someone by address. */
   getUserByEmail(email: string): Promise<UserRecord | null>;
+  /** Merge-patch a Light's appearance preferences (a partial update; unset keys persist). */
+  updatePreferences(userId: string, patch: UserPreferencesT): Promise<UserRecord>;
   createSession(userId: string, csrfToken: string, expiresAt: number): Promise<SessionRecord>;
   getSession(id: string): Promise<{ session: SessionRecord; user: UserRecord } | null>;
   deleteSession(id: string): Promise<void>;

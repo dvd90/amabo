@@ -114,6 +114,11 @@ function readTheme(): ThemeId {
   return (THEMES.find((x) => x.id === t)?.id ?? 'ember') as ThemeId;
 }
 
+/** A theme id from the server is only trusted if it's still one we know how to render. */
+function coerceTheme(id: string | undefined): ThemeId | null {
+  return (THEMES.find((x) => x.id === id)?.id as ThemeId | undefined) ?? null;
+}
+
 function readLocal(key: string): string | null {
   try {
     return typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
@@ -279,22 +284,43 @@ export const useGame = create<GameState>((set, get) => ({
   setClient: (client) => set({ client }),
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   toggleContrast: () => set((s) => ({ highContrast: !s.highContrast })),
-  togglePixel: () =>
-    set((s) => {
-      const pixelMode = !s.pixelMode;
-      writeLocal(PIXEL_KEY, pixelMode ? '1' : null);
-      return { pixelMode };
-    }),
+  togglePixel: () => {
+    const pixelMode = !get().pixelMode;
+    writeLocal(PIXEL_KEY, pixelMode ? '1' : null);
+    set({ pixelMode });
+    // Beside the local cache (instant, works signed out), save it at the account level
+    // so it follows the Light to any device. Best-effort — local already applied.
+    if (get().authed)
+      void get()
+        .client.updatePreferences({ pixelMode })
+        .catch(() => {});
+  },
   setTheme: (theme) => {
     writeLocal(THEME_KEY, theme === 'ember' ? null : theme);
     set({ theme });
+    if (get().authed)
+      void get()
+        .client.updatePreferences({ theme })
+        .catch(() => {});
   },
 
   checkSession: async () => {
     const me = await get().client.me();
     if (me) {
       await get().loadDashboard();
-      set({ authed: true });
+      // The account-level prefs are the source of truth once signed in; reconcile the
+      // local cache to match (so the *next* signed-out boot on this device agrees too).
+      const prefs = me.user.preferences;
+      const theme = coerceTheme(prefs?.theme);
+      if (theme) writeLocal(THEME_KEY, theme === 'ember' ? null : theme);
+      if (typeof prefs?.pixelMode === 'boolean') {
+        writeLocal(PIXEL_KEY, prefs.pixelMode ? '1' : null);
+      }
+      set({
+        authed: true,
+        ...(theme ? { theme } : {}),
+        ...(typeof prefs?.pixelMode === 'boolean' ? { pixelMode: prefs.pixelMode } : {}),
+      });
     } else {
       // Logged out → the birth moment. A device that has met it before sees a warmer welcome.
       set({

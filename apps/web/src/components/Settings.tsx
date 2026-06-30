@@ -36,6 +36,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
         <h3 className="settings-h">Creature art</h3>
         <DesignSwitch />
+
+        <p className="settings-note">Saved to your account — follows you to any device.</p>
       </div>
     </div>
   );

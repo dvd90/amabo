@@ -352,7 +352,13 @@ permanence upgrade on top of off-chain rehoming.
 ### New data (Postgres / Drizzle)
 ```
 users         id, email, display_name, oauth_provider, oauth_subject,
-              age_band, created_at
+              age_band, preferences(jsonb), created_at
+auth_identities  id, user_id, provider, subject, created_at   -- unique(provider, subject);
+                 -- every sign-in method linked to an account. upsertUser resolves login
+                 -- against THIS table first, then merges a newly-seen, VERIFIED email into
+                 -- an existing user instead of creating a duplicate (Google ⟷ magic link).
+                 -- users.oauth_provider/oauth_subject is just the first method, kept for
+                 -- display/back-compat.
 sessions      id, user_id, expires_at, ...            -- or via session-store lib
 share_links   id, creature_id, owner_id, kind('visit'|'meet'|'postcard'),
               token, scope, expires_at, revoked_at

@@ -4,7 +4,7 @@
  * cookies, and torn down on logout. `/me` returns the current user + CSRF token.
  */
 
-import { EmailLoginRequest } from '@amabo/shared';
+import { EmailLoginRequest, UserPreferences } from '@amabo/shared';
 import { Router, type Request, type Response } from 'express';
 import type { Clock } from '../clock.js';
 import type { AuthProvider } from '../auth/provider.js';
@@ -169,6 +169,7 @@ export function authRouter(deps: AuthDeps): Router {
           subject: profile.subject,
           email: profile.email,
           displayName: profile.displayName,
+          emailVerified: profile.emailVerified,
         });
         res.clearCookie(STATE_COOKIE, { path: '/' });
         await establishSession(res, user);
@@ -196,6 +197,8 @@ export function authRouter(deps: AuthDeps): Router {
           subject: email,
           email,
           displayName: email.split('@')[0] || email,
+          // Possession of the inbox (clicking the link) verifies the address itself.
+          emailVerified: true,
         });
         await establishSession(res, user);
         res.redirect(postLoginRedirect);
@@ -213,9 +216,28 @@ export function authRouter(deps: AuthDeps): Router {
         email: req.user!.email,
         displayName: req.user!.displayName,
         ageBand: req.user!.ageBand,
+        preferences: req.user!.preferences,
       },
       csrfToken: req.csrfToken,
     });
+  });
+
+  // Save appearance preferences (theme, pixel/smooth art) at the account level, so they
+  // follow the Light to any device. A merge-patch: omitted keys are left as they were.
+  router.patch('/me/preferences', requireAuth, requireCsrf, (req: Request, res: Response, next) => {
+    void (async () => {
+      try {
+        const parsed = UserPreferences.safeParse(req.body);
+        if (!parsed.success) {
+          res.status(400).json({ error: 'invalid preferences' });
+          return;
+        }
+        const user = await repo.updatePreferences(req.user!.id, parsed.data);
+        res.json({ preferences: user.preferences });
+      } catch (err) {
+        next(err);
+      }
+    })();
   });
 
   // Logout: destroy the session (CSRF-protected).

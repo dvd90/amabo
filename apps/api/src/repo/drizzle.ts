@@ -5,10 +5,12 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
+import type { UserPreferencesT } from '@amabo/shared';
 import { and, desc, eq, isNull, or, sql, type AnyColumn } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
 import {
+  authIdentities,
   blocks,
   bonds,
   creatures,
@@ -242,24 +244,58 @@ export class DrizzleRepository implements Repository {
   }
 
   async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
-    const existing = await this.db
-      .select()
-      .from(users)
-      .where(and(eq(users.oauthProvider, input.provider), eq(users.oauthSubject, input.subject)))
-      .limit(1);
-    if (existing[0]) return toUser(existing[0]);
+    return this.db.transaction(async (tx) => {
+      // 1. This exact sign-in method is already linked to an account — use it.
+      const [identity] = await tx
+        .select()
+        .from(authIdentities)
+        .where(
+          and(
+            eq(authIdentities.provider, input.provider),
+            eq(authIdentities.subject, input.subject),
+          ),
+        )
+        .limit(1);
+      if (identity) {
+        const [row] = await tx.select().from(users).where(eq(users.id, identity.userId)).limit(1);
+        return toUser(row!);
+      }
 
-    const [row] = await this.db
-      .insert(users)
-      .values({
-        email: input.email,
-        displayName: input.displayName,
-        oauthProvider: input.provider,
-        oauthSubject: input.subject,
-        ageBand: input.ageBand ?? null,
-      })
-      .returning();
-    return toUser(row!);
+      // 2. A verified email may join an EXISTING account under a different sign-in
+      // method (the magic-link ⟷ Google merge) instead of spawning a duplicate.
+      if (input.emailVerified !== false) {
+        const [existingUser] = await tx
+          .select()
+          .from(users)
+          .where(sql`lower(${users.email}) = ${input.email.toLowerCase()}`)
+          .limit(1);
+        if (existingUser) {
+          await tx
+            .insert(authIdentities)
+            .values({ userId: existingUser.id, provider: input.provider, subject: input.subject })
+            .onConflictDoNothing();
+          return toUser(existingUser);
+        }
+      }
+
+      // 3. Brand new Light.
+      const [row] = await tx
+        .insert(users)
+        .values({
+          email: input.email,
+          displayName: input.displayName,
+          oauthProvider: input.provider,
+          oauthSubject: input.subject,
+          ageBand: input.ageBand ?? null,
+          preferences: {},
+        })
+        .returning();
+      await tx
+        .insert(authIdentities)
+        .values({ userId: row!.id, provider: input.provider, subject: input.subject })
+        .onConflictDoNothing();
+      return toUser(row!);
+    });
   }
 
   async getUserById(id: string): Promise<UserRecord | null> {
@@ -274,6 +310,18 @@ export class DrizzleRepository implements Repository {
       .where(sql`lower(${users.email}) = ${email.toLowerCase()}`)
       .limit(1);
     return row ? toUser(row) : null;
+  }
+
+  async updatePreferences(userId: string, patch: UserPreferencesT): Promise<UserRecord> {
+    const [current] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!current) throw new Error('user not found');
+    const merged = { ...((current.preferences as UserPreferencesT | null) ?? {}), ...patch };
+    const [row] = await this.db
+      .update(users)
+      .set({ preferences: merged })
+      .where(eq(users.id, userId))
+      .returning();
+    return toUser(row!);
   }
 
   async createSession(
@@ -644,6 +692,7 @@ function toUser(row: typeof users.$inferSelect): UserRecord {
     oauthProvider: row.oauthProvider,
     oauthSubject: row.oauthSubject,
     ageBand: row.ageBand,
+    preferences: (row.preferences as UserPreferencesT | null) ?? {},
     createdAt: row.createdAt.getTime(),
   };
 }

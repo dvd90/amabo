@@ -58,8 +58,14 @@ export interface PeekResult {
 
 export type CareAction = 'feed' | 'clean' | 'play' | 'comfort' | 'sleep' | 'wake';
 
+/** Account-level appearance prefs (theme id + pixel/smooth art), follows any device. */
+export interface UserPreferences {
+  theme?: string;
+  pixelMode?: boolean;
+}
+
 export interface MeResult {
-  user: { id: string; email?: string; displayName: string };
+  user: { id: string; email?: string; displayName: string; preferences?: UserPreferences };
   csrfToken: string;
 }
 
@@ -180,6 +186,8 @@ export interface DemoBirth {
 
 export interface ApiClient {
   me(): Promise<MeResult | null>;
+  /** Save appearance prefs at the account level (a merge-patch); follows any device. */
+  updatePreferences(patch: UserPreferences): Promise<UserPreferences>;
   /** Meet an ephemeral newborn Mote before signing in (no account, nothing stored). */
   demoBirth(): Promise<DemoBirth>;
   /** Which sign-in methods the server offers (Google only when configured). */
@@ -266,6 +274,10 @@ export class HttpApiClient implements ApiClient {
     } catch {
       return null;
     }
+  }
+  async updatePreferences(patch: UserPreferences) {
+    const r = await this.req<{ preferences: UserPreferences }>('/me/preferences', 'PATCH', patch);
+    return r.preferences;
   }
   authConfig() {
     return this.req<AuthConfig>('/auth/config');

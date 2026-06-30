@@ -32,6 +32,7 @@ function creature(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
 function fakeClient(): ApiClient {
   return {
     me: vi.fn().mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
+    updatePreferences: vi.fn().mockResolvedValue({}),
     authConfig: vi.fn().mockResolvedValue({ email: true, google: false }),
     loginWithEmail: vi
       .fn()

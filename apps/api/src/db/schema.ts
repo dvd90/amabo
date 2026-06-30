@@ -13,6 +13,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { CareTotals, SimEvent, Stats } from '@amabo/engine';
@@ -101,12 +102,39 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull(),
     displayName: text('display_name').notNull(),
+    // The FIRST sign-in method, kept for display/back-compat. The authoritative,
+    // possibly-multiple set of sign-in methods lives in `auth_identities` below — that's
+    // what login actually resolves against, so a Light who signs in with Google and later
+    // with a magic link to the SAME email lands in this one account, not a duplicate.
     oauthProvider: text('oauth_provider').notNull(),
     oauthSubject: text('oauth_subject').notNull(),
     ageBand: text('age_band'), // captured for the child-safety + optional-crypto gates
+    // Appearance prefs (theme, pixel/smooth art) — account-level, follows the Light to
+    // any device. Validated at the API boundary by `@amabo/shared`'s UserPreferences.
+    preferences: jsonb('preferences'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [index('users_oauth_idx').on(t.oauthProvider, t.oauthSubject)],
+);
+
+// Every sign-in method linked to an account — one row per (provider, subject), many rows
+// can point at the same userId. This is what makes account merging by verified email work:
+// upsertUser links a new identity to an EXISTING user instead of creating a second account.
+export const authIdentities = pgTable(
+  'auth_identities',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    subject: text('subject').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('auth_identities_provider_subject_idx').on(t.provider, t.subject),
+    index('auth_identities_user_idx').on(t.userId),
+  ],
 );
 
 export const sessions = pgTable('sessions', {

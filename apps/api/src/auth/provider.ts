@@ -9,6 +9,8 @@ export interface OAuthProfile {
   subject: string;
   email: string;
   displayName: string;
+  /** Whether the provider itself has verified this address (gates account merging). */
+  emailVerified: boolean;
 }
 
 export interface AuthProvider {
@@ -29,6 +31,7 @@ export class FakeAuthProvider implements AuthProvider {
       subject: code,
       email: `${code}@example.com`,
       displayName: code,
+      emailVerified: true,
     };
   }
 }
@@ -72,12 +75,19 @@ export class GoogleAuthProvider implements AuthProvider {
       headers: { authorization: `Bearer ${access_token}` },
     });
     if (!infoRes.ok) throw new Error('oauth userinfo failed');
-    const info = (await infoRes.json()) as { sub: string; email: string; name?: string };
+    const info = (await infoRes.json()) as {
+      sub: string;
+      email: string;
+      name?: string;
+      email_verified?: boolean;
+    };
     return {
       provider: 'google',
       subject: info.sub,
       email: info.email,
       displayName: info.name ?? info.email,
+      // Google verifies the address itself; only trust the merge when it confirms.
+      emailVerified: info.email_verified === true,
     };
   }
 }

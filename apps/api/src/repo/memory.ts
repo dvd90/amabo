@@ -5,6 +5,7 @@
  */
 
 import type { SimEvent } from '@amabo/engine';
+import type { UserPreferencesT } from '@amabo/shared';
 import { randomUUID } from 'node:crypto';
 import type {
   BondRecord,
@@ -36,6 +37,8 @@ export class InMemoryRepository implements Repository {
   private stars: StarRecord[] = [];
   private interactions: { creatureId: string; action: string; at: number }[] = [];
   private users = new Map<string, UserRecord>();
+  /** Every sign-in method linked to an account — see schema.ts `auth_identities`. */
+  private identities: { provider: string; subject: string; userId: string }[] = [];
   private sessions = new Map<string, SessionRecord>();
   private memories: { creatureId: string; at: number; text: string; salience: number }[] = [];
   private shareLinks = new Map<string, ShareLinkRecord>();
@@ -139,11 +142,25 @@ export class InMemoryRepository implements Repository {
   }
 
   async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
-    for (const u of this.users.values()) {
-      if (u.oauthProvider === input.provider && u.oauthSubject === input.subject) {
-        return structuredClone(u);
+    // 1. This exact sign-in method is already linked to an account — use it.
+    const identity = this.identities.find(
+      (i) => i.provider === input.provider && i.subject === input.subject,
+    );
+    if (identity) return structuredClone(this.users.get(identity.userId)!);
+
+    // 2. A verified email may join an EXISTING account under a different sign-in method
+    // (the magic-link ⟷ Google merge) instead of spawning a duplicate.
+    if (input.emailVerified !== false) {
+      const lower = input.email.toLowerCase();
+      for (const u of this.users.values()) {
+        if (u.email.toLowerCase() === lower) {
+          this.identities.push({ provider: input.provider, subject: input.subject, userId: u.id });
+          return structuredClone(u);
+        }
       }
     }
+
+    // 3. Brand new Light.
     const user: UserRecord = {
       id: randomUUID(),
       email: input.email,
@@ -151,9 +168,11 @@ export class InMemoryRepository implements Repository {
       oauthProvider: input.provider,
       oauthSubject: input.subject,
       ageBand: input.ageBand ?? null,
+      preferences: {},
       createdAt: Date.now(),
     };
     this.users.set(user.id, user);
+    this.identities.push({ provider: input.provider, subject: input.subject, userId: user.id });
     return structuredClone(user);
   }
 
@@ -168,6 +187,13 @@ export class InMemoryRepository implements Repository {
       if (u.email.toLowerCase() === lower) return structuredClone(u);
     }
     return null;
+  }
+
+  async updatePreferences(userId: string, patch: UserPreferencesT): Promise<UserRecord> {
+    const u = this.users.get(userId);
+    if (!u) throw new Error('user not found');
+    u.preferences = { ...u.preferences, ...patch };
+    return structuredClone(u);
   }
 
   async createSession(

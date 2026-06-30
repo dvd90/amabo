@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
+import type { Express } from 'express';
 import { createApp } from '../app.js';
 import { FakeAuthProvider } from '../auth/provider.js';
 import { localNarrator } from '../narrate/port.js';
@@ -116,6 +117,59 @@ describe('auth (M5.5)', () => {
     expect(await follow('pip@example.com')).toBe(await follow('PIP@example.com'));
   });
 
+  it('merges a Google sign-in and a later magic-link sign-in to the SAME email into one account', async () => {
+    const { app } = setup();
+
+    // First, sign in with the fake OAuth provider (stands in for Google) as pip@example.com.
+    const oauth = request.agent(app);
+    const start = await oauth.get('/auth/google');
+    const state = new URL(start.headers.location!).searchParams.get('state');
+    await oauth.get('/auth/callback').query({ code: 'pip', state: state ?? '' });
+    const oauthMe = await oauth.get('/me');
+    const oauthUserId = oauthMe.body.user.id as string;
+
+    // Condense a creature under that account.
+    const created = await oauth
+      .post('/creatures')
+      .set('x-csrf-token', oauthMe.body.csrfToken)
+      .send({ name: 'Pip' });
+    expect(created.status).toBe(201);
+
+    // Now, on a different device/agent, request a magic link to the SAME email and follow
+    // it. This must land in the SAME account — not spawn a duplicate.
+    const viaEmail = request.agent(app);
+    const sent = await viaEmail.post('/auth/email').send({ email: 'pip@example.com' });
+    const link = new URL(sent.body.devLink);
+    await viaEmail.get(link.pathname + link.search);
+    const emailMe = await viaEmail.get('/me');
+
+    expect(emailMe.status).toBe(200);
+    expect(emailMe.body.user.id).toBe(oauthUserId); // merged, not duplicated
+
+    // And the creature condensed under the OAuth sign-in is visible from this one too.
+    const listed = await viaEmail.get('/creatures');
+    expect(listed.body.creatures.map((c: { name: string }) => c.name)).toContain('Pip');
+  });
+
+  it('merges in the other order too: magic-link first, then a Google sign-in to the same email', async () => {
+    const { app } = setup();
+
+    const viaEmail = request.agent(app);
+    const sent = await viaEmail.post('/auth/email').send({ email: 'sol@example.com' });
+    const link = new URL(sent.body.devLink);
+    await viaEmail.get(link.pathname + link.search);
+    const emailUserId = (await viaEmail.get('/me')).body.user.id as string;
+
+    const oauth = request.agent(app);
+    const start = await oauth.get('/auth/google');
+    const state = new URL(start.headers.location!).searchParams.get('state');
+    // FakeAuthProvider derives the email as `${code}@example.com` — use 'sol' to match.
+    await oauth.get('/auth/callback').query({ code: 'sol', state: state ?? '' });
+    const oauthUserId = (await oauth.get('/me')).body.user.id as string;
+
+    expect(oauthUserId).toBe(emailUserId);
+  });
+
   it('rejects a tampered or expired magic link (no session)', async () => {
     const { app, setNow } = setup();
     const agent = request.agent(app);
@@ -171,5 +225,66 @@ describe('auth (M5.5)', () => {
 
     ctx.setNow(1_000_000 + 40 * 24 * 60 * 60 * 1000); // past the 30-day TTL
     expect((await agent.get('/me')).status).toBe(401);
+  });
+
+  describe('appearance preferences (account-level, follow any device)', () => {
+    async function signIn(app: Express) {
+      const agent = request.agent(app);
+      const start = await agent.get('/auth/google');
+      const state = new URL(start.headers.location!).searchParams.get('state');
+      await agent.get('/auth/callback').query({ code: 'pip', state: state ?? '' });
+      const me = await agent.get('/me');
+      return { agent, csrf: me.body.csrfToken as string };
+    }
+
+    it('a fresh account has no preferences yet', async () => {
+      const { app } = setup();
+      const { agent } = await signIn(app);
+      expect((await agent.get('/me')).body.user.preferences).toEqual({});
+    });
+
+    it('saves a merge-patch and a later /me reflects it', async () => {
+      const { app } = setup();
+      const { agent, csrf } = await signIn(app);
+
+      const r1 = await agent
+        .patch('/me/preferences')
+        .set('x-csrf-token', csrf)
+        .send({ theme: 'solar' });
+      expect(r1.status).toBe(200);
+      expect(r1.body.preferences).toEqual({ theme: 'solar' });
+
+      // A second patch with a different key doesn't clobber the first.
+      const r2 = await agent
+        .patch('/me/preferences')
+        .set('x-csrf-token', csrf)
+        .send({ pixelMode: true });
+      expect(r2.body.preferences).toEqual({ theme: 'solar', pixelMode: true });
+
+      expect((await agent.get('/me')).body.user.preferences).toEqual({
+        theme: 'solar',
+        pixelMode: true,
+      });
+    });
+
+    it('requires auth and a valid CSRF token', async () => {
+      const { app } = setup();
+      const anon = await request(app).patch('/me/preferences').send({ theme: 'solar' });
+      expect(anon.status).toBe(401);
+
+      const { agent } = await signIn(app);
+      const noCsrf = await agent.patch('/me/preferences').send({ theme: 'solar' });
+      expect(noCsrf.status).toBe(403);
+    });
+
+    it('rejects a malformed body', async () => {
+      const { app } = setup();
+      const { agent, csrf } = await signIn(app);
+      const res = await agent
+        .patch('/me/preferences')
+        .set('x-csrf-token', csrf)
+        .send({ pixelMode: 'not-a-boolean' });
+      expect(res.status).toBe(400);
+    });
   });
 });
