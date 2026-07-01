@@ -284,6 +284,55 @@ describe('ownership scoping', () => {
   });
 });
 
+describe('POST /creatures/:id/archive — endings leave the shelf (STORY.md §7)', () => {
+  it('refuses to archive a living light (409)', async () => {
+    const { app } = setup();
+    const { agent, csrf } = await login(app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    const res = await agent.post(`/creatures/${created.body.id}/archive`).set('x-csrf-token', csrf);
+    expect(res.status).toBe(409);
+  });
+
+  it('lays an ascended light to rest — off the roster, its star kept', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    const created = await agent
+      .post('/creatures')
+      .set('x-csrf-token', csrf)
+      .send({ name: 'Lumen' });
+    // Mark it graduated directly (the ceremony normally happens via catch-up).
+    const rec = (await ctx.repo.getCreature(created.body.id, userId))!;
+    await ctx.repo.saveCreature({ ...rec, graduatedAt: ctx.nowAt() });
+
+    const res = await agent.post(`/creatures/${created.body.id}/archive`).set('x-csrf-token', csrf);
+    expect(res.status).toBe(200);
+    const listed = await agent.get('/creatures');
+    const mine = listed.body.creatures.find((c: { id: string }) => c.id === created.body.id);
+    expect(mine.archivedAt).toBe(ctx.nowAt()); // marked, never deleted — the client shelves it
+  });
+
+  it('lets a faded light go (dead → archivable), owner-scoped', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    const created = await agent
+      .post('/creatures')
+      .set('x-csrf-token', csrf)
+      .send({ name: 'Hollow' });
+    const rec = (await ctx.repo.getCreature(created.body.id, userId))!;
+    await ctx.repo.saveCreature({ ...rec, state: { ...rec.state, alive: false } });
+
+    // another Light cannot archive it (404, never leaked)
+    const other = await login(ctx.app, 'other');
+    const crossed = await other.agent
+      .post(`/creatures/${created.body.id}/archive`)
+      .set('x-csrf-token', other.csrf);
+    expect(crossed.status).toBe(404);
+
+    const res = await agent.post(`/creatures/${created.body.id}/archive`).set('x-csrf-token', csrf);
+    expect(res.status).toBe(200);
+  });
+});
+
 describe('rate limits (abuse/cost guards)', () => {
   it('caps Mote creation per account (10/hour)', async () => {
     const { app } = setup();

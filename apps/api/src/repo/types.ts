@@ -16,6 +16,8 @@ export interface CreatureRecord {
   name: string;
   state: CreatureState;
   graduatedAt: number | null;
+  /** Laid to rest after its ending ceremony (STORY.md §7); off the active roster. */
+  archivedAt: number | null;
   /** When the Light last explicitly looked in (peek); null until the first visit. */
   lastSeenAt: number | null;
   createdAt: number;
@@ -166,6 +168,8 @@ export interface Repository {
   listCreaturesByOwner(ownerId: string | null): Promise<CreatureRecord[]>;
   /** Record that the Light looked in (peek) — drives "Xh ago" on the roster. */
   markSeen(id: string, at: number): Promise<void>;
+  /** Lay an ended light to rest (the route guards that it IS ended; owner-scoped). */
+  archiveCreature(id: string, ownerId: string | null, at: number): Promise<void>;
   saveCreature(rec: CreatureRecord): Promise<void>;
   appendEvents(
     creatureId: string,

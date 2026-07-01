@@ -69,6 +69,17 @@ export const LOW_AMBRA_AFFECTION_DRAIN_PER_MIN = 0.03;
 export const UNCANNY_THRESHOLD = -30;
 
 /**
+ * Lethe — the fading (STORY.md §7). Even a soft light can be lost, but never suddenly
+ * and never to mere illness: deep neglect is COUNTED (wellbeing at the floor accrues
+ * neglectedSteps; any landed act of care resets the count — the door back stays open
+ * to the very last step), and only two uninterrupted weeks of it, with the heart fully
+ * soured, lets the light go out — without a star, unremembered.
+ */
+export const NEGLECT_WELLBEING = 15; // wellbeing at/below this counts as deep neglect
+export const LETHE_STEPS = (14 * 24 * 60) / SIM_STEP_MINUTES; // two weeks, uninterrupted
+export const LETHE_DISPOSITION = -80; // and the heart at the floor
+
+/**
  * Interactions (ARCHITECTURE.md §4.3). Care raises stats; OVER-care is punished like
  * neglect — tending a creature that doesn't need it is `refused` and costs affection —
  * which is what makes disposition branch instead of climbing forever. Every action has

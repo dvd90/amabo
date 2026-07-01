@@ -203,6 +203,8 @@ export interface ApiClient {
   getCreature(id: string): Promise<RosterItem>;
   peek(id: string): Promise<PeekResult>;
   interact(id: string, action: CareAction): Promise<InteractResult>;
+  /** Lay an ENDED light to rest (ascended → its star remains; faded → Lethe). */
+  archive(id: string): Promise<void>;
   /** The Symposium split — only when the creature is overflowing. */
   multiply(id: string): Promise<MultiplyResult>;
   /** A resonance meeting between two of your own creatures (a duet, never a duel). */
@@ -309,6 +311,9 @@ export class HttpApiClient implements ApiClient {
   }
   interact(id: string, action: CareAction) {
     return this.req<InteractResult>(`/creatures/${id}/interact`, 'POST', { action });
+  }
+  async archive(id: string) {
+    await this.req(`/creatures/${id}/archive`, 'POST', {});
   }
   multiply(id: string) {
     return this.req<MultiplyResult>(`/creatures/${id}/multiply`, 'POST', {});

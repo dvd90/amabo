@@ -12,6 +12,7 @@ function sample(disposition: number, uncanny: boolean, stage = 'bloom'): Creatur
     id: 'codex',
     name: 'codex',
     graduatedAt: null,
+    archivedAt: null,
     lastSeenAt: null,
     createdAt: 0,
     state: {

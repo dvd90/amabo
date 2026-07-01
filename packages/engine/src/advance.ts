@@ -25,8 +25,11 @@ import {
   ILLNESS_DISPOSITION_DRAIN_PER_MIN,
   ILLNESS_HEALTH_DRAIN_PER_MIN,
   ILLNESS_ONSET_CHANCE_PER_STEP,
+  LETHE_DISPOSITION,
+  LETHE_STEPS,
   LOW_AMBRA_AFFECTION_DRAIN_PER_MIN,
   LOW_AMBRA_THRESHOLD,
+  NEGLECT_WELLBEING,
   MS_PER_HOUR,
   NIGHT_END_HOUR,
   NIGHT_START_HOUR,
@@ -95,6 +98,7 @@ export function advance(
   let stage = state.stage;
   let ageMinutes = state.ageMinutes;
   let lastTickAt = state.lastTickAt;
+  let neglected = state.careHistory.neglectedSteps;
   let died = false;
   const events: SimEvent[] = [];
   const stageMult = STAGE_DECAY_MULTIPLIER[state.stage];
@@ -211,6 +215,22 @@ export function advance(
     if (ill) dispDrift -= ILLNESS_DISPOSITION_DRAIN_PER_MIN * SIM_STEP_MINUTES;
     disposition = clampDisposition(disposition + dispDrift);
 
+    // Lethe (STORY.md §7): deep neglect is COUNTED, never sudden. A landed act of
+    // care resets the count (interact.ts) — the door back stays open to the last step.
+    neglected = wellbeing <= NEGLECT_WELLBEING ? neglected + 1 : 0;
+    if (neglected >= LETHE_STEPS && disposition <= LETHE_DISPOSITION) {
+      events.push({
+        at: stepEndTs,
+        kind: 'lightWentOut',
+        tag: 'lethe',
+        statDeltas: {},
+        dispositionDelta: 0,
+        salience: 5,
+      });
+      died = true;
+      break;
+    }
+
     // Ambient flavor: a small, narratable moment — the table leans by disposition
     // (warm finds for an Amabo, stopped clocks for a Yim).
     if (stepRng() < AMBIENT_EVENT_CHANCE_PER_STEP) {
@@ -266,6 +286,7 @@ export function advance(
     stage,
     ageMinutes,
     lastTickAt,
+    careHistory: { ...state.careHistory, neglectedSteps: neglected },
     alive: state.alive && !died,
     uncanny: deriveUncanny(disposition),
   };

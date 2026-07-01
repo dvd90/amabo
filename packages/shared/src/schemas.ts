@@ -100,6 +100,8 @@ export const CreatureView = z.object({
   name: z.string(),
   state: CreatureStateSchema,
   graduatedAt: z.number().nullable(),
+  /** Laid to rest after its ending ceremony (STORY.md §7); off the active roster. */
+  archivedAt: z.number().nullable(),
   createdAt: z.number(),
   /** When the Light last looked in (peek); null if never. Drives "Xh ago" on the roster. */
   lastSeenAt: z.number().nullable(),

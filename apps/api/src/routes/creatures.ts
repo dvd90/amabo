@@ -59,6 +59,7 @@ function toView(rec: CreatureRecord): CreatureViewT {
     name: rec.name,
     state: rec.state,
     graduatedAt: rec.graduatedAt,
+    archivedAt: rec.archivedAt,
     lastSeenAt: rec.lastSeenAt,
     createdAt: rec.createdAt,
   });
@@ -175,6 +176,24 @@ export function creaturesRouter(deps: CreatureDeps): Router {
         away,
         needs: needs(record.state),
       });
+    }),
+  );
+
+  // Lay an ENDED light to rest (STORY.md §7 "Endings leave the shelf"): only an
+  // ascended (graduated) or faded (light gone out) creature can be archived — the
+  // ceremony's confirm calls this. A living creature answers 409; never a deletion.
+  router.post(
+    '/creatures/:id/archive',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const rec = await repo.getCreature(req.params.id!, owner);
+      if (!rec) return res.status(404).json({ error: 'not found' });
+      const ended = rec.graduatedAt !== null || !rec.state.alive;
+      if (!ended) {
+        return res.status(409).json({ error: 'only an ended light can be laid to rest' });
+      }
+      await repo.archiveCreature(rec.id, owner, clock());
+      return res.json({ archived: true });
     }),
   );
 

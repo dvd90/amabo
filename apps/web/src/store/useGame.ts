@@ -235,6 +235,8 @@ export interface GameState {
   rehome(email: string): Promise<string>;
   /** Accept an incoming rehome, then refresh the roster (the creature is now mine). */
   acceptRehome(id: string): Promise<void>;
+  /** Lay an ended light to rest (the ceremony's confirm), then refresh the roster. */
+  layToRest(id: string): Promise<void>;
   /** Return to the roster. */
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
@@ -465,6 +467,15 @@ export const useGame = create<GameState>((set, get) => ({
     try {
       await get().client.acceptRehome(id);
       await get().openDashboard(); // it's mine now — refresh the roster
+    } catch (e) {
+      set({ error: friendlyError(e) });
+    }
+  },
+
+  layToRest: async (id) => {
+    try {
+      await get().client.archive(id);
+      await get().loadDashboard(); // it has left the shelf
     } catch (e) {
       set({ error: friendlyError(e) });
     }

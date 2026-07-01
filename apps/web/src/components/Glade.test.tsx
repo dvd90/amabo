@@ -13,6 +13,7 @@ function creature(id: string, name: string): RosterItem {
     id,
     name,
     graduatedAt: null,
+    archivedAt: null,
     lastSeenAt: null,
     createdAt: 0,
     needs: [],

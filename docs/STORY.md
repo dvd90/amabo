@@ -209,6 +209,18 @@ Its opposite is **Lethe** — forgetting. A creature lost to deep, sustained neg
 risks fading without a star, unremembered. *To raise an Amabo well is to be allowed
 to remember it.* That is the emotional stake under the whole care loop.
 
+The fading is **counted, never sudden**: only weeks of *uninterrupted* deep neglect,
+with the heart fully soured, let a light go out — and **a single act of care that
+lands resets the count**. The door back stays open to the very last step; Lethe only
+ever takes the truly forgotten.
+
+### Endings leave the shelf
+An ended light does not linger among the living. An **ascended** creature is laid to
+rest with a small ceremony and lives on as its named star (Mnemosyne — the sky keeps
+it). A **faded** one is let go with a quieter goodbye and passes into the dark between
+stars (Lethe — the Light may carry it, but the glass does not). Either way, the
+Amarium's shelf holds only the lights still being tended.
+
 ---
 
 ## 7½. The Exchange & the Eternal Memory *(optional — the chain layer)*
