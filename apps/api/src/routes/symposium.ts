@@ -32,7 +32,7 @@ export interface SymposiumDeps {
 }
 
 const MIN_PARTICIPANTS = 2;
-const MAX_PARTICIPANTS = 6;
+const MAX_PARTICIPANTS = 8;
 // A gathering narrates the whole company (real AI spend once the model is on) — generous
 // for any real evening of tending, a wall against scripted abuse.
 const GATHER_MAX = 20;

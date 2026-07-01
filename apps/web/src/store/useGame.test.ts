@@ -264,6 +264,15 @@ describe('useGame store (M8)', () => {
     const line = await useGame.getState().meet('c1', 'c2');
     expect(client.meet).toHaveBeenCalledWith('c1', 'c2');
     expect(line).toMatch(/harmonized/);
+    // …and the duet scene is staged so the meeting is SEEN, not just read.
+    expect(useGame.getState().duet).toEqual({
+      result: 'harmony',
+      a: 'c1',
+      b: 'c2',
+      names: ['Pip', 'Bo'],
+    });
+    useGame.getState().dismissDuet();
+    expect(useGame.getState().duet).toBeNull();
   });
 
   it('shareCreature mints a keepsake link for the open creature', async () => {

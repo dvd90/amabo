@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Creature } from './Creature.js';
+import { DuetScene } from './DuetScene.js';
 import { Farewell } from './Farewell.js';
 import { Settings } from './Settings.js';
 import { useGame } from '../store/useGame.js';
@@ -291,6 +292,7 @@ export function Dashboard() {
         </p>
       ) : null}
 
+      <DuetScene />
       {farewell ? <Farewell creature={farewell} onClose={() => setFarewell(null)} /> : null}
       {settingsOpen ? <Settings onClose={() => setSettingsOpen(false)} /> : null}
 

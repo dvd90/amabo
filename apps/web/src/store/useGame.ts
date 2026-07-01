@@ -172,6 +172,8 @@ export interface GameState {
   reveal: GapSummary | null;
   /** The held Symposium gathering shown in the Glade (null = none yet). */
   gathering: GatheringView | null;
+  /** A just-resonated meeting, played as a small duet scene (null = none showing). */
+  duet: { result: 'harmony' | 'clash'; a: string; b: string; names: [string, string] } | null;
   /** Set the moment a creature ascends — drives the full-screen graduation ceremony. */
   graduation: StarView | null;
   /** Short "what just changed" feedback after a care action. */
@@ -227,8 +229,11 @@ export interface GameState {
   dismissGraduation(): Promise<void>;
   /** The Symposium split — let an overflowing creature share its light into a sibling. */
   multiply(): Promise<void>;
-  /** Introduce two of your creatures; returns a human line about how they resonated. */
+  /** Introduce two of your creatures; returns a human line about how they resonated
+   *  and stages the duet scene (`duet`) so the meeting is *seen*, not just read. */
   meet(aId: string, bId: string): Promise<string>;
+  /** Close the duet scene. */
+  dismissDuet(): void;
   /** Mint a shareable postcard link for the open creature; returns the URL (or null). */
   shareCreature(): Promise<string | null>;
   /** Entrust the open creature to another Light by email; returns a status line. */
@@ -260,6 +265,7 @@ export const useGame = create<GameState>((set, get) => ({
   magicSent: null,
   magicDevLink: null,
   gathering: null,
+  duet: null,
   creatures: [],
   incoming: [],
   creature: null,
@@ -422,6 +428,15 @@ export const useGame = create<GameState>((set, get) => ({
       const r = await get().client.meet(aId, bId);
       await get().loadDashboard(); // both came away a little changed
       const [a, b] = r.names;
+      // Stage the duet so the meeting is *seen* — the note is the after-line.
+      set({
+        duet: {
+          result: r.result,
+          a: aId,
+          b: bId,
+          names: [a ?? 'one', b ?? 'the other'],
+        },
+      });
       return r.result === 'harmony'
         ? `${a} and ${b} harmonized ✦`
         : `${a} and ${b} met, a little wary`;
@@ -432,6 +447,8 @@ export const useGame = create<GameState>((set, get) => ({
       set({ busy: false });
     }
   },
+
+  dismissDuet: () => set({ duet: null }),
 
   dismissGraduation: async () => {
     set({ graduation: null });

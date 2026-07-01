@@ -15,7 +15,7 @@ import { useGame } from '../store/useGame.js';
 import type { SkyView } from '../api/client.js';
 
 const MIN = 2;
-const MAX = 6;
+const MAX = 8;
 const TOPICS = ['love', 'the dark', 'becoming Real', 'home', 'the Light'] as const;
 
 /** Pull the capability token out of a pasted guest-pass link (or accept a raw token). */

@@ -81,6 +81,26 @@ describe('the Symposium (M-S)', () => {
     expect(held.body.transcript[0].text).toContain('the dark');
   });
 
+  it('a bigger company may gather now: eight peeps hold the glade; nine is too many', async () => {
+    const { app } = setup();
+    const u = await login(app, 'host');
+    const ids: string[] = [];
+    for (let i = 0; i < 9; i++) ids.push(await makeCreature(u.agent, u.csrf, `P${i}`));
+
+    const eight = await u.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', u.csrf)
+      .send({ creatureIds: ids.slice(0, 8) });
+    expect(eight.status).toBe(200);
+    expect(eight.body.participants).toHaveLength(8);
+
+    const nine = await u.agent
+      .post('/symposium/gather')
+      .set('x-csrf-token', u.csrf)
+      .send({ creatureIds: ids });
+    expect(nine.status).toBe(400);
+  });
+
   it('needs at least two creatures, and only your own', async () => {
     const { app } = setup();
     const u = await login(app, 'host');
