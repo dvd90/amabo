@@ -3059,3 +3059,168 @@ main,
     opacity: 0.5;
   }
 }
+
+/* ── The device is glass, and glass is lit by what lives inside it ─────────────── */
+/* The Amarium spills its creature's light onto the bezel — brighter as Ambra rises. */
+.amarium {
+  box-shadow:
+    0 0 calc(14px + 26px * var(--ambra, 0)) hsl(var(--amber) / calc(0.14 + 0.28 * var(--ambra, 0))),
+    inset 0 0 30px rgba(0, 0, 0, 0.35);
+}
+/* Curvature: a fixed corner highlight, the way a domed screen catches the room. */
+.amarium::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(60% 45% at 22% 12%, rgba(255, 255, 255, 0.09), transparent 65%);
+}
+/* A slow reflection sweep across the glass — the room's light passing over it. */
+.amarium::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: -45%;
+  width: 32%;
+  z-index: 3;
+  pointer-events: none;
+  transform: rotate(18deg);
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.05) 45%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 55%,
+    transparent
+  );
+  animation: glassSweep 9s ease-in-out infinite;
+}
+@keyframes glassSweep {
+  0%,
+  55% {
+    left: -45%;
+    opacity: 0;
+  }
+  62% {
+    opacity: 1;
+  }
+  90%,
+  100% {
+    left: 115%;
+    opacity: 0;
+  }
+}
+/* The bezel itself gets a warm rim where the glasslight lands. */
+.device-bezel {
+  border: 1px solid hsl(var(--amber) / 0.14);
+  box-shadow:
+    inset 0 4px 12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 hsl(var(--amber) / 0.12);
+}
+
+/* ── The graduation becomes an ascent, not a poster ────────────────────────────── */
+/* The sky already holds the ones who went before. */
+.ascend-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ascend-field span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: hsl(45 100% 82%);
+  box-shadow: 0 0 6px hsl(45 100% 75% / 0.8);
+  animation: starTwinkle 3.4s ease-in-out infinite;
+}
+/* The soul climbs the column of light… */
+.ascend-soul {
+  position: absolute;
+  left: 50%;
+  top: 24%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff, hsl(45 100% 70%) 45%, transparent 75%);
+  box-shadow: 0 0 18px hsl(45 100% 72%);
+  animation: soulRise 2.4s ease-in-out both;
+  pointer-events: none;
+}
+@keyframes soulRise {
+  0% {
+    transform: translateY(58vh) scale(0.7);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1.25);
+    opacity: 0;
+  }
+}
+/* …and BECOMES the star: it blooms in only once the soul arrives. */
+.ascend-star {
+  animation:
+    starBloom 0.8s cubic-bezier(0.2, 1.5, 0.4, 1) 2.2s backwards,
+    pulse 2.6s ease-in-out 3s infinite;
+}
+@keyframes starBloom {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+/* The words follow like credits. */
+.ascend-kicker {
+  animation: fadeUpIn 0.7s ease 0.2s backwards;
+}
+.ascend-name {
+  animation: fadeUpIn 0.7s ease 2.6s backwards;
+}
+.ascend-line {
+  animation: fadeUpIn 0.9s ease 3s backwards;
+}
+.ascend-dates {
+  animation: fadeUpIn 0.9s ease 3.5s backwards;
+}
+.ascend-done {
+  animation: fadeUpIn 0.9s ease 4s backwards;
+}
+@keyframes fadeUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .amarium::after,
+  .ascend-field span,
+  .ascend-soul,
+  .ascend-star,
+  .ascend-kicker,
+  .ascend-name,
+  .ascend-line,
+  .ascend-dates,
+  .ascend-done {
+    animation: none !important;
+  }
+  .ascend-soul {
+    display: none;
+  }
+}
