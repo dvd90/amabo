@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LOW_AMBRA_THRESHOLD, SIM_STEP_MINUTES, SIM_STEP_MS } from './config.js';
+import {
+  LOW_AMBRA_THRESHOLD,
+  NIGHT_SLEEP_ENERGY,
+  SIM_STEP_MINUTES,
+  SIM_STEP_MS,
+} from './config.js';
 import { advance, decideAsleep, hourOfDay, isNight } from './advance.js';
 import { condenseMote, type CreatureState } from './state.js';
 
@@ -21,14 +26,21 @@ describe('time helpers (M1)', () => {
   });
 
   it('decideAsleep covers every awake/asleep transition', () => {
-    // Awake → stays awake when rested in daytime; sleeps at night or when exhausted.
+    // Awake → collapses when exhausted at any hour; at night it turns in early once
+    // drowsy (below NIGHT_SLEEP_ENERGY) — but a rested creature stays up.
     expect(decideAsleep(false, 80, 12)).toBe(false);
-    expect(decideAsleep(false, 80, 23)).toBe(true);
-    expect(decideAsleep(false, 10, 12)).toBe(true);
-    // Asleep → wakes only when rested AND daytime; stays down otherwise.
+    expect(decideAsleep(false, 80, 23)).toBe(false); // rested at night: still up
+    expect(decideAsleep(false, NIGHT_SLEEP_ENERGY - 5, 23)).toBe(true); // drowsy at night: turns in
+    expect(decideAsleep(false, NIGHT_SLEEP_ENERGY - 5, 12)).toBe(false); // same energy at noon: up
+    expect(decideAsleep(false, 10, 12)).toBe(true); // exhausted: collapses even at noon
+    // Asleep → rest serves the creature, not the clock: it wakes the moment it is
+    // rested, whatever the hour; otherwise it stays down. (Fixes the stuck-asleep bug:
+    // "night" is UTC, so the old never-wake-at-night rule could pin a fully-rested
+    // creature asleep through a user's local afternoon.)
     expect(decideAsleep(true, 95, 12)).toBe(false);
+    expect(decideAsleep(true, 95, 23)).toBe(false); // fully rested wakes even at night
     expect(decideAsleep(true, 50, 12)).toBe(true);
-    expect(decideAsleep(true, 95, 23)).toBe(true);
+    expect(decideAsleep(true, 50, 23)).toBe(true);
   });
 });
 

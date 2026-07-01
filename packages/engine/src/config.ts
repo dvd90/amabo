@@ -45,10 +45,17 @@ export const STAGE_DECAY_MULTIPLIER: Record<Stage, number> = {
   bloom: 0.9,
 };
 
-/** Sleep cycle: the creature rests at night (UTC hour) or when exhausted. */
+/**
+ * Sleep cycle: rest serves the creature, not the clock. It collapses when exhausted
+ * at any hour, turns in *early* at night once drowsy, and always wakes the moment it
+ * is rested (WAKE_ENERGY) — the gap between NIGHT_SLEEP_ENERGY and WAKE_ENERGY is the
+ * hysteresis that keeps it from flip-flopping at the boundary. ("Night" is UTC; a
+ * never-wake-at-night rule would pin creatures asleep through some users' local day.)
+ */
 export const NIGHT_START_HOUR = 22;
 export const NIGHT_END_HOUR = 6;
 export const SLEEP_ENERGY_THRESHOLD = 15;
+export const NIGHT_SLEEP_ENERGY = 70; // at night it turns in early below this
 export const WAKE_ENERGY = 90;
 
 /**
@@ -63,10 +70,14 @@ export const UNCANNY_THRESHOLD = -30;
 
 /**
  * Interactions (ARCHITECTURE.md §4.3). Care raises stats; OVER-care is punished like
- * neglect — feeding a full creature is `refused` and costs affection — which is what
- * makes disposition branch instead of climbing forever.
+ * neglect — tending a creature that doesn't need it is `refused` and costs affection —
+ * which is what makes disposition branch instead of climbing forever. Every action has
+ * a refusal, so care cannot be spammed into a free disposition pump: the game paces
+ * itself by the creature's actual needs.
  */
 export const FULL_AMBRA = 90; // feeding at/above this is refused
+export const CLEAN_ENOUGH = 90; // cleaning at/above this is refused
+export const SECURE_ENOUGH = 85; // comforting at/above this is refused — comfort is for need
 export const REFUSED_AFFECTION_PENALTY = 4;
 export const PLAY_ENERGY_FLOOR = 20; // too tired to play below this
 

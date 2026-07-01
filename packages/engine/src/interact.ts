@@ -11,11 +11,13 @@
  */
 
 import {
+  CLEAN_ENOUGH,
   DISPOSITION_NUDGE,
   FULL_AMBRA,
   INTERACTION_EFFECTS,
   PLAY_ENERGY_FLOOR,
   REFUSED_AFFECTION_PENALTY,
+  SECURE_ENOUGH,
   STAT_MAX,
   STAT_MIN,
 } from './config.js';
@@ -89,7 +91,17 @@ export function interact(state: CreatureState, action: InteractAction): Result {
       );
     }
 
-    case 'clean':
+    case 'clean': {
+      // Already spotless — scrubbing a clean creature is over-care, and it stings.
+      if (state.stats.cleanliness >= CLEAN_ENOUGH) {
+        return care(
+          state,
+          'refused',
+          { affection: -REFUSED_AFFECTION_PENALTY },
+          {},
+          DISPOSITION_NUDGE.refused,
+        );
+      }
       return care(
         state,
         'cleaned',
@@ -97,6 +109,7 @@ export function interact(state: CreatureState, action: InteractAction): Result {
         { cleaned: state.careHistory.cleaned + 1 },
         DISPOSITION_NUDGE.care,
       );
+    }
 
     case 'play': {
       // Too tired to play — no benefit, just a small refusal.
@@ -123,7 +136,18 @@ export function interact(state: CreatureState, action: InteractAction): Result {
       );
     }
 
-    case 'comfort':
+    case 'comfort': {
+      // Comfort is for need (the redemption lever, STORY.md §4) — a creature already
+      // at peace refuses it, so spamming can never pump disposition toward the light.
+      if (state.stats.security >= SECURE_ENOUGH) {
+        return care(
+          state,
+          'refused',
+          { affection: -REFUSED_AFFECTION_PENALTY },
+          {},
+          DISPOSITION_NUDGE.refused,
+        );
+      }
       return care(
         state,
         'comforted',
@@ -131,6 +155,7 @@ export function interact(state: CreatureState, action: InteractAction): Result {
         { comforted: state.careHistory.comforted + 1 },
         DISPOSITION_NUDGE.comfort,
       );
+    }
 
     case 'sleep': {
       if (state.asleep) return { state, events: [] };

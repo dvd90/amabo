@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FULL_AMBRA, PLAY_ENERGY_FLOOR } from './config.js';
+import { CLEAN_ENOUGH, FULL_AMBRA, PLAY_ENERGY_FLOOR, SECURE_ENOUGH } from './config.js';
 import { interact } from './interact.js';
 import { condenseMote, type CreatureState } from './state.js';
 
@@ -54,6 +54,45 @@ describe('interact — care actions (M2)', () => {
     expect(state.stats.security).toBeGreaterThan(20);
     expect(state.careHistory.comforted).toBe(1);
     expect(events[0]?.kind).toBe('comforted');
+  });
+
+  it('cleaning an already-clean creature is refused (over-care stings everywhere)', () => {
+    const spotless: CreatureState = {
+      ...fresh(),
+      stats: { ...fresh().stats, cleanliness: CLEAN_ENOUGH + 5 },
+    };
+    const { state, events } = interact(spotless, 'clean');
+    expect(events[0]?.kind).toBe('refused');
+    expect(state.careHistory.cleaned).toBe(0);
+    expect(state.stats.affection).toBeLessThan(spotless.stats.affection);
+    expect(state.disposition).toBeLessThan(spotless.disposition);
+  });
+
+  it('comforting a creature already at peace is refused — the lever is for need', () => {
+    const atPeace: CreatureState = {
+      ...fresh(),
+      stats: { ...fresh().stats, security: SECURE_ENOUGH + 5 },
+    };
+    const { state, events } = interact(atPeace, 'comfort');
+    expect(events[0]?.kind).toBe('refused');
+    expect(state.careHistory.comforted).toBe(0);
+    expect(state.disposition).toBeLessThan(atPeace.disposition);
+  });
+
+  it('spamming comfort cannot pump disposition forever: it self-seals into refusals', () => {
+    // Each landed comfort raises security; once security crosses SECURE_ENOUGH the
+    // next spam is refused and *costs* disposition — closing the +6/act exploit.
+    let s = fresh();
+    let refused = false;
+    for (let i = 0; i < 10; i++) {
+      const r = interact(s, 'comfort');
+      if (r.events[0]?.kind === 'refused') {
+        refused = true;
+        break;
+      }
+      s = r.state;
+    }
+    expect(refused).toBe(true);
   });
 
   it('sleep and wake toggle rest, emitting transitions only on a real change', () => {
