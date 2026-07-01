@@ -86,7 +86,7 @@ export function interact(state: CreatureState, action: InteractAction): Result {
         state,
         'fed',
         INTERACTION_EFFECTS.feed,
-        { fed: state.careHistory.fed + 1 },
+        { fed: state.careHistory.fed + 1, neglectedSteps: 0 },
         DISPOSITION_NUDGE.care,
       );
     }
@@ -106,7 +106,7 @@ export function interact(state: CreatureState, action: InteractAction): Result {
         state,
         'cleaned',
         INTERACTION_EFFECTS.clean,
-        { cleaned: state.careHistory.cleaned + 1 },
+        { cleaned: state.careHistory.cleaned + 1, neglectedSteps: 0 },
         DISPOSITION_NUDGE.care,
       );
     }
@@ -131,7 +131,7 @@ export function interact(state: CreatureState, action: InteractAction): Result {
         state,
         'played',
         INTERACTION_EFFECTS.play,
-        { played: state.careHistory.played + 1 },
+        { played: state.careHistory.played + 1, neglectedSteps: 0 },
         DISPOSITION_NUDGE.care,
       );
     }
@@ -152,7 +152,7 @@ export function interact(state: CreatureState, action: InteractAction): Result {
         state,
         'comforted',
         INTERACTION_EFFECTS.comfort,
-        { comforted: state.careHistory.comforted + 1 },
+        { comforted: state.careHistory.comforted + 1, neglectedSteps: 0 },
         DISPOSITION_NUDGE.comfort,
       );
     }

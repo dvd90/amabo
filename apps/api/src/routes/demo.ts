@@ -36,6 +36,7 @@ export function demoRouter(deps: DemoDeps): Router {
       name: 'Mote',
       state,
       graduatedAt: null,
+      archivedAt: null,
       lastSeenAt: null,
       createdAt: clock(),
     });

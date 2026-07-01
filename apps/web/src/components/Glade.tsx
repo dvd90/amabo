@@ -27,7 +27,9 @@ function passToToken(s: string): string | null {
 }
 
 export function Glade() {
-  const creatures = useGame((s) => s.creatures);
+  const roster = useGame((s) => s.creatures);
+  // Only lights still being tended can gather (the ended have left the shelf).
+  const creatures = roster.filter((c) => c.state.alive && !c.graduatedAt && !c.archivedAt);
   const gathering = useGame((s) => s.gathering);
   const busy = useGame((s) => s.busy);
   const hold = useGame((s) => s.holdSymposium);
@@ -84,6 +86,18 @@ export function Glade() {
       <p className="glade-lede">
         Gather {MIN}–{MAX} of your creatures in the glade to be together and speak of love.
       </p>
+      {/* The glade's purpose made visible: company is grace (STORY.md §6½) — a longing
+          Yim warmed by warm companions drifts back toward the light. */}
+      {creatures.some((c) => c.state.uncanny) ? (
+        <p className="glade-purpose">
+          ☾{' '}
+          {creatures
+            .filter((c) => c.state.uncanny)
+            .map((c) => c.name)
+            .join(', ')}{' '}
+          is longing — company is grace. Gather bright friends around it.
+        </p>
+      ) : null}
 
       <div className="glade-roster">
         {creatures.map((c) => {

@@ -19,6 +19,7 @@ function representative(p: PostcardView): CreatureViewT {
     id: 'postcard',
     name: p.name,
     graduatedAt: p.graduated ? 1 : null,
+    archivedAt: null,
     lastSeenAt: null,
     createdAt: 0,
     state: {

@@ -38,6 +38,10 @@ export const creatures = pgTable(
     careHistory: jsonb('care_history').$type<CareTotals>().notNull(),
     lastTickAt: doublePrecision('last_tick_at').notNull(),
     graduatedAt: doublePrecision('graduated_at'),
+    // Laid to rest after its ending ceremony (STORY.md §7 "Endings leave the shelf"):
+    // an ascended or faded creature the Light has said goodbye to. Off the active
+    // roster; a graduated one lives on as its star. Only ended lights can be archived.
+    archivedAt: doublePrecision('archived_at'),
     // When the Light last explicitly looked in (peek). Distinct from lastTickAt, which
     // any background catch-up advances — this only moves on a real visit (M-B).
     lastSeenAt: doublePrecision('last_seen_at'),

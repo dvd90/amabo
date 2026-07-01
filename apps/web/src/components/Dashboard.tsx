@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Creature } from './Creature.js';
+import { Farewell } from './Farewell.js';
 import { Settings } from './Settings.js';
 import { useGame } from '../store/useGame.js';
 import type { LetterView, NeedFlag, RosterItem } from '../api/client.js';
@@ -115,6 +116,20 @@ export function Dashboard() {
   const [note, setNote] = useState<string | null>(null);
   const [letters, setLetters] = useState<LetterView[] | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [farewell, setFarewell] = useState<RosterItem | null>(null);
+
+  // Endings leave the shelf (STORY.md §7): the grid holds only lights being tended;
+  // ended-but-unfarewelled ones wait for their ceremony; archived ones become the sky
+  // shelf (ascended → their stars remain) or a quiet count (faded → Lethe).
+  const active = creatures.filter((c) => c.state.alive && !c.graduatedAt && !c.archivedAt);
+  const ended = creatures.filter((c) => (!c.state.alive || c.graduatedAt) && !c.archivedAt);
+  const skyNames = creatures
+    .filter((c) => c.graduatedAt && c.archivedAt)
+    .map((c) => c.name)
+    .join(' · ');
+  const lostCount = creatures.filter(
+    (c) => !c.state.alive && !c.graduatedAt && c.archivedAt,
+  ).length;
 
   const exitMeet = () => {
     setMeetMode(false);
@@ -142,7 +157,7 @@ export function Dashboard() {
           <button className="linkish" onClick={() => setSettingsOpen(true)}>
             ⚙ Settings
           </button>
-          {creatures.length >= 2 ? (
+          {active.length >= 2 ? (
             <button
               className="linkish"
               onClick={() => {
@@ -154,12 +169,12 @@ export function Dashboard() {
               {meetMode ? 'Cancel' : '✦ Introduce two'}
             </button>
           ) : null}
-          {creatures.length >= 2 && !meetMode ? (
+          {active.length >= 2 && !meetMode ? (
             <button className="linkish" onClick={() => openGlade()}>
               ❀ The Symposium
             </button>
           ) : null}
-          {creatures.length >= 2 && !meetMode ? (
+          {active.length >= 2 && !meetMode ? (
             <button className="linkish" onClick={() => void client.letters().then(setLetters)}>
               ✉ Letters
             </button>
@@ -198,7 +213,7 @@ export function Dashboard() {
       {note ? <p className="dash-note">{note}</p> : null}
 
       <div className="amabo-grid">
-        {creatures.map((c) => (
+        {active.map((c) => (
           <CreatureCard
             key={c.id}
             c={c}
@@ -206,6 +221,27 @@ export function Dashboard() {
             selected={picked.includes(c.id)}
             onOpen={() => onCardTap(c.id)}
           />
+        ))}
+
+        {/* Ended lights awaiting their ceremony — tap to say the goodbye. */}
+        {ended.map((c) => (
+          <button
+            key={c.id}
+            className={`amabo-card amabo-card-ended${c.graduatedAt ? ' is-elysium' : ' is-lethe'}`}
+            onClick={() => setFarewell(c)}
+            aria-label={c.graduatedAt ? `Lay ${c.name} to rest` : `Let ${c.name} go`}
+          >
+            <span className="amabo-card-glass ended-mark" aria-hidden="true">
+              {c.graduatedAt ? '✦' : '◌'}
+            </span>
+            <span className="amabo-card-name">{c.name}</span>
+            <span className="amabo-card-meta">
+              {c.graduatedAt ? 'ascended into Elysium' : 'its light went out'}
+            </span>
+            <span className="amabo-card-fate">
+              {c.graduatedAt ? 'tap to lay it to rest' : 'tap to say goodbye'}
+            </span>
+          </button>
         ))}
 
         {naming ? (
@@ -246,6 +282,16 @@ export function Dashboard() {
         )}
       </div>
 
+      {/* The sky shelf: the ones laid to rest live on as their stars; the faded are
+          only a quiet count — Lethe keeps its own (STORY.md §7). */}
+      {skyNames ? <p className="dash-shelf dash-shelf-sky">✦ in your sky: {skyNames}</p> : null}
+      {lostCount > 0 ? (
+        <p className="dash-shelf dash-shelf-lost">
+          ◌ lost to the dark: {lostCount} light{lostCount === 1 ? '' : 's'}
+        </p>
+      ) : null}
+
+      {farewell ? <Farewell creature={farewell} onClose={() => setFarewell(null)} /> : null}
       {settingsOpen ? <Settings onClose={() => setSettingsOpen(false)} /> : null}
 
       {letters ? (

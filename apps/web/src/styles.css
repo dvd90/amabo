@@ -3372,3 +3372,115 @@ main,
     animation: none;
   }
 }
+
+/* ── Endings leave the shelf (STORY.md §7) ─────────────────────────────────────── */
+/* An ended light waiting for its ceremony: quiet, no breathing glow, an invitation. */
+.amabo-card-ended .amabo-card-glass::before {
+  animation: none;
+  opacity: 0.35;
+}
+.amabo-card-ended .ended-mark {
+  font-size: 2.2rem;
+  display: grid;
+  place-items: center;
+}
+.amabo-card-ended.is-elysium {
+  border-color: hsl(45 90% 65% / 0.45);
+}
+.amabo-card-ended.is-elysium .ended-mark {
+  color: hsl(45 100% 76%);
+  text-shadow: 0 0 18px hsl(45 100% 70% / 0.8);
+}
+.amabo-card-ended.is-lethe {
+  border-color: hsl(254 20% 45% / 0.4);
+  opacity: 0.8;
+}
+.amabo-card-ended.is-lethe .ended-mark {
+  color: hsl(254 25% 70%);
+}
+/* The shelves under the grid: the kept and the lost. */
+.dash-shelf {
+  margin: 0.9rem 0 0;
+  font-size: 0.74rem;
+  text-align: center;
+}
+.dash-shelf-sky {
+  color: hsl(45 90% 72%);
+  text-shadow: 0 0 12px hsl(45 100% 70% / 0.35);
+}
+.dash-shelf-lost {
+  color: hsl(254 15% 55%);
+  font-style: italic;
+}
+
+/* The farewell ceremony — Mnemosyne warm, Lethe grey. */
+.farewell {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(0, 0, 0, 0.72);
+}
+.farewell-sheet {
+  width: 100%;
+  max-width: 22rem;
+  text-align: center;
+  border-radius: 1rem;
+  padding: 1.6rem 1.4rem 1.5rem;
+  color: #f3ece0;
+  background: linear-gradient(#241d16, #17110c);
+  border: 1px solid hsl(var(--amber) / 0.3);
+}
+.farewell.is-lethe .farewell-sheet {
+  background: linear-gradient(#1b1822, #100e16);
+  border-color: hsl(254 25% 45% / 0.4);
+}
+.farewell-kicker {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.farewell-mark {
+  font-size: 2.6rem;
+  margin: 0.6rem 0 0.2rem;
+  color: hsl(45 100% 76%);
+  text-shadow: 0 0 22px hsl(45 100% 70% / 0.8);
+  animation: pulse 2.6s ease-in-out infinite;
+}
+.farewell.is-lethe .farewell-mark {
+  color: hsl(254 25% 72%);
+  text-shadow: 0 0 14px hsl(254 40% 60% / 0.5);
+}
+.farewell-name {
+  margin: 0 0 0.7rem;
+  font-size: 1.3rem;
+}
+.farewell-line {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  opacity: 0.9;
+  margin: 0 0 1.2rem;
+}
+.farewell-confirm {
+  width: 100%;
+}
+.farewell-cancel {
+  margin-top: 0.5rem;
+}
+
+/* The glade's purpose, spoken aloud. */
+.glade-purpose {
+  text-align: center;
+  font-size: 0.8rem;
+  color: hsl(254 55% 78%);
+  margin: -0.3rem 0 0.8rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .farewell-mark {
+    animation: none;
+  }
+}

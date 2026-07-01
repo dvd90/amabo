@@ -18,6 +18,7 @@ function creature(
     id,
     name,
     graduatedAt: null,
+    archivedAt: null,
     lastSeenAt: null,
     createdAt: 0,
     needs,

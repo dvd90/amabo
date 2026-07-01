@@ -12,6 +12,7 @@ const demoCreature = (): CreatureViewT =>
     id: 'demo',
     name: 'Mote',
     graduatedAt: null,
+    archivedAt: null,
     lastSeenAt: null,
     createdAt: 0,
     state: {

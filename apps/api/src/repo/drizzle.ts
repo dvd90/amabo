@@ -70,6 +70,7 @@ function rowToRecord(row: Row): CreatureRecord {
     name: row.name,
     state,
     graduatedAt: row.graduatedAt,
+    archivedAt: row.archivedAt,
     lastSeenAt: row.lastSeenAt,
     createdAt: row.createdAt.getTime(),
   };
@@ -141,6 +142,13 @@ export class DrizzleRepository implements Repository {
 
   async markSeen(id: string, at: number): Promise<void> {
     await this.db.update(creatures).set({ lastSeenAt: at }).where(eq(creatures.id, id));
+  }
+
+  async archiveCreature(id: string, ownerId: string | null, at: number): Promise<void> {
+    await this.db
+      .update(creatures)
+      .set({ archivedAt: at })
+      .where(and(eq(creatures.id, id), ownedBy(ownerId)));
   }
 
   async appendEvents(creatureId: string, list: SimEvent[], source: 'sim' | 'ai' | 'user') {

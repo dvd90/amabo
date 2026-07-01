@@ -8,6 +8,7 @@ function creature(over: Partial<CreatureViewT['state']> = {}): CreatureViewT {
     id: 'c1',
     name: 'Pip',
     graduatedAt: null,
+    archivedAt: null,
     lastSeenAt: null,
     createdAt: 0,
     state: {
@@ -60,6 +61,7 @@ function fakeClient(): ApiClient {
     }),
     letters: vi.fn().mockResolvedValue([]),
     sky: vi.fn().mockResolvedValue({ stars: [], threads: [] }),
+    archive: vi.fn().mockResolvedValue(undefined),
     vapidKey: vi.fn().mockResolvedValue(null),
     subscribePush: vi.fn().mockResolvedValue(undefined),
     share: vi
@@ -229,6 +231,7 @@ describe('useGame store (M8)', () => {
         name: 'Lumen',
         bornAt: 0,
         graduatedAt: 2 * 86_400_000,
+        archivedAt: null,
         constellationPos: { x: 0.1, y: 0.2 },
       },
     });

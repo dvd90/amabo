@@ -57,6 +57,13 @@
       "when": 1782849115660,
       "tag": "0007_tired_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782941091559,
+      "tag": "0008_easy_shard",
+      "breakpoints": true
     }
   ]
 }
