@@ -2733,3 +2733,223 @@ body {
   border-radius: 50%;
   box-shadow: 0 0 6px currentColor;
 }
+
+/* ═══ The juice pass — a living world around the creatures ═══════════════════════
+   The app is a game about drifting motes of unspent love; the page itself should
+   breathe. A fixed ambient layer (motes + vignette + grain) sits behind every screen,
+   tinted by the active theme. All motion honours prefers-reduced-motion. */
+
+main,
+.app,
+.boot {
+  position: relative;
+  z-index: 1;
+}
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* Ambra adrift: tiny theme-tinted lights, each on its own slow cycle. */
+.ambient-mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsl(var(--amber) / 0.9), hsl(var(--amber) / 0) 70%);
+  filter: blur(0.4px);
+  animation: ambientDrift linear infinite;
+}
+@keyframes ambientDrift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(14px, -24px) scale(1.25);
+  }
+  50% {
+    transform: translate(-10px, -46px) scale(0.9);
+  }
+  75% {
+    transform: translate(10px, -70px) scale(1.15);
+  }
+  100% {
+    transform: translate(0, -96px) scale(1);
+  }
+}
+/* A soft cinematic vignette: the corners fall away, the centre is where life is. */
+.ambient-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.5));
+}
+/* A whisper of film grain so flat fields read as crafted, not vector-empty. */
+.ambient-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Roster cards: little glass worlds, not list items ─────────────────────────── */
+.amabo-card {
+  animation: cardArrive 0.5s ease backwards;
+}
+/* Staggered entrance: the shelf of worlds lights up one by one. */
+.amabo-card:nth-child(1) {
+  animation-delay: 0.03s;
+}
+.amabo-card:nth-child(2) {
+  animation-delay: 0.09s;
+}
+.amabo-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.amabo-card:nth-child(4) {
+  animation-delay: 0.21s;
+}
+.amabo-card:nth-child(5) {
+  animation-delay: 0.27s;
+}
+.amabo-card:nth-child(6) {
+  animation-delay: 0.33s;
+}
+.amabo-card:nth-child(n + 7) {
+  animation-delay: 0.4s;
+}
+@keyframes cardArrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+/* The glass breathes: a slow warm pulse behind each creature. */
+.amabo-card-glass {
+  position: relative;
+}
+.amabo-card-glass::before {
+  content: '';
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, hsl(var(--amber) / 0.16), transparent 68%);
+  animation: glassBreathe 5.5s ease-in-out infinite;
+}
+@keyframes glassBreathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+.amabo-card:hover {
+  transform: translateY(-4px) scale(1.015);
+  border-color: hsl(var(--amber) / 0.55);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.45),
+    0 0 22px hsl(var(--amber) / 0.12);
+}
+.amabo-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+/* A Yim's card longs in lavender — you feel who it is before you read a word. */
+.amabo-card.is-yim {
+  border-color: hsl(254 40% 62% / 0.35);
+  background: radial-gradient(120% 90% at 50% 0%, rgba(48, 42, 66, 0.55), rgba(17, 15, 24, 0.65));
+}
+.amabo-card.is-yim .amabo-card-name {
+  color: hsl(254 55% 78%);
+}
+.amabo-card.is-yim .amabo-card-glass::before {
+  background: radial-gradient(circle at 50% 45%, hsl(254 55% 70% / 0.16), transparent 68%);
+}
+.amabo-card.is-yim:hover {
+  border-color: hsl(254 50% 68% / 0.6);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.45),
+    0 0 22px hsl(254 55% 70% / 0.14);
+}
+
+/* ── Typography with presence ──────────────────────────────────────────────────── */
+.dash-title {
+  font-size: 1.45rem;
+  background: linear-gradient(
+    100deg,
+    hsl(var(--amber)) 20%,
+    hsl(var(--amber) / 0.55) 40%,
+    hsl(var(--amber)) 60%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 6s ease-in-out infinite;
+}
+@keyframes titleShimmer {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 100% 0;
+  }
+}
+
+/* ── Button tactility: everything you press should press back ──────────────────── */
+.btn {
+  transition:
+    filter 0.15s ease,
+    transform 0.08s ease,
+    box-shadow 0.15s ease;
+}
+.btn:hover {
+  filter: brightness(1.12);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 255, 255, 0.2),
+    0 3px 10px rgba(0, 0, 0, 0.45),
+    0 0 16px hsl(var(--amber) / 0.22);
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.toggle,
+.linkish,
+.chip,
+.glade-topic,
+.theme-swatch,
+.design-opt,
+.sharecard-btn {
+  transition:
+    transform 0.08s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+.toggle:active,
+.chip:active,
+.glade-topic:active,
+.theme-swatch:active,
+.design-opt:active,
+.sharecard-btn:active {
+  transform: scale(0.93);
+}
+
+/* ── Stillness for those who ask for it ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ambient-mote,
+  .amabo-card,
+  .amabo-card-glass::before,
+  .dash-title {
+    animation: none !important;
+  }
+}

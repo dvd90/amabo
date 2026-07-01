@@ -6,6 +6,7 @@
  */
 
 import { useEffect } from 'react';
+import { Ambient } from './components/Ambient.js';
 import { Dashboard } from './components/Dashboard.js';
 import { Device } from './components/Device.js';
 import { Glade } from './components/Glade.js';
@@ -41,15 +42,24 @@ export function App() {
     if (typeof document !== 'undefined') document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  if (lookToken) return <PublicLook token={lookToken} />;
-  if (authed === null) return <main className="boot">Warming the glass…</main>;
-  // Logged out: meet a newborn Mote first (the hook), then the sign-in form.
-  if (!authed) return authView === 'login' ? <Login /> : <Welcome />;
+  // Which screen is showing (the ambient mote layer breathes behind all of them).
+  const screen = (() => {
+    if (lookToken) return <PublicLook token={lookToken} />;
+    if (authed === null) return <main className="boot">Warming the glass…</main>;
+    // Logged out: meet a newborn Mote first (the hook), then the sign-in form.
+    if (!authed) return authView === 'login' ? <Login /> : <Welcome />;
+    // Inside the device for the open creature; the Glade for the Symposium; otherwise
+    // the roster (or the first-run myth).
+    if (route === 'device' && creature) return <main className="app">{<Device />}</main>;
+    if (route === 'glade') return <main className="app">{<Glade />}</main>;
+    if (creatures.length === 0) return <main className="app">{<Onboarding />}</main>;
+    return <main className="app">{<Dashboard />}</main>;
+  })();
 
-  // Inside the device for the open creature; the Glade for the Symposium; otherwise the
-  // roster (or the first-run myth).
-  if (route === 'device' && creature) return <main className="app">{<Device />}</main>;
-  if (route === 'glade') return <main className="app">{<Glade />}</main>;
-  if (creatures.length === 0) return <main className="app">{<Onboarding />}</main>;
-  return <main className="app">{<Dashboard />}</main>;
+  return (
+    <>
+      <Ambient />
+      {screen}
+    </>
+  );
 }
