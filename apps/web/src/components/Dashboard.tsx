@@ -71,7 +71,7 @@ function CreatureCard({
   const urgent = c.needs.some((n) => NEED[n].tone === 'warn');
   return (
     <button
-      className={`amabo-card${urgent ? ' is-urgent' : ''}${selected ? ' is-selected' : ''}`}
+      className={`amabo-card${urgent ? ' is-urgent' : ''}${selected ? ' is-selected' : ''}${c.state.uncanny ? ' is-yim' : ''}`}
       onClick={onOpen}
       aria-pressed={meetMode ? selected : undefined}
       aria-label={meetMode ? `Choose ${c.name} to meet` : `Open ${c.name}`}
