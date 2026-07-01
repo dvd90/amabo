@@ -3224,3 +3224,151 @@ main,
     display: none;
   }
 }
+
+/* ═══ Console-grade controls — the joystick pass ═══════════════════════════════
+   The three buttons become hardware: A and C are convex chocolate pills angled
+   like a handheld's face buttons; ● is an amber gem set in a socket, lit by the
+   theme and physically pressed in on tap. The screen-name becomes an engraved
+   plate; the help line whispers. Scoped to .device-buttons so the .btn-b used in
+   forms/CTAs elsewhere is untouched. */
+
+.device-screenname {
+  width: max-content;
+  margin: 8px auto 4px;
+  padding: 3px 16px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  opacity: 1;
+  color: #57452f;
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.device-buttons {
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  padding: 8px 0 2px;
+}
+/* A · C — convex face buttons, angled like a handheld's */
+.device-buttons .btn-a,
+.device-buttons .btn-c {
+  min-width: 72px;
+  padding: 13px 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #f3ece0;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.55);
+  background:
+    radial-gradient(130% 150% at 50% -20%, rgba(255, 255, 255, 0.3), transparent 55%),
+    linear-gradient(#63503a, #33281d);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.5),
+    0 5px 10px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.device-buttons .btn-a {
+  transform: rotate(-7deg) translateY(4px);
+}
+.device-buttons .btn-c {
+  transform: rotate(7deg) translateY(4px);
+}
+.device-buttons .btn-a:active {
+  transform: rotate(-7deg) translateY(6px) scale(0.96);
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.device-buttons .btn-c:active {
+  transform: rotate(7deg) translateY(6px) scale(0.96);
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+/* ● — the act button: an amber gem in a dark socket, lit by the theme */
+.device-buttons .btn-b {
+  width: 78px;
+  height: 78px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: rgba(42, 26, 8, 0.8);
+  border: 7px solid #433626;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.55), transparent 42%),
+    radial-gradient(
+      circle at 50% 45%,
+      hsl(var(--amber) / 0.95),
+      hsl(var(--amber) / 0.5) 62%,
+      #2e241a 100%
+    );
+  box-shadow:
+    inset 0 3px 6px rgba(255, 255, 255, 0.35),
+    inset 0 -7px 12px rgba(0, 0, 0, 0.4),
+    0 6px 14px rgba(0, 0, 0, 0.4),
+    0 0 24px hsl(var(--amber) / 0.35);
+  animation: gemGlow 3.2s ease-in-out infinite;
+}
+@keyframes gemGlow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 3px 6px rgba(255, 255, 255, 0.35),
+      inset 0 -7px 12px rgba(0, 0, 0, 0.4),
+      0 6px 14px rgba(0, 0, 0, 0.4),
+      0 0 18px hsl(var(--amber) / 0.28);
+  }
+  50% {
+    box-shadow:
+      inset 0 3px 6px rgba(255, 255, 255, 0.35),
+      inset 0 -7px 12px rgba(0, 0, 0, 0.4),
+      0 6px 14px rgba(0, 0, 0, 0.4),
+      0 0 30px hsl(var(--amber) / 0.5);
+  }
+}
+.device-buttons .btn-b:active {
+  transform: translateY(3px) scale(0.96);
+  animation: none;
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 12px hsl(var(--amber) / 0.25);
+}
+.device-help {
+  font-size: 0.6rem;
+  opacity: 0.42;
+  letter-spacing: 0.04em;
+}
+
+/* Top toolbar: never wrap into an orphaned second row — the brand shrinks instead. */
+.device-topbar {
+  gap: 6px;
+}
+.device-brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.device-toggles {
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.device-toggles .toggle {
+  font-size: 0.8rem;
+  padding: 4px 5px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .device-buttons .btn-b {
+    animation: none;
+  }
+}
