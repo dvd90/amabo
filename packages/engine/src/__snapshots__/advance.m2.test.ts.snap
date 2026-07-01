@@ -2,10 +2,10 @@
 
 exports[`advance — fixed seed → fixed event sequence (M2) > matches the recorded snapshot of event kinds 1`] = `
 [
-  "fellAsleep",
   "ambient:warmSpot",
-  "ambient:triedAShape",
+  "fellAsleep",
   "woke",
+  "ambient:triedAShape",
   "ambient:warmSpot",
   "ambient:driftingLight",
   "ambient:warmSpot",

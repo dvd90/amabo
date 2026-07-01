@@ -35,6 +35,7 @@ import {
   SIM_STEP_MINUTES,
   SIM_STEP_MS,
   SLEEP_DECAY_MULTIPLIER,
+  NIGHT_SLEEP_ENERGY,
   SLEEP_ENERGY_THRESHOLD,
   STAGE_DECAY_MULTIPLIER,
   STAT_MAX,
@@ -59,14 +60,18 @@ export function isNight(hour: number): boolean {
   return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
 }
 
-/** Decide the sleep state for a step from the current energy and the hour. */
+/**
+ * Decide the sleep state for a step from the current energy and the hour. Rest serves
+ * the creature, not the clock: it always wakes once rested (WAKE_ENERGY), whatever the
+ * hour — night only makes it turn in earlier (NIGHT_SLEEP_ENERGY vs the daytime
+ * collapse threshold). The gap between the wake and sleep thresholds is the hysteresis
+ * that prevents flip-flopping at the boundary; through a long night it cat-naps.
+ */
 export function decideAsleep(asleep: boolean, energy: number, hour: number): boolean {
   if (asleep) {
-    // Stay resting until rested, and never wake back into the night.
-    return energy < WAKE_ENERGY || isNight(hour);
+    return energy < WAKE_ENERGY;
   }
-  // Awake: drift off at night, or collapse when exhausted.
-  return isNight(hour) || energy <= SLEEP_ENERGY_THRESHOLD;
+  return energy <= (isNight(hour) ? NIGHT_SLEEP_ENERGY : SLEEP_ENERGY_THRESHOLD);
 }
 
 export function advance(

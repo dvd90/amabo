@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SIM_STEP_MS, UNCANNY_THRESHOLD } from './config.js';
+import { SECURE_ENOUGH, SIM_STEP_MS, UNCANNY_THRESHOLD } from './config.js';
 import { advance } from './advance.js';
 import { interact } from './interact.js';
 import { condenseMote, type CreatureState } from './state.js';
@@ -23,11 +23,14 @@ describe('disposition — the moral engine (M3)', () => {
 
   it('comfort is the redemption lever: a Yim can be loved back toward the light', () => {
     let s: CreatureState = { ...condenseMote(3, 1000), disposition: -50, uncanny: true };
-    for (let i = 0; i < 12; i++) {
+    // A caring Light comforts while the creature needs it — and stops at peace.
+    for (let i = 0; i < 12 && s.stats.security < SECURE_ENOUGH; i++) {
       s = interact(s, 'comfort').state;
     }
     expect(s.disposition).toBeGreaterThan(-50);
     expect(s.uncanny).toBe(false); // the door back is never locked
+    // …but one sitting is bounded: at peace, the lever closes (no infinite pump).
+    expect(interact(s, 'comfort').events[0]?.kind).toBe('refused');
   });
 
   it('a single act of care nudges disposition; over-care sours it', () => {
