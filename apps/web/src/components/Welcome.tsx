@@ -46,7 +46,18 @@ export function Welcome() {
         {returning ? 'Your Mote is waiting' : 'A small light has gathered'}
       </h1>
 
-      <div className="welcome-stage">
+      <div className={`welcome-stage${creature ? ' is-born' : ''}`}>
+        {/* The condensation: gathered light spirals inward, then the Mote IS (STORY.md §1).
+            Eight sparks on fixed angles; pure CSS, stilled under prefers-reduced-motion. */}
+        <span className="welcome-condense" aria-hidden="true">
+          {Array.from({ length: 8 }, (_, i) => (
+            <i
+              key={i}
+              style={{ ['--a' as string]: `${i * 45}deg`, animationDelay: `${i * 0.35}s` }}
+            />
+          ))}
+        </span>
+        <span className="welcome-birthflash" aria-hidden="true" />
         <div className="welcome-orb">
           {creature ? <Creature creature={creature} /> : <span className="welcome-spark" />}
         </div>
