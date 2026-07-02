@@ -148,6 +148,8 @@ export interface GameState {
   authed: boolean | null;
   /** The Light's stated age band; null = not yet confirmed (the AgeGate shows). */
   ageBand: string | null;
+  /** The account's tier (L5): 'lantern' widens the shelf and the voice. */
+  tier: 'free' | 'lantern';
   /** While logged out: the birth-moment welcome (the hook) or the sign-in form. */
   authView: AuthView;
   /** True if this device has met the birth moment before (logged-out return visit). */
@@ -259,6 +261,10 @@ export interface GameState {
   confirmAge(band: '13-17' | '18+'): Promise<void>;
   /** Delete the account and everything in it; confirm must be the account email. */
   deleteAccount(confirm: string): Promise<boolean>;
+  /** Open a Keeper's Lantern checkout; returns the URL to send the browser to. */
+  lightLantern(): Promise<string | null>;
+  /** Open the billing portal (manage/cancel); returns the URL, or null. */
+  manageLantern(): Promise<string | null>;
   start(name?: string): Promise<void>;
   refresh(): Promise<void>;
   peek(): Promise<void>;
@@ -274,6 +280,7 @@ export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
   authed: null,
   ageBand: null,
+  tier: 'free',
   authView: 'welcome',
   returningVisitor: false,
   magicSent: null,
@@ -329,7 +336,7 @@ export const useGame = create<GameState>((set, get) => ({
   checkSession: async () => {
     const me = await get().client.me();
     if (me) {
-      set({ ageBand: me.user.ageBand ?? null });
+      set({ ageBand: me.user.ageBand ?? null, tier: me.user.entitlements?.tier ?? 'free' });
       await get().loadDashboard();
       // The account-level prefs are the source of truth once signed in; reconcile the
       // local cache to match (so the *next* signed-out boot on this device agrees too).
@@ -556,6 +563,25 @@ export const useGame = create<GameState>((set, get) => ({
       // Flip `authed` false so the app routes back to the sign-in screen (not an empty
       // dashboard) — auth state lives here, not in a component's local state.
       set({ authed: false, creatures: [], creature: null, route: 'dashboard', screen: 'home' });
+    }
+  },
+
+  lightLantern: async () => {
+    try {
+      return (await get().client.checkout()).url;
+    } catch (e) {
+      const msg = (e as Error)?.message ?? '';
+      set({ error: msg.includes('503') ? 'the till isn’t open yet ☾' : friendlyError(e) });
+      return null;
+    }
+  },
+
+  manageLantern: async () => {
+    try {
+      return (await get().client.billingPortal()).url;
+    } catch {
+      set({ error: 'could not open the lantern’s ledger — try again' });
+      return null;
     }
   },
 

@@ -3956,3 +3956,20 @@ main,
   color: hsl(254 45% 76%);
   animation: refusedShake 0.5s ease;
 }
+
+/* ── The Keeper's Lantern (L5) ──────────────────────────────────────────────────── */
+.settings-lantern {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin-bottom: 0.4rem;
+}
+.settings-lantern-lede {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+.settings-lantern-go {
+  box-shadow: 0 0 14px hsl(var(--amber) / 0.35);
+}

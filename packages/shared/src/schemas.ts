@@ -94,6 +94,19 @@ export const UserPreferences = z.object({
 });
 export type UserPreferencesT = z.infer<typeof UserPreferences>;
 
+/**
+ * The till (LAUNCH_PLAN.md L5): what an account is entitled to. Read at every gate
+ * (shelf width, narration allowance); nothing outside billing ever touches Stripe.
+ * The soul is never here: souring/illness/death/redemption know no tiers.
+ */
+export const Entitlements = z.object({
+  tier: z.enum(['free', 'lantern']),
+  /** Epoch ms the subscription renews/ends (informational); null when free/unknown. */
+  renewsAt: z.number().nullable(),
+});
+export type EntitlementsT = z.infer<typeof Entitlements>;
+export const DEFAULT_ENTITLEMENTS: EntitlementsT = { tier: 'free', renewsAt: null };
+
 // ── API response views ─────────────────────────────────────────────────────────
 export const CreatureView = z.object({
   id: z.string(),

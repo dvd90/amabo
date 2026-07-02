@@ -23,8 +23,8 @@ export interface MeterDeps {
   repo: Repository;
   clock: Clock;
   monitor: Monitor;
-  /** Model-narrated peeks per Light per rolling day (the free allowance). */
-  userAllowancePerDay: number;
+  /** Model-narrated peeks per Light per rolling day — entitlement-aware (L5). */
+  allowanceFor: (userId: string) => Promise<number>;
   /** Model calls per rolling day across ALL Lights — the no-surprise-bill breaker. */
   globalCallsPerDay: number;
 }
@@ -56,7 +56,7 @@ export function meteredNarrator(model: Narrator, fallback: Narrator, deps: Meter
         const userId = ctx.ownerId ?? null;
         if (userId) {
           const mine = await repo.countTelemetry('narration', { since, userId });
-          if (mine >= deps.userAllowancePerDay) return fallback.narrate(ctx, events, mode);
+          if (mine >= (await deps.allowanceFor(userId))) return fallback.narrate(ctx, events, mode);
         }
 
         const out = await model.narrate(ctx, events, mode);

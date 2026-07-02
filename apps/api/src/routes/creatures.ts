@@ -105,6 +105,10 @@ export function creaturesRouter(deps: CreatureDeps): Router {
     }),
   );
 
+  /** The shelf's width for this Light: the till widens it, never the soul (L5). */
+  const shelfFor = (req: import('express').Request): number =>
+    req.user?.entitlements.tier === 'lantern' ? SLOTS.lantern : SLOTS.free;
+
   /** Living, present lights only — the shelf never counts the ascended or archived. */
   const activeCount = async (owner: string | null): Promise<number> => {
     const all = await repo.listCreaturesByOwner(owner);
@@ -121,9 +125,15 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       if ((req.user?.ageBand ?? null) === null) {
         return res.status(403).json({ error: 'age confirmation required' });
       }
-      // The shelf (L4): capacity, kindly enforced. Endings never count.
-      if ((await activeCount(getOwner(req))) >= SLOTS.free) {
-        return res.status(403).json({ error: 'your shelf holds three — a wider shelf, one day ✦' });
+      // The shelf (L4/L5): capacity per tier, kindly enforced. Endings never count.
+      const cap = shelfFor(req);
+      if ((await activeCount(getOwner(req))) >= cap) {
+        return res.status(403).json({
+          error:
+            cap === SLOTS.free
+              ? `your shelf holds ${SLOTS.free} — the Keeper's Lantern widens it ✦`
+              : `your shelf holds ${cap} lights — lay one to rest to make room ✦`,
+        });
       }
       const parsed = CreateCreatureRequest.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -259,7 +269,7 @@ export function creaturesRouter(deps: CreatureDeps): Router {
         return res.status(409).json({ error: 'not overflowing yet' });
       }
       // The split needs room too (L4) — overflow keeps; it simply waits for a shelf.
-      if ((await activeCount(owner)) >= SLOTS.free) {
+      if ((await activeCount(owner)) >= shelfFor(req)) {
         return res
           .status(403)
           .json({ error: 'no room on the shelf — lay a light to rest, or widen it one day ✦' });

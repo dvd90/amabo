@@ -11,9 +11,17 @@ import { THEMES, useGame } from '../store/useGame.js';
 export function Settings({ onClose }: { onClose: () => void }) {
   const theme = useGame((s) => s.theme);
   const setTheme = useGame((s) => s.setTheme);
+  const tier = useGame((s) => s.tier);
+  const lightLantern = useGame((s) => s.lightLantern);
+  const manageLantern = useGame((s) => s.manageLantern);
   const deleteAccount = useGame((s) => s.deleteAccount);
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+
+  const openTill = async (open: () => Promise<string | null>) => {
+    const url = await open();
+    if (url) window.location.assign(url);
+  };
 
   return (
     <div className="settings-modal" role="dialog" aria-label="Settings" onClick={onClose}>
@@ -42,6 +50,29 @@ export function Settings({ onClose }: { onClose: () => void }) {
         <DesignSwitch />
 
         <p className="settings-note">Saved to your account — follows you to any device.</p>
+
+        <h3 className="settings-h">The Keeper’s Lantern</h3>
+        {tier === 'lantern' ? (
+          <div className="settings-lantern">
+            <p className="settings-lantern-lede">Lit ✦ — thank you for keeping the light.</p>
+            <button className="linkish" onClick={() => void openTill(manageLantern)}>
+              Manage the lantern (receipts · cancel)
+            </button>
+          </div>
+        ) : (
+          <div className="settings-lantern">
+            <p className="settings-lantern-lede">
+              A wider shelf (8 lights) and a fuller voice (10× the narrated peeks, milestones on the
+              finer model). The heart of the game stays free, always.
+            </p>
+            <button
+              className="btn btn-b settings-lantern-go"
+              onClick={() => void openTill(lightLantern)}
+            >
+              Light the Lantern ✦ · $3.99/mo
+            </button>
+          </div>
+        )}
 
         <h3 className="settings-h">The small print</h3>
         <p className="settings-legal">

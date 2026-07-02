@@ -31,6 +31,18 @@ describe('<Settings>', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('offers the Keeper’s Lantern to a free Light, and its ledger to a lit one (L5)', async () => {
+    useGame.setState({ tier: 'free' });
+    render(<Settings onClose={() => {}} />);
+    expect(screen.getByRole('button', { name: /Light the Lantern/ })).toBeTruthy();
+    cleanup();
+    useGame.setState({ tier: 'lantern' });
+    render(<Settings onClose={() => {}} />);
+    expect(screen.queryByRole('button', { name: /Light the Lantern/ })).toBeNull();
+    expect(screen.getByText(/thank you for keeping the light/)).toBeTruthy();
+    useGame.setState({ tier: 'free' });
+  });
+
   it('offers the small print and a guarded goodbye (L2)', async () => {
     const deleteAccount = vi.fn().mockResolvedValue(undefined);
     useGame.setState({ client: { deleteAccount } as unknown as ApiClient });

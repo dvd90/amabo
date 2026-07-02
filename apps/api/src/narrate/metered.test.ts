@@ -33,7 +33,7 @@ function setup(over: { userAllowancePerDay?: number; globalCallsPerDay?: number 
     repo,
     clock: () => now,
     monitor: { capture },
-    userAllowancePerDay: over.userAllowancePerDay ?? 3,
+    allowanceFor: async () => over.userAllowancePerDay ?? 3,
     globalCallsPerDay: over.globalCallsPerDay ?? 100,
   });
   return { repo, narrator, model, capture, tick: (ms: number) => (now += ms) };
@@ -94,7 +94,7 @@ describe('peek → meter (L3, end to end)', () => {
         repo,
         clock: () => 1_000_000,
         monitor: { capture: vi.fn() },
-        userAllowancePerDay: 1,
+        allowanceFor: async () => 1,
         globalCallsPerDay: 100,
       }),
       authProvider: new FakeAuthProvider(),
