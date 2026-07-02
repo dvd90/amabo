@@ -4,6 +4,7 @@
  * hub the app lands on after sign-in (the device is one creature deep from here).
  */
 
+import { SLOTS } from '@amabo/shared';
 import { useState } from 'react';
 import { Creature } from './Creature.js';
 import { DuetScene } from './DuetScene.js';
@@ -208,7 +209,16 @@ export function Dashboard() {
           </button>
         ))}
 
-        {naming ? (
+        {active.length >= SLOTS.free ? (
+          <div className="amabo-card amabo-card-full" aria-label="The shelf is full">
+            <span className="amabo-card-glass new-orb" aria-hidden="true">
+              ✦
+            </span>
+            <span className="amabo-card-name">The shelf is full</span>
+            <span className="amabo-card-meta">it holds {SLOTS.free} lights</span>
+            <span className="amabo-card-fate">a wider shelf, one day ✦</span>
+          </div>
+        ) : naming ? (
           <form
             className="amabo-card amabo-card-new is-naming"
             onSubmit={(e) => {

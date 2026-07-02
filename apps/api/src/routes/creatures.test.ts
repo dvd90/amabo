@@ -334,7 +334,7 @@ describe('POST /creatures/:id/archive — endings leave the shelf (STORY.md §7)
 });
 
 describe('rate limits (abuse/cost guards)', () => {
-  it('caps Mote creation per account (10/hour)', async () => {
+  it('caps Mote creation per account (10/hour) — attempts, not just successes', async () => {
     const { app } = setup();
     const { agent, csrf } = await login(app);
     for (let i = 0; i < 10; i++) {
@@ -342,7 +342,8 @@ describe('rate limits (abuse/cost guards)', () => {
         .post('/creatures')
         .set('x-csrf-token', csrf)
         .send({ name: `M${i}` });
-      expect(res.status).toBe(201);
+      // The shelf (L4) admits three; further attempts are shelf-refused but still count.
+      expect(res.status).toBe(i < 3 ? 201 : 403);
     }
     const blocked = await agent
       .post('/creatures')

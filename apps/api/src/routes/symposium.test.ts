@@ -1,3 +1,4 @@
+import { condenseMote } from '@amabo/engine';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
@@ -82,10 +83,20 @@ describe('the Symposium (M-S)', () => {
   });
 
   it('a bigger company may gather now: eight peeps hold the glade; nine is too many', async () => {
-    const { app } = setup();
+    const { app, repo, now } = setup();
     const u = await login(app, 'host');
     const ids: string[] = [];
-    for (let i = 0; i < 9; i++) ids.push(await makeCreature(u.agent, u.csrf, `P${i}`));
+    for (let i = 0; i < 3; i++) ids.push(await makeCreature(u.agent, u.csrf, `P${i}`));
+    // The free shelf holds three (L4); the rest of the company arrives via the repo —
+    // in life these are guests on gather passes, and capacity is what's under test.
+    for (let i = 3; i < 9; i++) {
+      const rec = await repo.createCreature({
+        ownerId: u.userId,
+        name: `P${i}`,
+        state: condenseMote(i, now),
+      });
+      ids.push(rec.id);
+    }
 
     const eight = await u.agent
       .post('/symposium/gather')

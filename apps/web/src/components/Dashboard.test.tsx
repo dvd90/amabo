@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CreatureViewT } from '@amabo/shared';
+import { SLOTS, type CreatureViewT } from '@amabo/shared';
 import type { NeedFlag, RosterItem } from '../api/client.js';
 import { useGame } from '../store/useGame.js';
 import { Dashboard } from './Dashboard.js';
@@ -76,5 +76,16 @@ describe('<Dashboard> (the roster)', () => {
     fireEvent.change(input, { target: { value: 'Vel' } });
     fireEvent.submit(input.closest('form')!);
     expect(start).toHaveBeenCalledWith('Vel');
+  });
+
+  it('at capacity the condense card becomes the full-shelf card (L4)', () => {
+    useGame.setState({
+      creatures: Array.from({ length: SLOTS.free }, (_, i) => creature(`c${i}`, `P${i}`)),
+      openCreature: vi.fn(),
+    });
+    render(<Dashboard />);
+    expect(screen.queryByLabelText('Condense a new Mote')).toBeNull();
+    expect(screen.getByText(/The shelf is full/)).toBeTruthy();
+    expect(screen.getByText(/a wider shelf, one day/)).toBeTruthy();
   });
 });
