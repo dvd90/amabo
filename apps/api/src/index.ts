@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
+import { stripeBilling } from './billing/stripe.js';
 import { nullMonitor, sentryMonitor, type Monitor } from './monitor.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
 import { consoleMailer, resendMailer, type Mailer } from './auth/mailer.js';
@@ -41,11 +42,17 @@ function buildNarrator(repo: Repository, monitor: Monitor): Narrator {
     return localNarrator;
   }
   // The soul, with a sensible bill (L3): allowance + breaker + ledger around the model.
+  const free = Number(process.env.NARRATION_USER_ALLOWANCE ?? 10);
+  const lantern = Number(process.env.NARRATION_LANTERN_ALLOWANCE ?? 100);
   return meteredNarrator(aiNarrator(makeAnthropicClient(key)), localNarrator, {
     repo,
     clock: systemClock,
     monitor,
-    userAllowancePerDay: Number(process.env.NARRATION_USER_ALLOWANCE ?? 10),
+    // The Keeper's Lantern buys a wider voice (L5); the gate reads the tier only.
+    allowanceFor: async (userId) => {
+      const user = await repo.getUserById(userId);
+      return user?.entitlements.tier === 'lantern' ? lantern : free;
+    },
     globalCallsPerDay: Number(process.env.NARRATION_DAILY_CAP ?? 2000),
   });
 }
@@ -139,11 +146,25 @@ if (process.env.NODE_ENV !== 'test') {
       )
     : nullMonitor;
 
+  // The till (L5): open only when all three Stripe vars are set; otherwise free.
+  const billing =
+    process.env.STRIPE_SECRET_KEY &&
+    process.env.STRIPE_PRICE_LANTERN &&
+    process.env.STRIPE_WEBHOOK_SECRET
+      ? stripeBilling({
+          secretKey: process.env.STRIPE_SECRET_KEY,
+          priceId: process.env.STRIPE_PRICE_LANTERN,
+          webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+        })
+      : undefined;
+  if (!billing) console.warn('[amabo] Stripe vars not set — the till is closed (free mode)');
+
   const app = createApp({
     repo,
     clock: systemClock,
     seed: randomSeed,
     narrator: buildNarrator(repo, monitor),
+    billing,
     symposiumNarrator: buildSymposiumNarrator(),
     authProvider: buildAuthProvider(),
     mailer,

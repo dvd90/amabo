@@ -71,6 +71,7 @@ export interface MeResult {
     displayName: string;
     preferences?: UserPreferences;
     ageBand?: string | null;
+    entitlements?: { tier: 'free' | 'lantern'; renewsAt: number | null };
   };
   csrfToken: string;
 }
@@ -208,6 +209,10 @@ export interface ApiClient {
   setAge(band: '13-17' | '18+'): Promise<void>;
   /** The right to be forgotten: erases everything; confirm must be the account email. */
   deleteAccount(confirm: string): Promise<void>;
+  /** Open a Keeper's Lantern checkout (L5); resolves to the hosted page URL. */
+  checkout(): Promise<{ url: string }>;
+  /** Open the billing portal (manage/cancel) for a subscribed Light. */
+  billingPortal(): Promise<{ url: string }>;
   listCreatures(): Promise<RosterItem[]>;
   createCreature(name: string, seed?: number): Promise<CreatureViewT>;
   getCreature(id: string): Promise<RosterItem>;
@@ -309,6 +314,12 @@ export class HttpApiClient implements ApiClient {
   }
   async deleteAccount(confirm: string) {
     await this.req('/me', 'DELETE', { confirm });
+  }
+  checkout() {
+    return this.req<{ url: string }>('/billing/checkout', 'POST', {});
+  }
+  billingPortal() {
+    return this.req<{ url: string }>('/billing/portal');
   }
   async listCreatures() {
     return (await this.req<{ creatures: RosterItem[] }>('/creatures')).creatures;

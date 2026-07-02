@@ -45,6 +45,9 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `NARRATION_USER_ALLOWANCE` | optional   | model-narrated peeks per Light per rolling day (default 10); over it → local voice                     |
    | `NARRATION_DAILY_CAP`      | optional   | global model calls per rolling day (default 2000) — the no-surprise-bill breaker                       |
    | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                             |
+   | `STRIPE_SECRET_KEY`        | optional   | the till (L5). All three Stripe vars set → the Keeper's Lantern sells; any missing → free mode         |
+   | `STRIPE_PRICE_LANTERN`     | optional   | the Lantern's subscription price id (`price_…`, ~$3.99/mo)                                             |
+   | `STRIPE_WEBHOOK_SECRET`    | optional   | signing secret of a webhook endpoint pointed at `https://<api-url>/billing/webhook`                    |
    | `GOOGLE_CLIENT_ID`         | optional\* | Google OAuth client ID (alias: `GOOGLE_OAUTH_ID`)                                                      |
    | `GOOGLE_CLIENT_SECRET`     | optional\* | Google OAuth client secret (alias: `GOOGLE_OAUTH_SECRET`)                                              |
    | `GOOGLE_CALLBACK_URL`      | optional   | Pin the exact redirect URI, e.g. `https://<api-url>/auth/google/callback`. Must match the console.     |

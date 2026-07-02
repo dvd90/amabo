@@ -14,6 +14,7 @@ import { attachUser, requireAuth, requireCsrf } from './auth/middleware.js';
 import { consoleMailer, type Mailer } from './auth/mailer.js';
 import { cors } from './cors.js';
 import type { SameSite } from './auth/session.js';
+import type { BillingPort } from './billing/port.js';
 import { nullMonitor, type Monitor } from './monitor.js';
 import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
@@ -23,6 +24,7 @@ import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
 import { demoRouter } from './routes/demo.js';
 import { symposiumRouter } from './routes/symposium.js';
+import { billingRouter, billingWebhookRouter } from './routes/billing.js';
 import { telemetryRouter } from './routes/telemetry.js';
 import { localSymposiumNarrator, type SymposiumNarrator } from './narrate/symposium.js';
 
@@ -56,12 +58,15 @@ export interface AppDeps {
   version?: string;
   /** Error eyes (L1): captures 500s + client_error beats. Defaults to a no-op. */
   monitor?: Monitor;
+  /** The till (L5). Absent = the game is simply free; billing routes answer 503. */
+  billing?: BillingPort;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
 const API_PREFIXES = [
   '/health',
   '/telemetry',
+  '/billing',
   '/me',
   '/auth',
   '/creatures',
@@ -84,6 +89,16 @@ export function createApp(deps: AppDeps): Express {
   if (deps.cookieSecure) app.set('trust proxy', 1);
   // Credentialed CORS only matters in the two-service deploy (a web origin is set).
   app.use(cors(deps.webOrigin));
+  // The Stripe webhook needs the RAW bytes (the signature covers them) — mount it
+  // before the JSON body parser.
+  app.use(
+    billingWebhookRouter({
+      repo: deps.repo,
+      clock: deps.clock,
+      billing: deps.billing,
+      webOrigin: deps.webOrigin ?? deps.baseUrl,
+    }),
+  );
   app.use(express.json());
 
   // Cross-site cookies require SameSite=None (+ Secure); same-origin uses Lax.
@@ -170,6 +185,14 @@ export function createApp(deps: AppDeps): Express {
     }),
   );
   app.use(pushRouter({ repo: deps.repo, getOwner }));
+  app.use(
+    billingRouter({
+      repo: deps.repo,
+      clock: deps.clock,
+      billing: deps.billing,
+      webOrigin: deps.webOrigin ?? deps.baseUrl,
+    }),
+  );
   app.use(
     symposiumRouter({
       repo: deps.repo,

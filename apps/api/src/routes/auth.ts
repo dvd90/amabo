@@ -239,6 +239,7 @@ export function authRouter(deps: AuthDeps): Router {
         email: req.user!.email,
         displayName: req.user!.displayName,
         ageBand: req.user!.ageBand,
+        entitlements: req.user!.entitlements,
         preferences: req.user!.preferences,
       },
       csrfToken: req.csrfToken,

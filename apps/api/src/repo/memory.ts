@@ -5,7 +5,7 @@
  */
 
 import type { SimEvent } from '@amabo/engine';
-import type { UserPreferencesT } from '@amabo/shared';
+import { DEFAULT_ENTITLEMENTS, type EntitlementsT, type UserPreferencesT } from '@amabo/shared';
 import { randomUUID } from 'node:crypto';
 import type {
   BondRecord,
@@ -52,6 +52,7 @@ export class InMemoryRepository implements Repository {
   private bonds: BondRecord[] = [];
   private letters: LetterRecord[] = [];
   private telemetry: TelemetryRecord[] = [];
+  private stripeSeen = new Set<string>();
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -177,6 +178,8 @@ export class InMemoryRepository implements Repository {
       oauthSubject: input.subject,
       ageBand: input.ageBand ?? null,
       preferences: {},
+      entitlements: { ...DEFAULT_ENTITLEMENTS },
+      stripeCustomerId: null,
       createdAt: Date.now(),
     };
     this.users.set(user.id, user);
@@ -384,6 +387,30 @@ export class InMemoryRepository implements Repository {
         });
       }
     }
+  }
+
+  async setEntitlements(
+    userId: string,
+    entitlements: EntitlementsT,
+    stripeCustomerId?: string,
+  ): Promise<void> {
+    const user = this.users.get(userId);
+    if (!user) return;
+    user.entitlements = structuredClone(entitlements);
+    if (stripeCustomerId !== undefined) user.stripeCustomerId = stripeCustomerId;
+  }
+
+  async getUserByStripeCustomer(customerId: string): Promise<UserRecord | null> {
+    for (const u of this.users.values()) {
+      if (u.stripeCustomerId === customerId) return structuredClone(u);
+    }
+    return null;
+  }
+
+  async markStripeEventSeen(id: string): Promise<boolean> {
+    if (this.stripeSeen.has(id)) return false;
+    this.stripeSeen.add(id);
+    return true;
   }
 
   async setAgeBand(userId: string, band: string): Promise<void> {

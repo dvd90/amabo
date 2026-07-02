@@ -8,7 +8,7 @@
  */
 
 import type { CreatureState, GatherResult, SimEvent, Star } from '@amabo/engine';
-import type { UserPreferencesT } from '@amabo/shared';
+import type { EntitlementsT, UserPreferencesT } from '@amabo/shared';
 
 export interface CreatureRecord {
   id: string;
@@ -53,6 +53,9 @@ export interface UserRecord {
   ageBand: string | null;
   /** Appearance prefs (theme, pixel/smooth art) — account-level, follows any device. */
   preferences: UserPreferencesT;
+  /** The till (L5): the account's tier; every gate reads this, never Stripe. */
+  entitlements: EntitlementsT;
+  stripeCustomerId: string | null;
   createdAt: number;
 }
 
@@ -232,6 +235,17 @@ export interface Repository {
   setAgeBand(userId: string, band: string): Promise<void>;
   /** The right to be forgotten: erase EVERY row the user owns, then the user itself. */
   deleteUser(userId: string): Promise<void>;
+
+  // The till (L5)
+  /** Set the tier (and optionally bind the Stripe customer) for a Light. */
+  setEntitlements(
+    userId: string,
+    entitlements: EntitlementsT,
+    stripeCustomerId?: string,
+  ): Promise<void>;
+  getUserByStripeCustomer(customerId: string): Promise<UserRecord | null>;
+  /** True the FIRST time an event id is seen — webhook idempotency. */
+  markStripeEventSeen(id: string, at: number): Promise<boolean>;
 
   // The funnel (L1) + the narration ledger (L3)
   addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void>;

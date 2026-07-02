@@ -5,7 +5,7 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
-import type { UserPreferencesT } from '@amabo/shared';
+import { DEFAULT_ENTITLEMENTS, type EntitlementsT, type UserPreferencesT } from '@amabo/shared';
 import { and, desc, eq, gte, isNull, or, sql, type AnyColumn } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
@@ -27,6 +27,7 @@ import {
   stars,
   users,
   telemetry,
+  stripeEvents,
 } from '../db/schema.js';
 import type {
   BondRecord,
@@ -574,6 +575,34 @@ export class DrizzleRepository implements Repository {
     }
   }
 
+  async setEntitlements(
+    userId: string,
+    entitlements: EntitlementsT,
+    stripeCustomerId?: string,
+  ): Promise<void> {
+    const patch: Record<string, unknown> = { entitlements };
+    if (stripeCustomerId !== undefined) patch['stripeCustomerId'] = stripeCustomerId;
+    await this.db.update(users).set(patch).where(eq(users.id, userId));
+  }
+
+  async getUserByStripeCustomer(customerId: string): Promise<UserRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.stripeCustomerId, customerId))
+      .limit(1);
+    return row ? toUser(row) : null;
+  }
+
+  async markStripeEventSeen(id: string, at: number): Promise<boolean> {
+    const inserted = await this.db
+      .insert(stripeEvents)
+      .values({ id, at })
+      .onConflictDoNothing()
+      .returning();
+    return inserted.length > 0;
+  }
+
   async setAgeBand(userId: string, band: string): Promise<void> {
     await this.db.update(users).set({ ageBand: band }).where(eq(users.id, userId));
   }
@@ -748,6 +777,8 @@ function toUser(row: typeof users.$inferSelect): UserRecord {
     oauthSubject: row.oauthSubject,
     ageBand: row.ageBand,
     preferences: (row.preferences as UserPreferencesT | null) ?? {},
+    entitlements: (row.entitlements as EntitlementsT | null) ?? { ...DEFAULT_ENTITLEMENTS },
+    stripeCustomerId: row.stripeCustomerId,
     createdAt: row.createdAt.getTime(),
   };
 }

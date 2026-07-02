@@ -24,11 +24,11 @@ daily ritual), one-time keepsakes second, nothing else until data says so.
 The immediate itch: refusals shipped in the engine but the live app may be stale,
 and today nothing can prove it either way.
 
-- [ ] `/health` returns `{ ok, version, builtAt }` — version from
+- [x] `/health` returns `{ ok, version, builtAt }` — version from
       `RAILWAY_GIT_COMMIT_SHA` (fallback `process.env.AMABO_VERSION`, then `"dev"`).
-- [ ] The web app bakes its own stamp (`import.meta.env` define at build) and shows
+- [x] The web app bakes its own stamp (`import.meta.env` define at build) and shows
       it small in Settings — stale-PWA confusion dies here too.
-- [ ] `DEPLOYMENT.md` gains a "verify a deploy" section: `curl /health`, compare to
+- [x] `DEPLOYMENT.md` gains a "verify a deploy" section: `curl /health`, compare to
       `git rev-parse origin/main`.
 - [ ] Manual (owner): open Railway, confirm both services' latest deploys succeed and
       postdate PR #66; re-trigger if not.
@@ -40,13 +40,13 @@ creature on the live site is refused.
 
 You cannot run a paid service blind.
 
-- [ ] **Errors:** Sentry in both apps (Express error handler + web error boundary),
+- [x] **Errors:** Sentry in both apps (Express error handler + web error boundary),
       DSN via env, a silent no-op when unset. Alert on first-error-of-a-kind.
-- [ ] **Funnel:** an owner-run `events` table in our own Postgres (no third party,
+- [x] **Funnel:** an owner-run `events` table in our own Postgres (no third party,
       no cookies): `POST /telemetry` (rate-limited, anonymous id + optional user id),
       client batches. Events: `visit`, `birth_seen`, `signup`, `creature_created`,
       `care_action`, `peek`, `push_enabled`, `return_day`.
-- [ ] A `docs/FUNNEL.sql` with the queries that matter: signup rate, D1/D7 retention,
+- [x] A `docs/FUNNEL.sql` with the queries that matter: signup rate, D1/D7 retention,
       actions per session. These numbers decide pricing later — collect them now.
 
 **Done when:** a thrown test error appears in Sentry; the D1 query returns a number.
@@ -56,12 +56,12 @@ You cannot run a paid service blind.
 Blocking for taking money, and for running AI over strangers' pets. Virtual pets
 skew young: position the product **13+** and mean it.
 
-- [ ] `/terms` and `/privacy` pages — plain-language, honest (what we store, that an
+- [x] `/terms` and `/privacy` pages — plain-language, honest (what we store, that an
       AI writes the creature's diary, no ads, no selling data), linked from the login
       screen and Settings.
-- [ ] Age gate at signup: a required "I'm 13 or older" confirmation; wire the dead
+- [x] Age gate at signup: a required "I'm 13 or older" confirmation; wire the dead
       `ageBand` field (`13-17` / `18+`); under-13 is refused kindly (COPPA).
-- [ ] Account deletion: owner-scoped cascade (creatures, journals, bonds, letters,
+- [x] Account deletion: owner-scoped cascade (creatures, journals, bonds, letters,
       shares, push subs, events) behind a double-confirm in Settings. Export-as-JSON
       is a fast follow, not a blocker.
 
@@ -73,15 +73,15 @@ account leaves zero owner-scoped rows (tested).
 The demo→product flip. The differentiator is currently switched off.
 
 - [ ] Set `ANTHROPIC_API_KEY` on Railway (manual, owner).
-- [ ] **Per-user meter:** narrated peeks/day counted in Postgres; over the allowance
+- [x] **Per-user meter:** narrated peeks/day counted in Postgres; over the allowance
       the narrator falls back to local templates *silently and gracefully* (the
       creature never goes mute). Allowance in config: free `10/day` (tune later).
-- [ ] **Global breaker:** a daily model-call budget (config); tripping it degrades
+- [x] **Global breaker:** a daily model-call budget (config); tripping it degrades
       everyone to the local narrator and raises a Sentry alert. No surprise bills.
-- [ ] **Cost ledger:** tokens per call into the `events` table; one `FUNNEL.sql`
+- [x] **Cost ledger:** tokens per call into the `events` table; one `FUNNEL.sql`
       query = cost per user per day. (Haiku peeks + prompt caching ≈ pennies; the
       ledger proves it.)
-- [ ] Existing tiering stands: `claude-haiku-4-5` for peeks, `claude-sonnet-4-6` for
+- [x] Existing tiering stands: `claude-haiku-4-5` for peeks, `claude-sonnet-4-6` for
       milestones; structured output via `record_life`; AI output stays zod-validated
       and never trusted (the second law).
 
@@ -94,14 +94,14 @@ Refusal thresholds stop exploits but don't *feel* like an economy. Add the one c
 that matters and make the existing costs visible. No paywall yet — this milestone
 just creates the shape a subscription will later widen.
 
-- [ ] **Slots:** `FREE_SLOTS = 3` *active* creatures (config, engine-adjacent but
+- [x] **Slots:** `FREE_SLOTS = 3` *active* creatures (config, engine-adjacent but
       enforced in the API — the engine stays pure). The 4th condense is refused
       kindly: "your shelf holds three; a wider shelf, one day ✦". Archived and
       ascended lights never count against it.
-- [ ] **Visible costs:** energy rendered as the currency it already is (play costs
+- [x] **Visible costs:** energy rendered as the currency it already is (play costs
       it, sleep restores it); refusals get louder (the shake + a clear line), so
       over-care reads as the creature's will, not a bug.
-- [ ] Resist adding more scarcity (timers, consumables, daily gifts) until L6 data
+- [x] Resist adding more scarcity (timers, consumables, daily gifts) until L6 data
       exists. The lore is "care, not grind" — protect that.
 
 **Done when:** the 4th condense on a free account returns 403 with the lore line
@@ -109,17 +109,18 @@ just creates the shape a subscription will later widen.
 
 ## L5 — The till (entitlements + Stripe) · ~3–4 days
 
-- [ ] **Entitlements first, payments second:** `users.entitlements` jsonb —
+- [x] **Entitlements first, payments second:** `users.entitlements` jsonb —
       `{ tier: 'free' | 'lantern', renewsAt }` — resolved through a shared zod
       schema; every gate reads the tier, nothing reads Stripe directly.
-- [ ] **The Keeper's Lantern** (~$3.99/mo, Stripe Checkout subscription):
+- [x] **The Keeper's Lantern** (~$3.99/mo, Stripe Checkout subscription):
       slots 3 → 8 · narration meter 10 → 100/day · milestone narration on Sonnet ·
-      full theme set + pixel skin (base theme stays free) · priority in future
-      features. Letters, meetings, the Symposium, and all endings stay free.
-- [ ] Stripe webhook (`checkout.session.completed`, `customer.subscription.updated`,
+      priority in future features. Letters, meetings, the Symposium, all themes and
+      the pixel skin, and all endings stay free — a shipped freebie is never taken
+      back (deviation from the first draft, deliberately kinder).
+- [x] Stripe webhook (`checkout.session.completed`, `customer.subscription.updated`,
       `…deleted`) → set/clear tier; idempotent; signature-verified; a `stripe_events`
       table for replay safety. Customer-portal link in Settings for cancel/receipts.
-- [ ] **The guard test:** an acceptance test asserting no entitlement check exists in
+- [x] **The guard test:** an acceptance test asserting no entitlement check exists in
       any souring/illness/death/redemption path — the rule made executable.
 - [ ] **Keepsake (fast follow):** the graduation star certificate — a rendered,
       shareable image of the named star with its epitaph — as a one-time price

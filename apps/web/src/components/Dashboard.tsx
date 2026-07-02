@@ -100,6 +100,7 @@ export function Dashboard() {
   const acceptRehome = useGame((s) => s.acceptRehome);
   const openGlade = useGame((s) => s.openGlade);
   const busy = useGame((s) => s.busy);
+  const tier = useGame((s) => s.tier);
   const [naming, setNaming] = useState(false);
   const [name, setName] = useState('');
   const [introOpen, setIntroOpen] = useState(false);
@@ -209,14 +210,20 @@ export function Dashboard() {
           </button>
         ))}
 
-        {active.length >= SLOTS.free ? (
+        {active.length >= (tier === 'lantern' ? SLOTS.lantern : SLOTS.free) ? (
           <div className="amabo-card amabo-card-full" aria-label="The shelf is full">
             <span className="amabo-card-glass new-orb" aria-hidden="true">
               ✦
             </span>
             <span className="amabo-card-name">The shelf is full</span>
-            <span className="amabo-card-meta">it holds {SLOTS.free} lights</span>
-            <span className="amabo-card-fate">a wider shelf, one day ✦</span>
+            <span className="amabo-card-meta">
+              it holds {tier === 'lantern' ? SLOTS.lantern : SLOTS.free} lights
+            </span>
+            <span className="amabo-card-fate">
+              {tier === 'lantern'
+                ? 'lay a light to rest to make room ✦'
+                : 'a wider shelf, one day ✦'}
+            </span>
           </div>
         ) : naming ? (
           <form

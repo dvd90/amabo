@@ -41,6 +41,8 @@ function fakeClient(): ApiClient {
     logout: vi.fn().mockResolvedValue(undefined),
     setAge: vi.fn().mockResolvedValue(undefined),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
+    checkout: vi.fn().mockResolvedValue({ url: 'https://checkout.test/x' }),
+    billingPortal: vi.fn().mockResolvedValue({ url: 'https://portal.test/x' }),
     listCreatures: vi.fn().mockResolvedValue([{ ...creature(), needs: [] }]),
     createCreature: vi.fn().mockResolvedValue(creature()),
     demoBirth: vi

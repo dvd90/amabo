@@ -116,10 +116,19 @@ export const users = pgTable(
     // Appearance prefs (theme, pixel/smooth art) — account-level, follows the Light to
     // any device. Validated at the API boundary by `@amabo/shared`'s UserPreferences.
     preferences: jsonb('preferences'),
+    // The till (L5): what this Light is entitled to, and the Stripe customer behind it.
+    entitlements: jsonb('entitlements'),
+    stripeCustomerId: text('stripe_customer_id'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [index('users_oauth_idx').on(t.oauthProvider, t.oauthSubject)],
 );
+
+// Webhook idempotency (L5): every Stripe event id lands exactly once, replay-safe.
+export const stripeEvents = pgTable('stripe_events', {
+  id: text('id').primaryKey(),
+  at: doublePrecision('at').notNull(),
+});
 
 // Every sign-in method linked to an account — one row per (provider, subject), many rows
 // can point at the same userId. This is what makes account merging by verified email work:
