@@ -1,3 +1,4 @@
+import { RESONANCE } from '@amabo/engine';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
@@ -272,5 +273,72 @@ describe('postcards & safety (M9.5)', () => {
       (await u.agent.post('/block').set('x-csrf-token', u.csrf).send({ blockedUserId: 'someone' }))
         .status,
     ).toBe(201);
+  });
+});
+
+describe('introductions leave a trace (M-I)', () => {
+  it('a harmony hangs a thin thread in the friendship sky', async () => {
+    const { app } = setup();
+    const u = await login(app, 'host');
+    const a = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Pip' });
+    const b = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Bo' });
+
+    const meet = await u.agent
+      .post(`/creatures/${a.body.id}/meet/${b.body.id}`)
+      .set('x-csrf-token', u.csrf)
+      .send({});
+    expect(meet.body.result).toBe('harmony'); // two fresh Motes hum alike
+
+    const sky = await u.agent.get('/symposium/sky');
+    expect(sky.body.threads).toHaveLength(1);
+    expect(sky.body.threads[0].strength).toBe(RESONANCE.bondStrength);
+  });
+
+  it('a harmonized pair must let it settle: 429 too soon, welcome again after', async () => {
+    const { app, setNow } = setup();
+    const u = await login(app, 'host');
+    const a = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Pip' });
+    const b = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Bo' });
+    const meetOnce = () =>
+      u.agent
+        .post(`/creatures/${a.body.id}/meet/${b.body.id}`)
+        .set('x-csrf-token', u.csrf)
+        .send({});
+
+    expect((await meetOnce()).status).toBe(200);
+    const tooSoon = await meetOnce();
+    expect(tooSoon.status).toBe(429);
+    expect(tooSoon.body.error).toMatch(/settle/);
+
+    // Once the meeting has settled, they may meet again — and the thread thickens.
+    setNow(1_000_000 + RESONANCE.pairCooldownMinutes * 60_000 + 1);
+    expect((await meetOnce()).status).toBe(200);
+    const sky = await u.agent.get('/symposium/sky');
+    expect(sky.body.threads[0].strength).toBeGreaterThan(RESONANCE.bondStrength);
+  });
+
+  it('a wary pair may try again soon — only harmony needs to settle', async () => {
+    const { app, repo } = setup();
+    const u = await login(app, 'host');
+    const a = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Pip' });
+    const b = await u.agent.post('/creatures').set('x-csrf-token', u.csrf).send({ name: 'Far' });
+    // Push them far apart so the meeting clashes (gap > harmonyGap).
+    const rec = (await repo.getCreature(b.body.id, u.userId))!;
+    await repo.saveCreature({ ...rec, state: { ...rec.state, disposition: -80, uncanny: true } });
+
+    const first = await u.agent
+      .post(`/creatures/${a.body.id}/meet/${b.body.id}`)
+      .set('x-csrf-token', u.csrf)
+      .send({});
+    expect(first.body.result).toBe('clash');
+
+    // No thread hangs from a clash, and no cooldown bars another try.
+    const sky = await u.agent.get('/symposium/sky');
+    expect(sky.body.threads).toHaveLength(0);
+    const again = await u.agent
+      .post(`/creatures/${a.body.id}/meet/${b.body.id}`)
+      .set('x-csrf-token', u.csrf)
+      .send({});
+    expect(again.status).toBe(200);
   });
 });

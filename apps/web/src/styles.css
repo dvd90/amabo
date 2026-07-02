@@ -1702,11 +1702,6 @@ body {
 .dash-note {
   color: hsl(var(--amber));
 }
-.amabo-card.is-selected {
-  border-color: hsl(var(--amber));
-  box-shadow: 0 0 0 2px hsl(var(--amber) / 0.5);
-}
-
 /* Home flavor lines (M-I) */
 .today-line {
   font-style: italic;
@@ -3657,6 +3652,153 @@ main,
   .duet-spark,
   .duet-caption,
   .duet-done {
+    animation: none !important;
+  }
+}
+
+/* ── The introduction, made legible (M-I): pick a pair, read them, let them meet ── */
+.introduce {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(0, 0, 0, 0.72);
+}
+.introduce-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  max-height: 86vh;
+  overflow-y: auto;
+  text-align: center;
+  border-radius: 1rem;
+  padding: 1.4rem 1.2rem 1.5rem;
+  color: #f3ece0;
+  background: linear-gradient(#241d16, #17110c);
+  border: 1px solid hsl(var(--amber) / 0.3);
+}
+.intro-kicker {
+  margin: 0 0 0.4rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.intro-title {
+  margin: 0 0 0.3rem;
+  font-size: 1.15rem;
+}
+.intro-lede {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+.intro-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+.intro-chip {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.3rem 0.5rem;
+  border-radius: 0.8rem;
+  border: 1px solid hsl(var(--amber) / 0.22);
+  background: hsl(var(--amber) / 0.05);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.intro-chip:hover {
+  transform: translateY(-1px);
+}
+.intro-chip.is-picked {
+  border-color: hsl(var(--amber));
+  box-shadow: 0 0 0 2px hsl(var(--amber) / 0.45);
+  background: hsl(var(--amber) / 0.1);
+}
+.intro-chip.is-yim {
+  border-color: hsl(254 25% 45% / 0.45);
+}
+.intro-chip.is-yim.is-picked {
+  border-color: hsl(254 35% 62%);
+  box-shadow: 0 0 0 2px hsl(254 35% 62% / 0.4);
+}
+.intro-chip-glass {
+  width: 52px;
+  height: 52px;
+}
+.intro-chip-glass > * {
+  width: 100%;
+  height: 100%;
+}
+.intro-chip-name {
+  font-size: 0.78rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.intro-chip-temper {
+  font-size: 0.62rem;
+  opacity: 0.6;
+}
+/* The reading: truthful, because the rule is (gap ≤ HARMONY_GAP is deterministic). */
+.intro-reading {
+  border-radius: 0.7rem;
+  border: 1px solid hsl(var(--amber) / 0.3);
+  background: hsl(var(--amber) / 0.07);
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 1rem;
+  animation: fadeUpIn 0.5s ease both;
+}
+.intro-reading-line {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.intro-reading-prospect {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: hsl(var(--amber));
+}
+.intro-hint {
+  font-size: 0.78rem;
+  opacity: 0.55;
+  margin: 0.2rem 0 1rem;
+}
+.intro-go {
+  width: 100%;
+}
+.intro-go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The duet's payoff line: what the meeting actually did (M-I). */
+.duet-payoff {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  margin: -0.6rem 0 1rem;
+  color: hsl(var(--amber));
+  opacity: 0.95;
+  animation: fadeUpIn 0.7s ease 2.1s backwards;
+}
+.duet.is-clash .duet-payoff {
+  color: hsl(254 35% 74%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-reading,
+  .duet-payoff {
     animation: none !important;
   }
 }

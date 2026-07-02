@@ -260,7 +260,14 @@ describe('useGame store (M8)', () => {
 
   it('introducing two creatures resonates them and reports the result', async () => {
     const client = fakeClient();
-    useGame.setState({ client });
+    // Bo is souring (−20): a harmony should be read as pulling it back toward the light.
+    useGame.setState({
+      client,
+      creatures: [
+        { ...creature(), needs: [] },
+        { ...creature({ disposition: -20 }), id: 'c2', name: 'Bo', needs: [] },
+      ],
+    });
     const line = await useGame.getState().meet('c1', 'c2');
     expect(client.meet).toHaveBeenCalledWith('c1', 'c2');
     expect(line).toMatch(/harmonized/);
@@ -270,9 +277,22 @@ describe('useGame store (M8)', () => {
       a: 'c1',
       b: 'c2',
       names: ['Pip', 'Bo'],
+      warmedName: 'Bo',
     });
     useGame.getState().dismissDuet();
     expect(useGame.getState().duet).toBeNull();
+  });
+
+  it('a pair that has just met is asked to let it settle — gently, not as an error', async () => {
+    const client = fakeClient();
+    (client.meet as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('POST /creatures/c1/meet/c2 → 429'),
+    );
+    useGame.setState({ client });
+    const line = await useGame.getState().meet('c1', 'c2');
+    expect(line).toMatch(/let it settle/);
+    expect(useGame.getState().duet).toBeNull();
+    expect(useGame.getState().error).toBeNull();
   });
 
   it('shareCreature mints a keepsake link for the open creature', async () => {
