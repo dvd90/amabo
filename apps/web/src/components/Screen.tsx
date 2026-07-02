@@ -42,6 +42,14 @@ const CARE_STAT: Record<string, { label: string; pick: (c: CreatureViewT) => num
   comfort: { label: 'secur', pick: (c) => c.state.stats.security },
 };
 
+/** The economy, spoken (L4): what each act costs or refuses — no hidden rules. */
+const CARE_HINT: Record<string, string> = {
+  feed: 'a meal of ambra · refused when full',
+  clean: 'a gentle polish · refused when spotless',
+  play: 'joy — it costs energy ✦',
+  comfort: 'for need · refused at peace',
+};
+
 const STORY_BEATS: string[] = [
   'Every tenderness that never lands drifts, and pools in the glass as a warm amber light — Ambra.',
   'When enough gathers, it condenses into a Mote: a small life with no shape of its own, made of unspent love.',
@@ -59,10 +67,14 @@ export function Screen() {
     return <p className="screen-text">A Mote is gathering. Press ● to call it into being.</p>;
   }
   const s = creature.state;
+  // A refusal is the creature's will, not a bug — make it unmissable (L4).
+  const refused = lastResult?.startsWith('refused') || lastResult?.startsWith('tooTired');
   const feedback = error ? (
     <p className="feedback feedback-error">⚠ {error}</p>
   ) : lastResult ? (
-    <p className="feedback feedback-ok">✦ {lastResult}</p>
+    <p className={`feedback ${refused ? 'feedback-refused' : 'feedback-ok'}`}>
+      {refused ? '☾' : '✦'} {lastResult}
+    </p>
   ) : null;
 
   switch (screen) {
@@ -120,6 +132,7 @@ export function Screen() {
             {screen === 'comfort' ? '  (the way back from Yim)' : ''}
           </p>
           <Stat label={stat.label} value={stat.pick(creature)} />
+          <p className="care-hint">{CARE_HINT[screen]}</p>
           {feedback}
         </div>
       );

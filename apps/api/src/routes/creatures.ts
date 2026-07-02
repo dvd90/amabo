@@ -21,6 +21,7 @@ import {
   CreatureView,
   InteractRequest,
   type CreatureViewT,
+  SLOTS,
 } from '@amabo/shared';
 import { Router, type Request } from 'express';
 import type { Clock, SeedSource } from '../clock.js';
@@ -104,6 +105,13 @@ export function creaturesRouter(deps: CreatureDeps): Router {
     }),
   );
 
+  /** Living, present lights only — the shelf never counts the ascended or archived. */
+  const activeCount = async (owner: string | null): Promise<number> => {
+    const all = await repo.listCreaturesByOwner(owner);
+    return all.filter((c) => c.state.alive && c.graduatedAt === null && c.archivedAt === null)
+      .length;
+  };
+
   // Condense a Mote.
   router.post(
     '/creatures',
@@ -112,6 +120,10 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       // The age gate (L2): no stated band, no creatures — 13+ and meant.
       if ((req.user?.ageBand ?? null) === null) {
         return res.status(403).json({ error: 'age confirmation required' });
+      }
+      // The shelf (L4): capacity, kindly enforced. Endings never count.
+      if ((await activeCount(getOwner(req))) >= SLOTS.free) {
+        return res.status(403).json({ error: 'your shelf holds three — a wider shelf, one day ✦' });
       }
       const parsed = CreateCreatureRequest.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -245,6 +257,12 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       const { record } = await catchUp(repo, rec, now);
       if (!canMultiply(record.state)) {
         return res.status(409).json({ error: 'not overflowing yet' });
+      }
+      // The split needs room too (L4) — overflow keeps; it simply waits for a shelf.
+      if ((await activeCount(owner)) >= SLOTS.free) {
+        return res
+          .status(403)
+          .json({ error: 'no room on the shelf — lay a light to rest, or widen it one day ✦' });
       }
       const { parent, child } = multiply(record.state);
       const updatedParent: CreatureRecord = { ...record, state: parent };

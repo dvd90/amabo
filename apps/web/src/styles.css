@@ -3939,3 +3939,20 @@ main,
   opacity: 0.65;
   font-size: 0.8rem;
 }
+
+/* ── The shelf + the spoken economy (L4) ────────────────────────────────────────── */
+.amabo-card-full {
+  opacity: 0.75;
+  border-style: dashed;
+  cursor: default;
+}
+.care-hint {
+  font-size: 0.68rem;
+  opacity: 0.55;
+  margin: 0.25rem 0 0;
+  letter-spacing: 0.04em;
+}
+.feedback-refused {
+  color: hsl(254 45% 76%);
+  animation: refusedShake 0.5s ease;
+}

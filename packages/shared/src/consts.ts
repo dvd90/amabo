@@ -28,3 +28,11 @@ export type Mortality = (typeof MORTALITIES)[number];
  * a pair truthfully *before* the meeting — the rule itself lives in the engine.
  */
 export const HARMONY_GAP = 40;
+
+/**
+ * The shelf (LAUNCH_PLAN.md L4/L5): how many ACTIVE lights an account may tend at
+ * once — alive, unascended, unarchived. Free Lights keep three; the Keeper's Lantern
+ * widens the shelf. Endings never count: the shelf is capacity, never a gate on the
+ * soul (souring/illness/death/redemption are untouchable by the till).
+ */
+export const SLOTS = { free: 3, lantern: 8 } as const;
