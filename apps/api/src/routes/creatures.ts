@@ -121,6 +121,9 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       // Condensing it is the first look-in, so the away-gap starts from now (not null).
       await repo.markSeen(rec.id, now);
       rec.lastSeenAt = now;
+      await repo.addTelemetry([
+        { name: 'creature_created', anonId: null, userId: getOwner(req), at: now, props: null },
+      ]);
       return res.status(201).json(toView(rec));
     }),
   );
@@ -153,6 +156,9 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       // Record this as an explicit "look in" so the roster can show "Xh ago".
       await repo.markSeen(rec.id, now);
       record.lastSeenAt = now;
+      await repo.addTelemetry([
+        { name: 'peek', anonId: null, userId: getOwner(req), at: now, props: null },
+      ]);
       const elapsedMs = prevSeen == null ? 0 : now - prevSeen;
       const away = summarizeGap(before, record.state, events, elapsedMs);
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
@@ -217,6 +223,9 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       await repo.saveCreature(updated);
       await repo.appendEvents(updated.id, events, 'user');
       await repo.recordInteraction(updated.id, action, now);
+      await repo.addTelemetry([
+        { name: 'care_action', anonId: null, userId: getOwner(req), at: now, props: { action } },
+      ]);
       return res.json({ creature: toView(updated), events, needs: needs(updated.state) });
     }),
   );

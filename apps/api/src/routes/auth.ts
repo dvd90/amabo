@@ -184,6 +184,11 @@ export function authRouter(deps: AuthDeps): Router {
           emailVerified: profile.emailVerified,
         });
         res.clearCookie(STATE_COOKIE, { path: '/' });
+        if (user.created) {
+          await repo.addTelemetry([
+            { name: 'signup', anonId: null, userId: user.id, at: clock(), props: null },
+          ]);
+        }
         await establishSession(res, user);
         res.redirect(postLoginRedirect);
       } catch (err) {
@@ -212,6 +217,11 @@ export function authRouter(deps: AuthDeps): Router {
           // Possession of the inbox (clicking the link) verifies the address itself.
           emailVerified: true,
         });
+        if (user.created) {
+          await repo.addTelemetry([
+            { name: 'signup', anonId: null, userId: user.id, at: clock(), props: null },
+          ]);
+        }
         await establishSession(res, user);
         res.redirect(postLoginRedirect);
       } catch (err) {

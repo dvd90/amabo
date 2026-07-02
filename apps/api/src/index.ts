@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
+import { sentryMonitor } from './monitor.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
 import { consoleMailer, resendMailer, type Mailer } from './auth/mailer.js';
 import { randomSeed, systemClock } from './clock.js';
@@ -143,6 +144,13 @@ if (process.env.NODE_ENV !== 'test') {
     vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
     // Railway injects the commit SHA; AMABO_VERSION covers other hosts.
     version: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION,
+    // Error eyes (L1): a no-op unless SENTRY_DSN is set.
+    monitor: process.env.SENTRY_DSN
+      ? sentryMonitor(
+          process.env.SENTRY_DSN,
+          process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION ?? 'dev',
+        )
+      : undefined,
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

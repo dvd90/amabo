@@ -1,7 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
+import { initClientMonitoring, track } from './telemetry.js';
 import './styles.css';
+
+initClientMonitoring();
+track('visit');
 
 const root = document.getElementById('root');
 if (root) {

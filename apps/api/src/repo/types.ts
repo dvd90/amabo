@@ -139,6 +139,16 @@ export interface BondRecord {
   lastMetAt: number;
 }
 
+// ── L1: the funnel — named beats in our own Postgres (LAUNCH_PLAN.md) ─────────────
+export interface TelemetryRecord {
+  id: string;
+  name: string;
+  anonId: string | null;
+  userId: string | null;
+  at: number;
+  props: Record<string, unknown> | null;
+}
+
 export interface LetterRecord {
   id: string;
   ownerId: string | null;
@@ -189,7 +199,8 @@ export interface Repository {
   topMemories(creatureId: string, limit: number): Promise<{ text: string; salience: number }[]>;
 
   // Auth (M5.5)
-  upsertUser(input: OAuthUpsert): Promise<UserRecord>;
+  /** `created` is true only when a brand-new account was made (drives the signup beat). */
+  upsertUser(input: OAuthUpsert): Promise<UserRecord & { created?: boolean }>;
   getUserById(id: string): Promise<UserRecord | null>;
   /** Find a Light by email (case-insensitive) — used to rehome to someone by address. */
   getUserByEmail(email: string): Promise<UserRecord | null>;
@@ -215,6 +226,11 @@ export interface Repository {
   /** True if either Light has blocked the other (used to gate cross-owner gatherings). */
   blockedBetween(userA: string, userB: string): Promise<boolean>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
+
+  // The funnel (L1) + the narration ledger (L3)
+  addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void>;
+  /** Count beats by name since a timestamp, optionally for one Light. */
+  countTelemetry(name: string, opts: { since: number; userId?: string }): Promise<number>;
 
   // The Symposium (M-S)
   createGathering(input: Omit<GatheringRecord, 'id'>): Promise<GatheringRecord>;
