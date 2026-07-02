@@ -172,8 +172,15 @@ export interface GameState {
   reveal: GapSummary | null;
   /** The held Symposium gathering shown in the Glade (null = none yet). */
   gathering: GatheringView | null;
-  /** A just-resonated meeting, played as a small duet scene (null = none showing). */
-  duet: { result: 'harmony' | 'clash'; a: string; b: string; names: [string, string] } | null;
+  /** A just-resonated meeting, played as a small duet scene (null = none showing).
+   *  `warmedName` names the souring one a harmony drew back toward the light. */
+  duet: {
+    result: 'harmony' | 'clash';
+    a: string;
+    b: string;
+    names: [string, string];
+    warmedName: string | null;
+  } | null;
   /** Set the moment a creature ascends — drives the full-screen graduation ceremony. */
   graduation: StarView | null;
   /** Short "what just changed" feedback after a care action. */
@@ -424,10 +431,19 @@ export const useGame = create<GameState>((set, get) => ({
 
   meet: async (aId, bId) => {
     set({ busy: true, error: null });
+    // Capture the pair BEFORE the refresh, so the duet can say who was drawn back.
+    const pre = get().creatures.filter((c) => c.id === aId || c.id === bId);
     try {
       const r = await get().client.meet(aId, bId);
       await get().loadDashboard(); // both came away a little changed
       const [a, b] = r.names;
+      // A harmony pulls each toward the other; the story beat is the souring one rising.
+      const dim =
+        pre.length === 2
+          ? pre.reduce((p, q) => (p.state.disposition <= q.state.disposition ? p : q))
+          : null;
+      const warmedName =
+        r.result === 'harmony' && dim && dim.state.disposition < 0 ? dim.name : null;
       // Stage the duet so the meeting is *seen* — the note is the after-line.
       set({
         duet: {
@@ -435,12 +451,17 @@ export const useGame = create<GameState>((set, get) => ({
           a: aId,
           b: bId,
           names: [a ?? 'one', b ?? 'the other'],
+          warmedName,
         },
       });
       return r.result === 'harmony'
         ? `${a} and ${b} harmonized ✦`
         : `${a} and ${b} met, a little wary`;
     } catch (e) {
+      // The settling pause is part of the rite, not a failure — say it kindly.
+      if ((e as Error)?.message?.includes('429')) {
+        return 'they’ve just met — let it settle ☾';
+      }
       set({ error: friendlyError(e) });
       return 'they could not meet just now';
     } finally {

@@ -43,6 +43,13 @@ export function DuetScene() {
             ? `${duet.names[0]} and ${duet.names[1]} harmonized — their Ambra sang together.`
             : `${duet.names[0]} and ${duet.names[1]} met, a little wary. Another day, perhaps.`}
         </p>
+        {/* The payoff, spoken: what the meeting actually did to them. */}
+        <p className="duet-payoff">
+          {harmony
+            ? 'Both came away warmer, a little more settled.'
+            : 'A touch unsettled — yet even this left a trace of warmth.'}
+          {duet.warmedName ? ` ${duet.warmedName} drifted toward the light ✦` : ''}
+        </p>
         <button className="btn btn-b duet-done" onClick={dismiss}>
           {harmony ? 'Leave them to it ✦' : 'Give them time ☾'}
         </button>

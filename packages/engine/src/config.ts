@@ -4,7 +4,7 @@
  * this one file. Lore terms (ambra, disposition, stages) are spelled per STORY.md.
  */
 
-import type { Stage } from '@amabo/shared';
+import { HARMONY_GAP, type Stage } from '@amabo/shared';
 
 /** Time. The tick runs in fixed sim-steps so behaviour is frame-rate independent. */
 export const MS_PER_MINUTE = 60_000;
@@ -173,12 +173,16 @@ export const MULTIPLY = {
  * symmetric nudges; nothing is ever damaged.
  */
 export const RESONANCE = {
-  harmonyGap: 40, // |dispositionA − dispositionB| at/below this harmonizes
+  harmonyGap: HARMONY_GAP, // |dispositionA − dispositionB| at/below this harmonizes
   harmonyAffection: 4,
   harmonySecurity: 3,
   harmonyDispositionPull: 2, // each drifts a little toward the other
   clashSecurity: 2, // a small unsettling; no real harm
   clashAffection: 1, // even a clash leaves a trace of warmth
+  /** A harmony hangs a THIN thread in the friendship sky (gatherings weave thicker). */
+  bondStrength: 1,
+  /** A harmonized pair must let it settle before meeting again — seals the pull pump. */
+  pairCooldownMinutes: 6 * 60,
 } as const;
 
 /** A visit — another Light shining in (read-mostly) gently warms the creature. */

@@ -21,3 +21,10 @@ export const DISPOSITION_MAX = 100;
 /** Mortality modes: `soft` is the gentle default; `classic` allows the light to go out. */
 export const MORTALITIES = ['soft', 'classic'] as const;
 export type Mortality = (typeof MORTALITIES)[number];
+
+/**
+ * Resonance (STORY.md §7¾): two temperaments within this disposition gap harmonize
+ * when they meet; farther apart, the meeting is wary. Shared so the device can read
+ * a pair truthfully *before* the meeting — the rule itself lives in the engine.
+ */
+export const HARMONY_GAP = 40;

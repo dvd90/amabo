@@ -13,6 +13,7 @@ import {
   mulberry32,
   resonate,
   visitDelta,
+  RESONANCE,
   type CreatureState,
   type ResonanceDelta,
 } from '@amabo/engine';
@@ -195,6 +196,8 @@ export function authedShareRouter(deps: ShareDeps): Router {
   });
 
   // A meeting between two of your OWN creatures — a duet within one Amarium (M-H).
+  // A harmony hangs a THIN thread in the friendship sky and must settle before the
+  // same pair meets again (M-I) — the disposition pull is a gift, not a pump.
   router.post('/creatures/:id/meet/:otherId', (req, res, next) => {
     void (async () => {
       try {
@@ -207,6 +210,16 @@ export function authedShareRouter(deps: ShareDeps): Router {
         if (!a0 || !b0) return res.status(404).json({ error: 'not found' });
 
         const now = clock();
+        const bonds = await repo.listBonds(owner, a0.id);
+        const prior = bonds.find(
+          (x) =>
+            (x.creatureA === a0.id && x.creatureB === b0.id) ||
+            (x.creatureA === b0.id && x.creatureB === a0.id),
+        );
+        if (prior && now - prior.lastMetAt < RESONANCE.pairCooldownMinutes * 60_000) {
+          return res.status(429).json({ error: 'they have just met — let it settle' });
+        }
+
         const a = (await catchUp(repo, a0, now)).record;
         const b = (await catchUp(repo, b0, now)).record;
         const rng = mulberry32(deriveSeed(a.state.seed, b.state.seed));
@@ -216,6 +229,13 @@ export function authedShareRouter(deps: ShareDeps): Router {
         await repo.saveCreature({ ...b, state: applyDelta(b.state, deltasB) });
         await repo.appendEvents(a.id, events, 'sim');
         await repo.appendEvents(b.id, events, 'sim');
+        if (events[0]?.tag === 'harmony') {
+          await repo.recordBonds(
+            owner,
+            [{ a: a.id, b: b.id, strength: RESONANCE.bondStrength }],
+            now,
+          );
+        }
         return res.json({ result: events[0]?.tag ?? 'harmony', names: [a.name, b.name] });
       } catch (err) {
         next(err);
