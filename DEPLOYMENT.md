@@ -92,6 +92,21 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
   roster; "Sign out" ends the session.
 - Create a creature, peek, care — all calls go to the API with the session cookie.
 
+### Verify a deploy (which build is actually live?)
+
+Every deploy is stamped with the commit it was built from (LAUNCH_PLAN.md L0):
+
+```bash
+curl -s https://<api-url>/health          # → { ok, version: "<git sha>", startedAt }
+git rev-parse origin/main                 # must match `version`
+```
+
+If they differ, the API service is running a stale build — check Railway →
+`amabo-api` → **Deployments** for a failed build and redeploy. The web bundle
+carries its own stamp: **Settings → “build abc1234”** at the bottom of the sheet.
+If the web stamp lags after a deploy, it's the PWA cache — reload twice or
+reinstall the app. Locally both stamps read `dev`.
+
 ---
 
 ## Environment variables — quick reference

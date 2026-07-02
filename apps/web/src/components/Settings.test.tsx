@@ -31,6 +31,11 @@ describe('<Settings>', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('names the build it runs (deploy truth, L0)', () => {
+    render(<Settings onClose={() => {}} />);
+    expect(screen.getByText(/^build /)).toBeTruthy();
+  });
+
   it('saves a picked theme to the account when signed in, beside the local cache', () => {
     const updatePreferences = vi.fn().mockResolvedValue({});
     useGame.setState({
