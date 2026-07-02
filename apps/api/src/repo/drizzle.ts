@@ -6,7 +6,7 @@
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
 import type { UserPreferencesT } from '@amabo/shared';
-import { and, desc, eq, isNull, or, sql, type AnyColumn } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, or, sql, type AnyColumn } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
 import {
@@ -26,6 +26,7 @@ import {
   shareLinks,
   stars,
   users,
+  telemetry,
 } from '../db/schema.js';
 import type {
   BondRecord,
@@ -44,6 +45,7 @@ import type {
   StarRecord,
   TranscriptLine,
   UserRecord,
+  TelemetryRecord,
 } from './types.js';
 
 type Row = typeof creatures.$inferSelect;
@@ -251,7 +253,7 @@ export class DrizzleRepository implements Repository {
     return rows.map((m) => ({ text: m.text, salience: m.salience }));
   }
 
-  async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
+  async upsertUser(input: OAuthUpsert): Promise<UserRecord & { created?: boolean }> {
     return this.db.transaction(async (tx) => {
       // 1. This exact sign-in method is already linked to an account — use it.
       const [identity] = await tx
@@ -302,7 +304,7 @@ export class DrizzleRepository implements Repository {
         .insert(authIdentities)
         .values({ userId: row!.id, provider: input.provider, subject: input.subject })
         .onConflictDoNothing();
-      return toUser(row!);
+      return { ...toUser(row!), created: true };
     });
   }
 
@@ -570,6 +572,29 @@ export class DrizzleRepository implements Repository {
         });
       }
     }
+  }
+
+  async addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void> {
+    if (rows.length === 0) return;
+    await this.db.insert(telemetry).values(
+      rows.map((r) => ({
+        name: r.name,
+        anonId: r.anonId,
+        userId: r.userId,
+        at: r.at,
+        props: r.props ?? null,
+      })),
+    );
+  }
+
+  async countTelemetry(name: string, opts: { since: number; userId?: string }): Promise<number> {
+    const conds = [eq(telemetry.name, name), gte(telemetry.at, opts.since)];
+    if (opts.userId !== undefined) conds.push(eq(telemetry.userId, opts.userId));
+    const [row] = await this.db
+      .select({ n: sql<number>`count(*)` })
+      .from(telemetry)
+      .where(and(...conds));
+    return Number(row?.n ?? 0);
   }
 
   async listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]> {

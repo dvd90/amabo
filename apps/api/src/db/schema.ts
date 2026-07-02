@@ -260,5 +260,20 @@ export const bonds = pgTable(
   (t) => [index('bonds_pair_idx').on(t.ownerId, t.creatureA, t.creatureB)],
 );
 
+// The funnel (LAUNCH_PLAN.md L1): named product beats in our own Postgres — no third
+// party. Doubles as the narration cost ledger in L3 (name = 'narration', props = usage).
+export const telemetry = pgTable(
+  'telemetry',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    anonId: text('anon_id'),
+    userId: uuid('user_id'),
+    at: doublePrecision('at').notNull(),
+    props: jsonb('props').$type<Record<string, unknown>>(),
+  },
+  (t) => [index('telemetry_name_at_idx').on(t.name, t.at)],
+);
+
 export type EventRow = typeof events.$inferSelect;
 export type SimEventForDb = SimEvent;

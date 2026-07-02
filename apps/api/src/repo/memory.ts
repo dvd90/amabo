@@ -23,6 +23,7 @@ import type {
   StarRecord,
   TranscriptLine,
   UserRecord,
+  TelemetryRecord,
 } from './types.js';
 
 interface StoredEvent extends SimEvent {
@@ -50,6 +51,7 @@ export class InMemoryRepository implements Repository {
   private gatherings = new Map<string, GatheringRecord>();
   private bonds: BondRecord[] = [];
   private letters: LetterRecord[] = [];
+  private telemetry: TelemetryRecord[] = [];
 
   async createCreature(input: NewCreature): Promise<CreatureRecord> {
     const rec: CreatureRecord = {
@@ -147,7 +149,7 @@ export class InMemoryRepository implements Repository {
       .map((m) => ({ text: m.text, salience: m.salience }));
   }
 
-  async upsertUser(input: OAuthUpsert): Promise<UserRecord> {
+  async upsertUser(input: OAuthUpsert): Promise<UserRecord & { created?: boolean }> {
     // 1. This exact sign-in method is already linked to an account — use it.
     const identity = this.identities.find(
       (i) => i.provider === input.provider && i.subject === input.subject,
@@ -179,7 +181,7 @@ export class InMemoryRepository implements Repository {
     };
     this.users.set(user.id, user);
     this.identities.push({ provider: input.provider, subject: input.subject, userId: user.id });
-    return structuredClone(user);
+    return { ...structuredClone(user), created: true };
   }
 
   async getUserById(id: string): Promise<UserRecord | null> {
@@ -382,6 +384,19 @@ export class InMemoryRepository implements Repository {
         });
       }
     }
+  }
+
+  async addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void> {
+    for (const r of rows) this.telemetry.push({ ...structuredClone(r), id: randomUUID() });
+  }
+
+  async countTelemetry(name: string, opts: { since: number; userId?: string }): Promise<number> {
+    return this.telemetry.filter(
+      (t) =>
+        t.name === name &&
+        t.at >= opts.since &&
+        (opts.userId === undefined || t.userId === opts.userId),
+    ).length;
   }
 
   async listBonds(ownerId: string | null, creatureId: string): Promise<BondRecord[]> {

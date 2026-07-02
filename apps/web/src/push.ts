@@ -6,6 +6,7 @@
  */
 
 import type { ApiClient } from './api/client.js';
+import { track } from './telemetry.js';
 
 export type EnableResult = 'on' | 'denied' | 'unsupported' | 'unavailable' | 'error';
 
@@ -44,6 +45,7 @@ export async function enableNotifications(client: ApiClient): Promise<EnableResu
         applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
       }));
     await client.subscribePush(sub.toJSON());
+    track('push_enabled');
     return 'on';
   } catch {
     return 'error';

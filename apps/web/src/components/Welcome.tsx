@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Creature } from './Creature.js';
 import { DesignSwitch } from './DesignSwitch.js';
+import { track } from '../telemetry.js';
 import { useGame } from '../store/useGame.js';
 import type { CreatureViewT } from '../api/client.js';
 
@@ -27,6 +28,7 @@ export function Welcome() {
         if (!live) return;
         setCreature(d.creature);
         setThought(d.thought);
+        track('birth_seen');
         rememberDemoSeed(d.seed); // keep this one if they sign in
       })
       .catch(() => {

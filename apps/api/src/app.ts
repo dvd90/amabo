@@ -14,6 +14,7 @@ import { attachUser, requireAuth, requireCsrf } from './auth/middleware.js';
 import { consoleMailer, type Mailer } from './auth/mailer.js';
 import { cors } from './cors.js';
 import type { SameSite } from './auth/session.js';
+import { nullMonitor, type Monitor } from './monitor.js';
 import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
 import { authRouter } from './routes/auth.js';
@@ -22,6 +23,7 @@ import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
 import { demoRouter } from './routes/demo.js';
 import { symposiumRouter } from './routes/symposium.js';
+import { telemetryRouter } from './routes/telemetry.js';
 import { localSymposiumNarrator, type SymposiumNarrator } from './narrate/symposium.js';
 
 export interface AppDeps {
@@ -52,11 +54,14 @@ export interface AppDeps {
   symposiumNarrator?: SymposiumNarrator;
   /** The build this process runs (git SHA on Railway); "dev" locally. See /health. */
   version?: string;
+  /** Error eyes (L1): captures 500s + client_error beats. Defaults to a no-op. */
+  monitor?: Monitor;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
 const API_PREFIXES = [
   '/health',
+  '/telemetry',
   '/me',
   '/auth',
   '/creatures',
@@ -96,8 +101,13 @@ export function createApp(deps: AppDeps): Express {
     res.json({ key: deps.vapidPublicKey ?? null });
   });
 
+  const monitor = deps.monitor ?? nullMonitor;
+
   // Session attachment + public auth lifecycle.
   app.use(attachUser(deps.repo, deps.clock));
+  // The funnel's ear (L1): public, rate-limited, allowlisted. After attachUser so a
+  // signed-in beat carries its Light; before the auth gate so a visitor counts too.
+  app.use(telemetryRouter({ repo: deps.repo, clock: deps.clock, monitor }));
   app.use(
     authRouter({
       repo: deps.repo,
@@ -169,7 +179,8 @@ export function createApp(deps: AppDeps): Express {
     }),
   );
 
-  const onError: ErrorRequestHandler = (_err, _req, res, _next) => {
+  const onError: ErrorRequestHandler = (err, req, res, _next) => {
+    monitor.capture(err, { method: req.method, path: req.path });
     res.status(500).json({ error: 'internal error' });
   };
   app.use(onError);
