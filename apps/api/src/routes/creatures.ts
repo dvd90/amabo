@@ -169,7 +169,7 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
       const memories = await repo.topMemories(record.id, MAX_MEMORIES);
       const narration = await narrator.narrate(
-        { name: record.name, state: record.state, memories },
+        { name: record.name, state: record.state, memories, ownerId: getOwner(req) },
         events,
         mode,
       );

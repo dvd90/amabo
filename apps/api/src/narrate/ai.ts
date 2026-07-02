@@ -26,7 +26,12 @@ export function aiNarrator(client: AnthropicLike): Narrator {
         },
         client,
       );
-      return { journal: out.journal, mood: out.mood, newMemories: out.newMemories };
+      return {
+        journal: out.journal,
+        mood: out.mood,
+        newMemories: out.newMemories,
+        usage: out.usage,
+      };
     },
   };
 }

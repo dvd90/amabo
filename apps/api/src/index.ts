@@ -11,12 +11,13 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
-import { sentryMonitor } from './monitor.js';
+import { nullMonitor, sentryMonitor, type Monitor } from './monitor.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
 import { consoleMailer, resendMailer, type Mailer } from './auth/mailer.js';
 import { randomSeed, systemClock } from './clock.js';
 import { makeDb } from './db/client.js';
 import { aiNarrator } from './narrate/ai.js';
+import { meteredNarrator } from './narrate/metered.js';
 import { localNarrator } from './narrate/port.js';
 import type { Narrator } from './narrate/port.js';
 import { localSymposiumNarrator, type SymposiumNarrator } from './narrate/symposium.js';
@@ -33,11 +34,20 @@ function webDistDir(): string | undefined {
   return existsSync(guess) ? guess : undefined;
 }
 
-function buildNarrator(): Narrator {
+function buildNarrator(repo: Repository, monitor: Monitor): Narrator {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (key) return aiNarrator(makeAnthropicClient(key));
-  console.warn('[amabo] ANTHROPIC_API_KEY not set — using local templated narrator');
-  return localNarrator;
+  if (!key) {
+    console.warn('[amabo] ANTHROPIC_API_KEY not set — using local templated narrator');
+    return localNarrator;
+  }
+  // The soul, with a sensible bill (L3): allowance + breaker + ledger around the model.
+  return meteredNarrator(aiNarrator(makeAnthropicClient(key)), localNarrator, {
+    repo,
+    clock: systemClock,
+    monitor,
+    userAllowancePerDay: Number(process.env.NARRATION_USER_ALLOWANCE ?? 10),
+    globalCallsPerDay: Number(process.env.NARRATION_DAILY_CAP ?? 2000),
+  });
 }
 
 /** The Symposium voice: AI when a key is set (with a local fallback), else local. */
@@ -121,11 +131,19 @@ if (process.env.NODE_ENV !== 'test') {
 
   const { mailer, real: realMailer } = buildMailer();
 
+  const repo = buildRepo();
+  const monitor = process.env.SENTRY_DSN
+    ? sentryMonitor(
+        process.env.SENTRY_DSN,
+        process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION ?? 'dev',
+      )
+    : nullMonitor;
+
   const app = createApp({
-    repo: buildRepo(),
+    repo,
     clock: systemClock,
     seed: randomSeed,
-    narrator: buildNarrator(),
+    narrator: buildNarrator(repo, monitor),
     symposiumNarrator: buildSymposiumNarrator(),
     authProvider: buildAuthProvider(),
     mailer,
@@ -145,12 +163,7 @@ if (process.env.NODE_ENV !== 'test') {
     // Railway injects the commit SHA; AMABO_VERSION covers other hosts.
     version: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION,
     // Error eyes (L1): a no-op unless SENTRY_DSN is set.
-    monitor: process.env.SENTRY_DSN
-      ? sentryMonitor(
-          process.env.SENTRY_DSN,
-          process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION ?? 'dev',
-        )
-      : undefined,
+    monitor,
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {
