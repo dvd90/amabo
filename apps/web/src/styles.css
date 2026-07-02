@@ -3802,3 +3802,12 @@ main,
     animation: none !important;
   }
 }
+
+/* Deploy truth (L0): the bundle's commit, tiny, for stale-PWA diagnosis. */
+.settings-build {
+  margin: 0.4rem 0 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  opacity: 0.35;
+  text-align: center;
+}

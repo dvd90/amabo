@@ -141,6 +141,8 @@ if (process.env.NODE_ENV !== 'test') {
     googleEnabled: googleConfigured(),
     googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
     vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
+    // Railway injects the commit SHA; AMABO_VERSION covers other hosts.
+    version: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION,
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

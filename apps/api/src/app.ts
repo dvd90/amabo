@@ -50,6 +50,8 @@ export interface AppDeps {
   magicDevEcho?: boolean;
   /** Voices a Symposium gathering (defaults to the local templated narrator). */
   symposiumNarrator?: SymposiumNarrator;
+  /** The build this process runs (git SHA on Railway); "dev" locally. See /health. */
+  version?: string;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -82,8 +84,11 @@ export function createApp(deps: AppDeps): Express {
   // Cross-site cookies require SameSite=None (+ Secure); same-origin uses Lax.
   const sameSite: SameSite = deps.webOrigin ? 'none' : 'lax';
 
+  // Deploy truth (LAUNCH_PLAN.md L0): /health names the exact build, so "is X live?"
+  // is answered by comparing `version` to `git rev-parse origin/main`.
+  const startedAt = deps.clock();
   app.get('/health', (_req, res) => {
-    res.json({ ok: true });
+    res.json({ ok: true, version: deps.version ?? 'dev', startedAt });
   });
 
   // Public: the VAPID key the client needs to subscribe to push (no secrets here).

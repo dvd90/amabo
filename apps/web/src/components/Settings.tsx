@@ -38,6 +38,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
         <DesignSwitch />
 
         <p className="settings-note">Saved to your account — follows you to any device.</p>
+        <p className="settings-build">build {(import.meta.env.VITE_COMMIT ?? 'dev').slice(0, 7)}</p>
       </div>
     </div>
   );
