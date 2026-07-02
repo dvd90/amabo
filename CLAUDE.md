@@ -94,8 +94,12 @@ pnpm --filter web dev                  # :5173
 
 ## Status
 
-Greenfield. Begin at **M0** in `IMPLEMENTATION_PLAN.md` and proceed in order. Keep the
-engine fully unit-tested and behavior-frozen before building persistence on top of it.
+The game milestones (M0–M-I) are built and on `main`. The current phase is **launch
+readiness**: work proceeds through **`docs/LAUNCH_PLAN.md`** (L0→L6 — deploy truth,
+ops, legal, metered AI narration, the free shelf, entitlements + Stripe, soft launch)
+in order, one milestone ≈ one PR. One more law for this phase: **the till never
+touches the soul** — souring, illness, death, and redemption are never gated,
+metered, or sold.
 
 **Client & deploy:** PWA-first web app (`apps/web`) → Expo/React Native later, reusing
 the platform-agnostic `engine`; no Swift. Deploy on **Railway** (Express API + managed
