@@ -40,8 +40,16 @@ export interface AnthropicLike {
   messages: {
     create(body: unknown): Promise<{
       content: Array<{ type: string; name?: string; input?: unknown }>;
+      /** Token accounting, when the transport provides it — feeds the cost ledger (L3). */
+      usage?: { input_tokens?: number; output_tokens?: number };
     }>;
   };
+}
+
+/** Token usage in the app's own casing (undefined when the transport had none). */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
 }
 
 function registerFor(ctx: CreatureContext): Register {
@@ -66,7 +74,10 @@ export function fallbackNarration(ctx: CreatureContext): NarrateOutput {
   };
 }
 
-export async function narrate(input: NarrateInput, client: AnthropicLike): Promise<NarrateOutput> {
+export async function narrate(
+  input: NarrateInput,
+  client: AnthropicLike,
+): Promise<NarrateOutput & { usage?: TokenUsage }> {
   const { context, newEvents, mode } = input;
   const register = registerFor(context);
   const graduating = newEvents.some((e) => e.kind === 'graduation');
@@ -95,7 +106,11 @@ export async function narrate(input: NarrateInput, client: AnthropicLike): Promi
 
     const toolUse = res.content.find((c) => c.type === 'tool_use' && c.name === 'record_life');
     const parsed = NarrateOutputSchema.safeParse(toolUse?.input);
-    if (parsed.success) return parsed.data;
+    const usage =
+      res.usage?.input_tokens !== undefined && res.usage?.output_tokens !== undefined
+        ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
+        : undefined;
+    if (parsed.success) return { ...parsed.data, usage };
     return fallbackNarration(context);
   } catch {
     // Never let the device see an error — degrade to the local line.

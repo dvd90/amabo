@@ -12,12 +12,16 @@ export interface NarrateContext {
   state: CreatureState;
   /** Distilled top-N memories to give the narrator continuity (M7). */
   memories?: { text: string; salience: number }[];
+  /** The Light being narrated for — the meter (L3) charges its allowance. */
+  ownerId?: string | null;
 }
 
 export interface NarrateOutput {
   journal: string;
   mood: string;
   newMemories?: { text: string; salience: number }[];
+  /** Token accounting from a model call (absent on templated lines) — the ledger (L3). */
+  usage?: { inputTokens: number; outputTokens: number };
 }
 
 export interface Narrator {
