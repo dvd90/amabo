@@ -30,6 +30,22 @@ describe('<Login> (the threshold)', () => {
     expect(screen.queryByText(/Continue with Google/i)).toBeNull();
   });
 
+  it('holds the threshold until the Light confirms 13+ (L2)', async () => {
+    withClient(true);
+    render(<Login />);
+    const send = screen.getByRole('button', { name: /Email me a sign-in link/ });
+    expect((send as HTMLButtonElement).disabled).toBe(true);
+    // Google is a dead button too until the box is ticked.
+    await waitFor(() => expect(screen.getByText(/Continue with Google/i)).toBeTruthy());
+    expect((screen.getByText(/Continue with Google/i) as HTMLButtonElement).tagName).toBe('BUTTON');
+
+    fireEvent.click(screen.getByLabelText(/13 or older/));
+    expect((send as HTMLButtonElement).disabled).toBe(false);
+    await waitFor(() =>
+      expect((screen.getByText(/Continue with Google/i) as HTMLAnchorElement).tagName).toBe('A'),
+    );
+  });
+
   it('offers the explainer video, opening it in a modal', () => {
     withClient(false);
     const { container } = render(<Login />);

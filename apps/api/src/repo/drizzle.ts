@@ -574,6 +574,28 @@ export class DrizzleRepository implements Repository {
     }
   }
 
+  async setAgeBand(userId: string, band: string): Promise<void> {
+    await this.db.update(users).set({ ageBand: band }).where(eq(users.id, userId));
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      // Creatures cascade their events/memories/interactions/share links via FKs.
+      await tx.delete(creatures).where(eq(creatures.ownerId, userId));
+      await tx.delete(stars).where(eq(stars.ownerId, userId));
+      await tx.delete(bonds).where(eq(bonds.ownerId, userId));
+      await tx.delete(letters).where(eq(letters.ownerId, userId));
+      await tx.delete(gatherings).where(eq(gatherings.ownerId, userId));
+      await tx
+        .delete(rehomes)
+        .where(or(eq(rehomes.fromUserId, userId), eq(rehomes.toUserId, userId)));
+      await tx.delete(blocks).where(eq(blocks.userId, userId));
+      await tx.delete(telemetry).where(eq(telemetry.userId, userId));
+      // Sessions, auth identities and push subscriptions cascade from the user row.
+      await tx.delete(users).where(eq(users.id, userId));
+    });
+  }
+
   async addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void> {
     if (rows.length === 0) return;
     await this.db.insert(telemetry).values(

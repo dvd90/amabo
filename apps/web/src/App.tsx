@@ -13,6 +13,8 @@ import { Glade } from './components/Glade.js';
 import { Login } from './components/Login.js';
 import { Onboarding } from './components/Onboarding.js';
 import { Welcome } from './components/Welcome.js';
+import { AgeGate } from './components/AgeGate.js';
+import { PrivacyPage, TermsPage } from './components/Legal.js';
 import { PublicLook } from './components/PublicLook.js';
 import { useGame } from './store/useGame.js';
 
@@ -23,9 +25,19 @@ function getLookToken(): string | null {
   return m ? m[1]! : null;
 }
 
+/** The public legal pages (/terms, /privacy) — readable signed out (L2). */
+function getLegalPage(): 'terms' | 'privacy' | null {
+  if (typeof window === 'undefined') return null;
+  if (window.location.pathname === '/terms') return 'terms';
+  if (window.location.pathname === '/privacy') return 'privacy';
+  return null;
+}
+
 export function App() {
   const lookToken = getLookToken();
+  const legal = getLegalPage();
   const authed = useGame((s) => s.authed);
+  const ageBand = useGame((s) => s.ageBand);
   const checkSession = useGame((s) => s.checkSession);
   const creature = useGame((s) => s.creature);
   const creatures = useGame((s) => s.creatures);
@@ -44,6 +56,7 @@ export function App() {
 
   // Which screen is showing (the ambient mote layer breathes behind all of them).
   const screen = (() => {
+    if (legal) return legal === 'terms' ? <TermsPage /> : <PrivacyPage />;
     if (lookToken) return <PublicLook token={lookToken} />;
     if (authed === null) return <main className="boot">Warming the glass…</main>;
     // Logged out: meet a newborn Mote first (the hook), then the sign-in form.
@@ -60,6 +73,8 @@ export function App() {
     <>
       <Ambient />
       {screen}
+      {/* The one honest question (L2): asked once, enforced by the API. */}
+      {authed && !legal && ageBand === null ? <AgeGate /> : null}
     </>
   );
 }

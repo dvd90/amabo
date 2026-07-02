@@ -3811,3 +3811,131 @@ main,
   opacity: 0.35;
   text-align: center;
 }
+
+/* ── Lawful (L2): the age gate, the small print, the goodbye ────────────────────── */
+.agegate {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(0, 0, 0, 0.82);
+}
+.agegate-sheet {
+  width: 100%;
+  max-width: 24rem;
+  text-align: center;
+  border-radius: 1rem;
+  padding: 1.5rem 1.3rem;
+  color: #f3ece0;
+  background: linear-gradient(#241d16, #17110c);
+  border: 1px solid hsl(var(--amber) / 0.3);
+}
+.agegate-lede {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  opacity: 0.85;
+  margin: 0 0 1.1rem;
+}
+.agegate-bands {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+}
+.agegate-young {
+  opacity: 0.6;
+  font-size: 0.78rem;
+}
+.agegate-legal {
+  margin: 0.9rem 0 0;
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+.agegate-legal a,
+.settings-legal a,
+.login-age a,
+.legal a {
+  color: hsl(var(--amber));
+}
+.agegate-go {
+  width: 100%;
+}
+
+.login-age {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  text-align: left;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  opacity: 0.85;
+  margin: 0.15rem 0 0.2rem;
+}
+.login-age input {
+  width: auto;
+  margin-top: 0.15rem;
+  accent-color: hsl(var(--amber));
+}
+
+.legal {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2.2rem 1.2rem 3rem;
+  color: #f3ece0;
+  line-height: 1.6;
+}
+.legal-title {
+  margin: 0.2rem 0 0.2rem;
+}
+.legal-updated {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  margin: 0 0 1.4rem;
+}
+.legal h2 {
+  font-size: 1rem;
+  margin: 1.4rem 0 0.35rem;
+  color: hsl(var(--amber));
+}
+.legal p,
+.legal li {
+  font-size: 0.88rem;
+  opacity: 0.9;
+}
+.legal-footer {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.settings-legal {
+  font-size: 0.78rem;
+  opacity: 0.8;
+  margin: 0 0 0.4rem;
+}
+.settings-h-danger {
+  color: hsl(8 70% 62%);
+}
+.settings-delete {
+  display: grid;
+  gap: 0.55rem;
+  justify-items: start;
+}
+.settings-delete-warn {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  color: hsl(8 70% 72%);
+}
+.settings-delete input {
+  width: 100%;
+}
+.settings-delete-go:disabled {
+  opacity: 0.45;
+}
+.settings-delete-open {
+  opacity: 0.65;
+  font-size: 0.8rem;
+}

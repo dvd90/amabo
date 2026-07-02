@@ -11,6 +11,8 @@ export interface OAuthProfile {
   displayName: string;
   /** Whether the provider itself has verified this address (gates account merging). */
   emailVerified: boolean;
+  /** Providers never know ages; only the Fake provider vouches (dev/test convenience). */
+  ageBand?: string | null;
 }
 
 export interface AuthProvider {
@@ -32,6 +34,8 @@ export class FakeAuthProvider implements AuthProvider {
       email: `${code}@example.com`,
       displayName: code,
       emailVerified: true,
+      // Dev/test convenience: skip the age gate locally; real providers never set this.
+      ageBand: '18+',
     };
   }
 }

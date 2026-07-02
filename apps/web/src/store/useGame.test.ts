@@ -39,6 +39,8 @@ function fakeClient(): ApiClient {
       .fn()
       .mockResolvedValue({ user: { id: 'u1', displayName: 'P' }, csrfToken: 'x' }),
     logout: vi.fn().mockResolvedValue(undefined),
+    setAge: vi.fn().mockResolvedValue(undefined),
+    deleteAccount: vi.fn().mockResolvedValue(undefined),
     listCreatures: vi.fn().mockResolvedValue([{ ...creature(), needs: [] }]),
     createCreature: vi.fn().mockResolvedValue(creature()),
     demoBirth: vi

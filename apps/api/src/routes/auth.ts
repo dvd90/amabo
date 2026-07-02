@@ -182,6 +182,7 @@ export function authRouter(deps: AuthDeps): Router {
           email: profile.email,
           displayName: profile.displayName,
           emailVerified: profile.emailVerified,
+          ageBand: profile.ageBand ?? null,
         });
         res.clearCookie(STATE_COOKIE, { path: '/' });
         if (user.created) {
@@ -256,6 +257,41 @@ export function authRouter(deps: AuthDeps): Router {
         }
         const user = await repo.updatePreferences(req.user!.id, parsed.data);
         res.json({ preferences: user.preferences });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // The age gate (L2): the Light states its band once; under-13 is refused kindly at
+  // the client and no band means no creatures (see routes/creatures.ts). 13+ only.
+  router.post('/me/age', requireAuth, requireCsrf, (req: Request, res: Response, next) => {
+    void (async () => {
+      try {
+        const band = String(req.body?.band ?? '');
+        if (band !== '13-17' && band !== '18+') {
+          return res.status(400).json({ error: 'band must be 13-17 or 18+' });
+        }
+        await repo.setAgeBand(req.user!.id, band);
+        return res.json({ ageBand: band });
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  // Account deletion (L2): the right to be forgotten. The confirm phrase must match
+  // the account email; everything owner-scoped is erased and the session ends.
+  router.delete('/me', requireAuth, requireCsrf, (req: Request, res: Response, next) => {
+    void (async () => {
+      try {
+        const confirm = String(req.body?.confirm ?? '');
+        if (confirm.toLowerCase() !== req.user!.email.toLowerCase()) {
+          return res.status(400).json({ error: 'type your account email to confirm' });
+        }
+        await repo.deleteUser(req.user!.id);
+        clearSessionCookies(res);
+        return res.status(204).end();
       } catch (err) {
         next(err);
       }
