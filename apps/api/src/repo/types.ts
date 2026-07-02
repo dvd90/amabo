@@ -227,6 +227,12 @@ export interface Repository {
   blockedBetween(userA: string, userB: string): Promise<boolean>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
 
+  // Lawful (L2)
+  /** Record the Light's stated age band ('13-17' | '18+') — the gate reads it. */
+  setAgeBand(userId: string, band: string): Promise<void>;
+  /** The right to be forgotten: erase EVERY row the user owns, then the user itself. */
+  deleteUser(userId: string): Promise<void>;
+
   // The funnel (L1) + the narration ledger (L3)
   addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void>;
   /** Count beats by name since a timestamp, optionally for one Light. */

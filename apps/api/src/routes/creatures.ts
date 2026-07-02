@@ -109,6 +109,10 @@ export function creaturesRouter(deps: CreatureDeps): Router {
     '/creatures',
     createLimiter,
     asyncHandler(async (req, res) => {
+      // The age gate (L2): no stated band, no creatures — 13+ and meant.
+      if ((req.user?.ageBand ?? null) === null) {
+        return res.status(403).json({ error: 'age confirmation required' });
+      }
       const parsed = CreateCreatureRequest.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
       const now = clock();

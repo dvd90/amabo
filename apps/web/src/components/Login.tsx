@@ -35,6 +35,7 @@ export function Login() {
   const [busy, setBusy] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [watching, setWatching] = useState(false);
+  const [ofAge, setOfAge] = useState(false);
   const [error, setError] = useState<string | null>(() => readAuthError());
 
   useEffect(() => {
@@ -97,7 +98,19 @@ export function Login() {
           onChange={(e) => setEmail(e.target.value)}
           aria-label="Email address"
         />
-        <button className="btn btn-login" type="submit" disabled={busy}>
+        <label className="login-age">
+          <input
+            type="checkbox"
+            checked={ofAge}
+            onChange={(e) => setOfAge(e.target.checked)}
+            aria-label="I confirm I am 13 or older"
+          />
+          <span>
+            I’m 13 or older, and I accept the <a href="/terms">Terms</a> and{' '}
+            <a href="/privacy">Privacy Policy</a>.
+          </span>
+        </label>
+        <button className="btn btn-login" type="submit" disabled={busy || !ofAge}>
           {busy ? 'Sending the link…' : 'Email me a sign-in link'}
         </button>
       </form>
@@ -112,9 +125,15 @@ export function Login() {
           <div className="login-or" aria-hidden="true">
             or
           </div>
-          <a className="btn btn-ghost" href={LOGIN_URL}>
-            Continue with Google
-          </a>
+          {ofAge ? (
+            <a className="btn btn-ghost" href={LOGIN_URL}>
+              Continue with Google
+            </a>
+          ) : (
+            <button className="btn btn-ghost" disabled title="Confirm you’re 13+ first">
+              Continue with Google
+            </button>
+          )}
         </>
       ) : null}
 

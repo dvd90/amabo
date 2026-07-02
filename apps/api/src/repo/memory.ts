@@ -386,6 +386,39 @@ export class InMemoryRepository implements Repository {
     }
   }
 
+  async setAgeBand(userId: string, band: string): Promise<void> {
+    const user = this.users.get(userId);
+    if (user) user.ageBand = band;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    const mine = [...this.creatures.values()].filter((c) => c.ownerId === userId);
+    const creatureIds = new Set(mine.map((c) => c.id));
+    for (const id of creatureIds) this.creatures.delete(id);
+    this.events = this.events.filter((e) => !creatureIds.has(e.creatureId));
+    this.memories = this.memories.filter((m) => !creatureIds.has(m.creatureId));
+    this.interactions = this.interactions.filter((i) => !creatureIds.has(i.creatureId));
+    this.stars = this.stars.filter((s) => s.ownerId !== userId);
+    this.bonds = this.bonds.filter((b) => b.ownerId !== userId);
+    this.letters = this.letters.filter((l) => l.ownerId !== userId);
+    this.gatherings = new Map(
+      [...this.gatherings.entries()].filter(([, g]) => g.ownerId !== userId),
+    );
+    this.shareLinks = new Map(
+      [...this.shareLinks.entries()].filter(([, l]) => l.ownerId !== userId),
+    );
+    this.rehomes = new Map(
+      [...this.rehomes.entries()].filter(
+        ([, r]) => r.fromUserId !== userId && r.toUserId !== userId,
+      ),
+    );
+    this.pushSubs = new Map([...this.pushSubs.entries()].filter(([, p]) => p.userId !== userId));
+    this.telemetry = this.telemetry.filter((t) => t.userId !== userId);
+    this.sessions = new Map([...this.sessions.entries()].filter(([, x]) => x.userId !== userId));
+    this.identities = this.identities.filter((i) => i.userId !== userId);
+    this.users.delete(userId);
+  }
+
   async addTelemetry(rows: Omit<TelemetryRecord, 'id'>[]): Promise<void> {
     for (const r of rows) this.telemetry.push({ ...structuredClone(r), id: randomUUID() });
   }

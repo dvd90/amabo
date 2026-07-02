@@ -146,6 +146,8 @@ export interface GameState {
   client: ApiClient;
   /** Session state: null while the first check is in flight, then true/false. */
   authed: boolean | null;
+  /** The Light's stated age band; null = not yet confirmed (the AgeGate shows). */
+  ageBand: string | null;
   /** While logged out: the birth-moment welcome (the hook) or the sign-in form. */
   authView: AuthView;
   /** True if this device has met the birth moment before (logged-out return visit). */
@@ -253,6 +255,10 @@ export interface GameState {
   openDashboard(): Promise<void>;
   /** End the session and clear all local state. */
   signOut(): Promise<void>;
+  /** State the age band once (L2) — unblocks creature creation. */
+  confirmAge(band: '13-17' | '18+'): Promise<void>;
+  /** Delete the account and everything in it; confirm must be the account email. */
+  deleteAccount(confirm: string): Promise<boolean>;
   start(name?: string): Promise<void>;
   refresh(): Promise<void>;
   peek(): Promise<void>;
@@ -267,6 +273,7 @@ export interface GameState {
 export const useGame = create<GameState>((set, get) => ({
   client: new HttpApiClient(),
   authed: null,
+  ageBand: null,
   authView: 'welcome',
   returningVisitor: false,
   magicSent: null,
@@ -322,6 +329,7 @@ export const useGame = create<GameState>((set, get) => ({
   checkSession: async () => {
     const me = await get().client.me();
     if (me) {
+      set({ ageBand: me.user.ageBand ?? null });
       await get().loadDashboard();
       // The account-level prefs are the source of truth once signed in; reconcile the
       // local cache to match (so the *next* signed-out boot on this device agrees too).
@@ -549,6 +557,34 @@ export const useGame = create<GameState>((set, get) => ({
       // dashboard) — auth state lives here, not in a component's local state.
       set({ authed: false, creatures: [], creature: null, route: 'dashboard', screen: 'home' });
     }
+  },
+
+  confirmAge: async (band) => {
+    try {
+      await get().client.setAge(band);
+      set({ ageBand: band });
+    } catch (e) {
+      set({ error: friendlyError(e) });
+    }
+  },
+
+  deleteAccount: async (confirm) => {
+    try {
+      await get().client.deleteAccount(confirm);
+    } catch (e) {
+      set({ error: friendlyError(e) });
+      return false;
+    }
+    saveCreatureId(null);
+    set({
+      authed: false,
+      ageBand: null,
+      creatures: [],
+      creature: null,
+      route: 'dashboard',
+      screen: 'home',
+    });
+    return true;
   },
 
   start: async (name = 'Mote') => {

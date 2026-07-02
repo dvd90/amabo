@@ -31,6 +31,24 @@ describe('<Settings>', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('offers the small print and a guarded goodbye (L2)', async () => {
+    const deleteAccount = vi.fn().mockResolvedValue(undefined);
+    useGame.setState({ client: { deleteAccount } as unknown as ApiClient });
+    render(<Settings onClose={() => {}} />);
+    expect(screen.getByText('Terms')).toBeTruthy();
+    expect(screen.getByText('Privacy')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete my account/ }));
+    const go = screen.getByRole('button', { name: /Let it all go/ });
+    expect((go as HTMLButtonElement).disabled).toBe(true); // nothing typed yet
+    fireEvent.change(screen.getByLabelText(/confirm deletion/), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(go);
+    await Promise.resolve();
+    expect(deleteAccount).toHaveBeenCalledWith('me@example.com');
+  });
+
   it('names the build it runs (deploy truth, L0)', () => {
     render(<Settings onClose={() => {}} />);
     expect(screen.getByText(/^build /)).toBeTruthy();
