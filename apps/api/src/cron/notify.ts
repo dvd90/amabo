@@ -11,10 +11,13 @@
 
 import webpush from 'web-push';
 import { makeDb } from '../db/client.js';
+import { envLogger } from '../logger.js';
 import { decideNotification, type NotifyCandidate } from '../notify/decide.js';
 import { DrizzleRepository } from '../repo/drizzle.js';
 import type { PushSubscriptionRecord } from '../repo/types.js';
 import { catchUp } from '../service/catchup.js';
+
+const log = envLogger().child('notify');
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -22,7 +25,7 @@ async function main(): Promise<void> {
   const priv = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT ?? process.env.MAIL_FROM ?? 'mailto:amabo@example.com';
   if (!databaseUrl || !pub || !priv) {
-    console.error('[amabo notify] missing DATABASE_URL or VAPID keys — nothing to do');
+    log.error('missing DATABASE_URL or VAPID keys — nothing to do');
     return;
   }
   webpush.setVapidDetails(subject, pub, priv);
@@ -54,17 +57,21 @@ async function main(): Promise<void> {
         sent += 1;
       } catch (err) {
         const code = (err as { statusCode?: number }).statusCode;
-        if (code === 404 || code === 410) await repo.deletePushSubscription(sub.endpoint);
-        else console.error('[amabo notify] send failed:', (err as Error).message);
+        if (code === 404 || code === 410) {
+          log.info('pruned a dead push endpoint', { code });
+          await repo.deletePushSubscription(sub.endpoint);
+        } else {
+          log.error('push send failed', { code: code ?? null, err });
+        }
       }
     }
   }
-  console.log(`[amabo notify] pinged ${sent} device(s)`);
+  log.info('run complete', { pinged: sent });
 }
 
 main()
   .then(() => process.exit(0))
   .catch((e: unknown) => {
-    console.error(e);
+    log.error('notify run crashed', { err: e });
     process.exit(1);
   });

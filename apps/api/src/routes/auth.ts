@@ -19,6 +19,7 @@ import {
 import { requireAuth, requireCsrf } from '../auth/middleware.js';
 import { makeMagicToken, verifyMagicToken } from '../auth/magic.js';
 import type { Mailer } from '../auth/mailer.js';
+import { noopLogger, type Logger } from '../logger.js';
 import type { Repository, UserRecord } from '../repo/types.js';
 import { byIp, rateLimit } from '../rateLimit.js';
 
@@ -57,12 +58,15 @@ export interface AuthDeps {
    * `/auth/google/callback` works.
    */
   callbackOverride?: string;
+  /** Where sign-in failures get said out loud (they are invisible to the caller by design). */
+  logger?: Logger;
 }
 
 const STATE_COOKIE = 'amabo_oauth_state';
 
 export function authRouter(deps: AuthDeps): Router {
   const { repo, authProvider, clock, cookieSecure, sameSite, baseUrl, postLoginRedirect } = deps;
+  const log = deps.logger ?? noopLogger;
   const router = Router();
   const magicLimiter = rateLimit({
     windowMs: MAGIC_REQUEST_WINDOW_MS,
@@ -125,7 +129,7 @@ export function authRouter(deps: AuthDeps): Router {
           await deps.mailer.sendMagicLink(email, link);
         } catch (e) {
           // Don't leak delivery state to the caller; log it for ops and still answer 200.
-          console.error('[amabo] failed to send magic link:', (e as Error).message);
+          log.error('failed to send magic link', { to: email, err: e });
         }
         res.json({ sent: true, ...(deps.magicDevEcho ? { devLink: link } : {}) });
       } catch (err) {
@@ -150,8 +154,7 @@ export function authRouter(deps: AuthDeps): Router {
     const redirectUri = callbackUrl(req);
     // The exact value sent to Google — must match an Authorized redirect URI there,
     // or Google answers `redirect_uri_mismatch`. Logged so it can be copied verbatim.
-    if (deps.googleEnabled)
-      console.info('[amabo] OAuth redirect_uri sent to Google →', redirectUri);
+    if (deps.googleEnabled) log.info('OAuth redirect_uri sent to Google', { redirectUri });
     res.redirect(authProvider.authUrl(state, redirectUri));
   });
 
@@ -194,7 +197,7 @@ export function authRouter(deps: AuthDeps): Router {
         res.redirect(postLoginRedirect);
       } catch (err) {
         // Surface the real reason in the server log; show a friendly flag to the user.
-        console.error('[amabo] google oauth callback failed:', (err as Error).message);
+        log.error('google oauth callback failed', { err });
         backToLogin(res, 'google');
       }
     })();

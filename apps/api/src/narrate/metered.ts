@@ -15,6 +15,7 @@
  */
 
 import type { Clock } from '../clock.js';
+import { noopLogger, type Logger } from '../logger.js';
 import type { Monitor } from '../monitor.js';
 import type { Repository } from '../repo/types.js';
 import type { Narrator } from './port.js';
@@ -27,14 +28,17 @@ export interface MeterDeps {
   allowanceFor: (userId: string) => Promise<number>;
   /** Model calls per rolling day across ALL Lights — the no-surprise-bill breaker. */
   globalCallsPerDay: number;
-  /** Which LLM is behind the port (grok | anthropic) — stamped into the ledger. */
+  /** Which LLM is behind the port (llama | grok | anthropic) — stamped into the ledger. */
   provider?: string;
+  /** Says out loud what the meter otherwise does silently (trips, refusals, crashes). */
+  logger?: Logger;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function meteredNarrator(model: Narrator, fallback: Narrator, deps: MeterDeps): Narrator {
   const { repo, clock, monitor } = deps;
+  const logger = deps.logger ?? noopLogger;
   let breakerAlarmed = false;
 
   return {
@@ -47,6 +51,10 @@ export function meteredNarrator(model: Narrator, fallback: Narrator, deps: Meter
         if (global >= deps.globalCallsPerDay) {
           if (!breakerAlarmed) {
             breakerAlarmed = true;
+            logger.warn('global narration breaker tripped — all voices local until it resets', {
+              cap: deps.globalCallsPerDay,
+              provider: deps.provider ?? null,
+            });
             monitor.capture(
               new Error(`narration budget breaker tripped (${deps.globalCallsPerDay}/day)`),
             );
@@ -58,7 +66,13 @@ export function meteredNarrator(model: Narrator, fallback: Narrator, deps: Meter
         const userId = ctx.ownerId ?? null;
         if (userId) {
           const mine = await repo.countTelemetry('narration', { since, userId });
-          if (mine >= (await deps.allowanceFor(userId))) return fallback.narrate(ctx, events, mode);
+          if (mine >= (await deps.allowanceFor(userId))) {
+            logger.debug('daily narration allowance reached — local voice for this Light', {
+              userId,
+              used: mine,
+            });
+            return fallback.narrate(ctx, events, mode);
+          }
         }
 
         const out = await model.narrate(ctx, events, mode);
@@ -77,8 +91,13 @@ export function meteredNarrator(model: Narrator, fallback: Narrator, deps: Meter
           },
         ]);
         return out;
-      } catch {
+      } catch (err) {
         // The meter must never be the reason a creature goes silent.
+        logger.error('narration meter failed — degraded to the local voice', {
+          provider: deps.provider ?? null,
+          mode,
+          err,
+        });
         return fallback.narrate(ctx, events, mode);
       }
     },
