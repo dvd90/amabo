@@ -10,6 +10,7 @@ import { selectMemories, type Memory } from './memories.js';
 import { MODEL_MILESTONE, MODEL_PEEK } from './models.js';
 import { NarrateOutputSchema, RECORD_LIFE_TOOL, type NarrateOutput } from './schema.js';
 import { systemPrompt, type Register } from './voice.js';
+import type { PersonaT } from '@amabo/shared';
 
 /** Minimal, data-only view of the creature for narration (no mechanics leak in). */
 export interface CreatureContext {
@@ -19,6 +20,8 @@ export interface CreatureContext {
   uncanny: boolean;
   asleep: boolean;
   alive: boolean;
+  /** The Soulmark (STORY.md §8½): honored in every journal, never rewritten. */
+  persona?: PersonaT;
 }
 
 export interface NarrateEvent {

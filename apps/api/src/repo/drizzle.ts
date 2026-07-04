@@ -5,7 +5,12 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
-import { DEFAULT_ENTITLEMENTS, type EntitlementsT, type UserPreferencesT } from '@amabo/shared';
+import {
+  DEFAULT_ENTITLEMENTS,
+  type EntitlementsT,
+  type PersonaT,
+  type UserPreferencesT,
+} from '@amabo/shared';
 import { and, desc, eq, gte, isNull, or, sql, type AnyColumn } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db/client.js';
@@ -75,6 +80,7 @@ function rowToRecord(row: Row): CreatureRecord {
     graduatedAt: row.graduatedAt,
     archivedAt: row.archivedAt,
     lastSeenAt: row.lastSeenAt,
+    persona: (row.persona as PersonaT | null) ?? null,
     createdAt: row.createdAt.getTime(),
   };
 }
@@ -601,6 +607,10 @@ export class DrizzleRepository implements Repository {
       .onConflictDoNothing()
       .returning();
     return inserted.length > 0;
+  }
+
+  async setPersona(id: string, persona: PersonaT): Promise<void> {
+    await this.db.update(creatures).set({ persona }).where(eq(creatures.id, id));
   }
 
   async setAgeBand(userId: string, band: string): Promise<void> {

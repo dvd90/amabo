@@ -11,6 +11,7 @@ export * from './memories.js';
 export * from './schema.js';
 export * from './voice.js';
 export * from './narrate.js';
+export * from './persona.js';
 export * from './symposium.js';
 export * from './client.js';
 export * from './openai-compat.js';

@@ -5,6 +5,7 @@
  * the moment they sign in and keep it, carrying this same `seed`. Public, stateless, cheap.
  */
 
+import { localPersona } from '@amabo/ai';
 import { condenseMote, needs } from '@amabo/engine';
 import { CreatureView } from '@amabo/shared';
 import { Router, type Request } from 'express';
@@ -38,6 +39,8 @@ export function demoRouter(deps: DemoDeps): Router {
       graduatedAt: null,
       archivedAt: null,
       lastSeenAt: null,
+      // The door Mote gets a seeded soulmark too — free, instant, unique per seed.
+      persona: localPersona({ id: `demo-${s}`, name: 'Mote', seed: s }),
       createdAt: clock(),
     });
     return res.json({ creature, needs: needs(state), thought: birthThought(s), seed: s });

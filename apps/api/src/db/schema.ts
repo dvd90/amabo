@@ -45,6 +45,9 @@ export const creatures = pgTable(
     // When the Light last explicitly looked in (peek). Distinct from lastTickAt, which
     // any background catch-up advances — this only moves on a real visit (M-B).
     lastSeenAt: doublePrecision('last_seen_at'),
+    // The Soulmark (STORY.md §8½): who it is, set once at condensation. Flavor, never
+    // fate — narration honors it; the engine never reads it.
+    persona: jsonb('persona'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [index('creatures_owner_idx').on(t.ownerId)],

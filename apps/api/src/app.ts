@@ -14,6 +14,8 @@ import { attachUser, requireAuth, requireCsrf } from './auth/middleware.js';
 import { consoleMailer, type Mailer } from './auth/mailer.js';
 import { cors } from './cors.js';
 import type { SameSite } from './auth/session.js';
+import { localPersona } from '@amabo/ai';
+import type { PersonaT } from '@amabo/shared';
 import type { BillingPort } from './billing/port.js';
 import { nullMonitor, type Monitor } from './monitor.js';
 import type { Narrator } from './narrate/port.js';
@@ -60,6 +62,13 @@ export interface AppDeps {
   monitor?: Monitor;
   /** The till (L5). Absent = the game is simply free; billing routes answer 503. */
   billing?: BillingPort;
+  /** Condenses a newborn's Soulmark (STORY.md §8½). Defaults to the seeded local one. */
+  condenseSoul?: (input: {
+    id: string;
+    name: string;
+    seed: number;
+    ownerId: string | null;
+  }) => Promise<PersonaT>;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -173,6 +182,7 @@ export function createApp(deps: AppDeps): Express {
       seed: deps.seed,
       narrator: deps.narrator,
       getOwner,
+      condenseSoul: deps.condenseSoul ?? (async (input) => localPersona(input)),
     }),
   );
   app.use(

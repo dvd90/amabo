@@ -118,6 +118,15 @@ export function Screen() {
             disposition {Math.round(s.disposition)}
             {s.ill ? ' · ill' : ''}
           </p>
+          {creature.persona ? (
+            <div className="soulmark">
+              <p className="soulmark-essence">“{creature.persona.essence}”</p>
+              <p className="soulmark-line">
+                {creature.persona.temperament} · loves {creature.persona.loves.join(', ')}
+              </p>
+              <p className="soulmark-line">{creature.persona.quirk}</p>
+            </div>
+          ) : null}
         </div>
       );
     case 'feed':

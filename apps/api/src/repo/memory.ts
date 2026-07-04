@@ -5,7 +5,12 @@
  */
 
 import type { SimEvent } from '@amabo/engine';
-import { DEFAULT_ENTITLEMENTS, type EntitlementsT, type UserPreferencesT } from '@amabo/shared';
+import {
+  DEFAULT_ENTITLEMENTS,
+  type EntitlementsT,
+  type PersonaT,
+  type UserPreferencesT,
+} from '@amabo/shared';
 import { randomUUID } from 'node:crypto';
 import type {
   BondRecord,
@@ -63,6 +68,7 @@ export class InMemoryRepository implements Repository {
       graduatedAt: null,
       archivedAt: null,
       lastSeenAt: null,
+      persona: null,
       createdAt: Date.now(),
     };
     this.creatures.set(rec.id, rec);
@@ -411,6 +417,11 @@ export class InMemoryRepository implements Repository {
     if (this.stripeSeen.has(id)) return false;
     this.stripeSeen.add(id);
     return true;
+  }
+
+  async setPersona(id: string, persona: PersonaT): Promise<void> {
+    const rec = this.creatures.get(id);
+    if (rec) rec.persona = structuredClone(persona);
   }
 
   async setAgeBand(userId: string, band: string): Promise<void> {

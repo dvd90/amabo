@@ -78,6 +78,32 @@ describe('POST /creatures', () => {
   });
 });
 
+describe('the Soulmark (STORY.md §8½)', () => {
+  it('every newborn carries one, persisted, and no two are alike', async () => {
+    const { app } = setup();
+    const { agent, csrf } = await login(app);
+    const a = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    const b = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Bo' });
+
+    expect(a.body.persona.essence.length).toBeGreaterThan(0);
+    expect(a.body.persona.temperament.length).toBeGreaterThan(0);
+    expect(a.body.persona.loves.length).toBeGreaterThan(0);
+    expect(a.body.persona.quirk.length).toBeGreaterThan(0);
+    // Unique even with the server's fixed seed — the creature's id is the salt.
+    expect(JSON.stringify(a.body.persona)).not.toEqual(JSON.stringify(b.body.persona));
+
+    // Set once at condensation and persisted — the same mark on every later read.
+    const read = await agent.get(`/creatures/${a.body.id}`);
+    expect(read.body.persona).toEqual(a.body.persona);
+  });
+
+  it('the door Mote (demo birth) is marked too, uniquely per seed', async () => {
+    const { app } = setup();
+    const one = await request(app).get('/demo/birth');
+    expect(one.body.creature.persona.essence.length).toBeGreaterThan(0);
+  });
+});
+
 describe('GET /creatures/:id — lazy catch-up', () => {
   it('replays the gap so decay shows after time passes', async () => {
     const ctx = setup();

@@ -107,6 +107,20 @@ export const Entitlements = z.object({
 export type EntitlementsT = z.infer<typeof Entitlements>;
 export const DEFAULT_ENTITLEMENTS: EntitlementsT = { tier: 'free', renewsAt: null };
 
+/**
+ * The Soulmark (STORY.md §8½): the grain of who a creature is, set once at
+ * condensation. Flavor, never fate — narration honors it; mechanics ignore it.
+ * AI-elaborated but never trusted: validated here at every boundary.
+ */
+export const Persona = z.object({
+  essence: z.string().min(1).max(160),
+  temperament: z.string().min(1).max(24),
+  loves: z.array(z.string().min(1).max(60)).min(1).max(3),
+  fears: z.array(z.string().min(1).max(60)).min(1).max(2),
+  quirk: z.string().min(1).max(120),
+});
+export type PersonaT = z.infer<typeof Persona>;
+
 // ── API response views ─────────────────────────────────────────────────────────
 export const CreatureView = z.object({
   id: z.string(),
@@ -118,6 +132,8 @@ export const CreatureView = z.object({
   createdAt: z.number(),
   /** When the Light last looked in (peek); null if never. Drives "Xh ago" on the roster. */
   lastSeenAt: z.number().nullable(),
+  /** The Soulmark (STORY.md §8½) — who it is. Optional so older records stay valid. */
+  persona: Persona.nullable().optional(),
 });
 
 export type CreatureViewT = z.infer<typeof CreatureView>;
