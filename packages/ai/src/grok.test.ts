@@ -52,7 +52,7 @@ describe('the Grok adapter (multi-LLM) — one port, another voice', () => {
     expect(out.journal).toBe('a grok-written day');
     expect(out.usage).toEqual({ inputTokens: 700, outputTokens: 60 });
 
-    const [url, init] = fetchFn.mock.calls[0]!;
+    const [url, init] = fetchFn.mock.calls.find(([u]) => String(u).endsWith('/chat/completions'))!;
     expect(url).toBe('https://api.x.ai/v1/chat/completions');
     expect(init.headers.authorization).toBe('Bearer xai-test');
     const body = JSON.parse(init.body as string);
@@ -74,8 +74,9 @@ describe('the Grok adapter (multi-LLM) — one port, another voice', () => {
     const client = makeGrokClient(CFG, fetchFn as unknown as typeof fetch);
     await client.messages.create({ model: MODEL_MILESTONE, max_tokens: 300, messages: [] });
     await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
-    expect(JSON.parse(fetchFn.mock.calls[0]![1].body).model).toBe('grok-finer');
-    expect(JSON.parse(fetchFn.mock.calls[1]![1].body).model).toBe('grok-cheap');
+    const chat = fetchFn.mock.calls.filter(([u]) => String(u).endsWith('/chat/completions'));
+    expect(JSON.parse(chat[0]![1].body).model).toBe('grok-finer');
+    expect(JSON.parse(chat[1]![1].body).model).toBe('grok-cheap');
   });
 
   it('serves open-weights hosts too: Llama 3.3 70B on a custom base URL', async () => {
@@ -93,7 +94,7 @@ describe('the Grok adapter (multi-LLM) — one port, another voice', () => {
     );
     const out = await narrate({ context: pip, newEvents: [], mode: 'peek' }, client);
     expect(out.journal).toBe('a llama-written day');
-    const [url, init] = fetchFn.mock.calls[0]!;
+    const [url, init] = fetchFn.mock.calls.find(([u]) => String(u).endsWith('/chat/completions'))!;
     expect(url).toBe('https://api.groq.com/openai/v1/chat/completions'); // trailing / trimmed
     expect(JSON.parse(init.body as string).model).toBe('llama-3.3-70b-versatile');
     expect(init.headers.authorization).toBe('Bearer gsk-test');
@@ -105,5 +106,56 @@ describe('the Grok adapter (multi-LLM) — one port, another voice', () => {
     const out = await narrate({ context: pip, newEvents: [], mode: 'peek' }, client);
     expect(out.journal.length).toBeGreaterThan(0); // fallbackNarration, not a throw
     expect(out.mood.length).toBeGreaterThan(0);
+  });
+});
+
+describe('model auto-resolution — a key alone is enough', () => {
+  /** fetch that serves GET /models with the given ids, and chat completions after. */
+  function hostWith(ids: string[]) {
+    return vi.fn(async (url: string, init?: { body?: string }) => {
+      void init;
+      if (String(url).endsWith('/models')) {
+        return { ok: true, json: async () => ({ data: ids.map((id) => ({ id })) }) };
+      }
+      return grokResponse({ journal: 'ok', mood: 'calm' });
+    });
+  }
+  const chatBody = (calls: unknown[][]): string =>
+    (calls.find(([u]) => String(u).endsWith('/chat/completions'))![1] as { body: string }).body;
+
+  it('keeps the configured id when the host serves it', async () => {
+    const fetchFn = hostWith(['grok-cheap', 'grok-finer']);
+    const client = makeGrokClient(CFG, fetchFn as unknown as typeof fetch);
+    await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    expect(JSON.parse(chatBody(fetchFn.mock.calls)).model).toBe('grok-cheap');
+  });
+
+  it('when the configured id is gone, picks the best live match — narration keeps working', async () => {
+    // The host renamed everything; only these exist now.
+    const fetchFn = hostWith(['grok-5-image', 'grok-5-fast-non-reasoning', 'grok-5']);
+    const client = makeGrokClient(CFG, fetchFn as unknown as typeof fetch);
+    await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    // The xAI preference list lands on the fast non-reasoning tier — never the image model.
+    expect(JSON.parse(chatBody(fetchFn.mock.calls)).model).toBe('grok-5-fast-non-reasoning');
+  });
+
+  it('resolves once per process, not per call', async () => {
+    const fetchFn = hostWith(['grok-cheap', 'grok-finer']);
+    const client = makeGrokClient(CFG, fetchFn as unknown as typeof fetch);
+    await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    const modelCalls = fetchFn.mock.calls.filter(([u]) => String(u).endsWith('/models'));
+    expect(modelCalls).toHaveLength(1);
+  });
+
+  it('a host without /models just uses the configured ids, as before', async () => {
+    const fetchFn = vi.fn(async (url: string, init?: { body?: string }) => {
+      void init;
+      if (String(url).endsWith('/models')) return { ok: false, status: 404 };
+      return grokResponse({ journal: 'ok', mood: 'calm' });
+    });
+    const client = makeGrokClient(CFG, fetchFn as unknown as typeof fetch);
+    await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    expect(JSON.parse(chatBody(fetchFn.mock.calls)).model).toBe('grok-cheap');
   });
 });

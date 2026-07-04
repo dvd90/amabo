@@ -70,6 +70,10 @@ function buildLlmClient(): LlmChoice | null {
           baseUrl: process.env.LLAMA_BASE_URL ?? 'https://api.groq.com/openai/v1',
           peekModel: model,
           milestoneModel: process.env.LLAMA_MODEL_MILESTONE ?? model,
+          // Self-healing (like the Grok preset): if the host renamed the model,
+          // resolve against its live /models list — a key alone stays enough.
+          peekCandidates: [/llama-3\.3-70b/i, /llama-3\.3/i, /llama.*70b/i, /llama/i],
+          milestoneCandidates: [/llama-3\.3-70b/i, /llama-3\.3/i, /llama.*70b/i, /llama/i],
         });
       },
     },

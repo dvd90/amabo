@@ -24,6 +24,28 @@ export interface OpenAiCompatConfig {
   peekModel: string;
   /** The finer tier — milestones (evolution, first souring, graduation, symposium). */
   milestoneModel: string;
+  /**
+   * Ordered fallbacks matched against the host's live `GET /models` list when the
+   * configured id isn't served (providers rename models; a key alone should be
+   * enough). The configured id always wins when it exists; matching skips
+   * image/embedding/audio models; resolution happens once per process and any
+   * failure quietly keeps the configured ids.
+   */
+  peekCandidates?: RegExp[];
+  milestoneCandidates?: RegExp[];
+}
+
+/** Never narrate through a non-text model, whatever the candidates say. */
+const NON_TEXT = /image|embed|audio|vision|whisper|tts|guard|moderation/i;
+
+function pickModel(configured: string, available: string[], candidates: RegExp[]): string {
+  if (available.includes(configured)) return configured;
+  const text = available.filter((id) => !NON_TEXT.test(id));
+  for (const pattern of candidates) {
+    const hit = text.find((id) => pattern.test(id));
+    if (hit) return hit;
+  }
+  return configured;
 }
 
 /** The slice of the port's request body this adapter understands. */
@@ -40,12 +62,39 @@ export function makeOpenAiCompatClient(
   cfg: OpenAiCompatConfig,
   fetchFn: typeof fetch = fetch,
 ): AnthropicLike {
-  const endpoint = `${cfg.baseUrl.replace(/\/$/, '')}/chat/completions`;
+  const root = cfg.baseUrl.replace(/\/$/, '');
+  const endpoint = `${root}/chat/completions`;
+
+  // Resolve the tier ids against the host's live model list — once, lazily, and
+  // never fatally: a host without /models (or a failing call) keeps the configured
+  // ids exactly as before.
+  let resolved: Promise<{ peek: string; milestone: string }> | null = null;
+  const resolveModels = () => {
+    resolved ??= (async () => {
+      try {
+        const res = await fetchFn(`${root}/models`, {
+          headers: { authorization: `Bearer ${cfg.apiKey}` },
+        });
+        if (!res.ok) throw new Error(`models → ${res.status}`);
+        const data = (await res.json()) as { data?: { id?: string }[] };
+        const available = (data.data ?? []).map((m) => m.id).filter((id): id is string => !!id);
+        if (available.length === 0) throw new Error('empty model list');
+        return {
+          peek: pickModel(cfg.peekModel, available, cfg.peekCandidates ?? []),
+          milestone: pickModel(cfg.milestoneModel, available, cfg.milestoneCandidates ?? []),
+        };
+      } catch {
+        return { peek: cfg.peekModel, milestone: cfg.milestoneModel };
+      }
+    })();
+    return resolved;
+  };
 
   return {
     messages: {
       async create(rawBody: unknown) {
         const body = rawBody as PortBody;
+        const models = await resolveModels();
 
         // System blocks (with their cache_control hints) flatten to one system turn.
         const system = Array.isArray(body.system)
@@ -74,7 +123,7 @@ export function makeOpenAiCompatClient(
             'content-type': 'application/json',
           },
           body: JSON.stringify({
-            model: body.model === MODEL_MILESTONE ? cfg.milestoneModel : cfg.peekModel,
+            model: body.model === MODEL_MILESTONE ? models.milestone : models.peek,
             max_tokens: body.max_tokens,
             messages,
             ...(tools.length > 0 ? { tools } : {}),

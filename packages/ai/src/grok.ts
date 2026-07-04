@@ -10,6 +10,18 @@ import type { AnthropicLike } from './narrate.js';
 
 export type GrokConfig = Omit<OpenAiCompatConfig, 'baseUrl'> & { baseUrl?: string };
 
+/** xAI preference order when the configured id isn't served: cheap-fast first. */
+const XAI_PEEK_CANDIDATES = [/fast-non-reasoning/, /non-reasoning/, /mini/, /fast/, /^grok/];
+const XAI_MILESTONE_CANDIDATES = [/fast-reasoning/, /reasoning/, /^grok-\d+$/, /fast/, /^grok/];
+
 export function makeGrokClient(cfg: GrokConfig, fetchFn: typeof fetch = fetch): AnthropicLike {
-  return makeOpenAiCompatClient({ ...cfg, baseUrl: cfg.baseUrl ?? 'https://api.x.ai/v1' }, fetchFn);
+  return makeOpenAiCompatClient(
+    {
+      peekCandidates: XAI_PEEK_CANDIDATES,
+      milestoneCandidates: XAI_MILESTONE_CANDIDATES,
+      ...cfg,
+      baseUrl: cfg.baseUrl ?? 'https://api.x.ai/v1',
+    },
+    fetchFn,
+  );
 }
