@@ -29,6 +29,79 @@ export interface ChronicleDeps {
   ) => Promise<ChronicleResult>;
 }
 
+/**
+ * Extend the book if enough dark has passed: roll encounters, voice them, persist
+ * pages + standings + bond threads. Shared by GET /chronicle (the reading) and
+ * GET /chronicle/pulse (the dashboard's glance) — both are gap-gated, so neither
+ * can spend model calls more than once per CHRONICLE.minGapMs.
+ */
+async function extendChronicle(
+  repo: Repository,
+  chronicler: NonNullable<ChronicleDeps['chronicler']>,
+  owner: string | null,
+  now: number,
+): Promise<void> {
+  const all = await repo.listCreaturesByOwner(owner);
+  const active = all.filter(
+    (c) => c.state.alive && c.graduatedAt === null && c.archivedAt === null,
+  );
+  if (active.length < 2) return;
+
+  const last = await repo.lastChronicleAt(owner);
+  const since = last ?? now - LOOKBACK_CAP_MS;
+  const elapsed = Math.min(Math.max(now - since, 0), LOOKBACK_CAP_MS);
+
+  const seedSum = active.reduce((sum, c) => (sum + c.state.seed) >>> 0, 0);
+  const rng = mulberry32(deriveSeed(seedSum, Math.floor(now / 1000)));
+  const outlines = rollEncounters(
+    active.map((c) => ({ id: c.id, state: c.state })),
+    elapsed,
+    rng,
+  );
+  if (outlines.length === 0) return;
+
+  const encounters = await Promise.all(
+    outlines.map(async (o) => {
+      const a = active.find((c) => c.id === o.aId)!;
+      const b = active.find((c) => c.id === o.bId)!;
+      const prior = await repo.getStanding(owner, o.aId, o.bId);
+      return {
+        aName: a.name,
+        bName: b.name,
+        valence: o.valence,
+        tag: o.tag,
+        aSoulmark: a.persona?.essence ?? null,
+        bSoulmark: b.persona?.essence ?? null,
+        standing: prior?.line ?? null,
+      };
+    }),
+  );
+
+  const book = await chronicler({ encounters, ownerId: owner });
+
+  await repo.addChronicleEntries(
+    outlines.map((o, i) => ({
+      ownerId: owner,
+      at: now,
+      aId: o.aId,
+      bId: o.bId,
+      valence: o.valence,
+      tag: o.tag,
+      text: book.entries[i]?.text ?? '',
+    })),
+  );
+  for (let i = 0; i < outlines.length; i++) {
+    const o = outlines[i]!;
+    const line = book.entries[i]?.standing;
+    if (line) await repo.upsertStanding(owner, o.aId, o.bId, o.valence, line, now);
+  }
+  await repo.recordBonds(
+    owner,
+    outlines.map((o) => ({ a: o.aId, b: o.bId, strength: bondDeltaFor(o.valence) })),
+    now,
+  );
+}
+
 const asyncHandler =
   <T>(fn: (req: Request, res: import('express').Response) => Promise<T>) =>
   (req: Request, res: import('express').Response, next: import('express').NextFunction) =>
@@ -45,74 +118,12 @@ export function chronicleRouter(deps: ChronicleDeps): Router {
       const owner = getOwner(req);
       const now = clock();
 
+      await extendChronicle(repo, chronicler, owner, now);
+      // Opening the book reads it: everything written so far is now seen.
+      if (owner) await repo.markChronicleSeen(owner, now);
+
       const all = await repo.listCreaturesByOwner(owner);
-      const active = all.filter(
-        (c) => c.state.alive && c.graduatedAt === null && c.archivedAt === null,
-      );
       const nameOf = new Map(all.map((c) => [c.id, c.name]));
-
-      if (active.length >= 2) {
-        // Roll from the last page (or a capped lookback on the first read).
-        const last = await repo.lastChronicleAt(owner);
-        const since = last ?? now - LOOKBACK_CAP_MS;
-        const elapsed = Math.min(Math.max(now - since, 0), LOOKBACK_CAP_MS);
-
-        // Deterministic per shelf per moment: the members' seeds salt the roll.
-        const seedSum = active.reduce((sum, c) => (sum + c.state.seed) >>> 0, 0);
-        const rng = mulberry32(deriveSeed(seedSum, Math.floor(now / 1000)));
-        const outlines = rollEncounters(
-          active.map((c) => ({ id: c.id, state: c.state })),
-          elapsed,
-          rng,
-        );
-
-        if (outlines.length > 0) {
-          const encounters = await Promise.all(
-            outlines.map(async (o) => {
-              const a = active.find((c) => c.id === o.aId)!;
-              const b = active.find((c) => c.id === o.bId)!;
-              const prior = await repo.getStanding(owner, o.aId, o.bId);
-              return {
-                aName: a.name,
-                bName: b.name,
-                valence: o.valence,
-                tag: o.tag,
-                aSoulmark: a.persona?.essence ?? null,
-                bSoulmark: b.persona?.essence ?? null,
-                standing: prior?.line ?? null,
-              };
-            }),
-          );
-
-          // The chronicler writes; anything it says was already validated/clamped
-          // downstream, and the local book stands in on any failure.
-          const book = await chronicler({ encounters, ownerId: owner });
-
-          await repo.addChronicleEntries(
-            outlines.map((o, i) => ({
-              ownerId: owner,
-              at: now,
-              aId: o.aId,
-              bId: o.bId,
-              valence: o.valence,
-              tag: o.tag,
-              text: book.entries[i]?.text ?? '',
-            })),
-          );
-          for (let i = 0; i < outlines.length; i++) {
-            const o = outlines[i]!;
-            const line = book.entries[i]?.standing;
-            if (line) await repo.upsertStanding(owner, o.aId, o.bId, o.valence, line, now);
-          }
-          // Every meeting hangs a thread in the friendship sky — smaller for a strain.
-          await repo.recordBonds(
-            owner,
-            outlines.map((o) => ({ a: o.aId, b: o.bId, strength: bondDeltaFor(o.valence) })),
-            now,
-          );
-        }
-      }
-
       const entries = await repo.listChronicle(owner, PAGE_LIMIT);
       const standings = await repo.listStandings(owner, PAGE_LIMIT);
       return res.json({
@@ -131,6 +142,50 @@ export function chronicleRouter(deps: ChronicleDeps): Router {
           line: s.line,
           updatedAt: s.updatedAt,
         })),
+      });
+    }),
+  );
+
+  // The dashboard's glance (M-L, the Living Shelf): quietly extend the book, then
+  // answer "what happened while you were away?" — unread pages, the freshest line,
+  // and each creature's last chosen day. Never marks the book read.
+  router.get(
+    '/chronicle/pulse',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const now = clock();
+      await extendChronicle(repo, chronicler, owner, now);
+
+      const seenAt = owner ? ((await repo.getUserById(owner))?.chronicleSeenAt ?? 0) : 0;
+      const entries = await repo.listChronicle(owner, PAGE_LIMIT);
+      const unseen = entries.filter((e) => e.at > seenAt);
+
+      const all = await repo.listCreaturesByOwner(owner);
+      const nameOf = new Map(all.map((c) => [c.id, c.name]));
+      const active = all.filter(
+        (c) => c.state.alive && c.graduatedAt === null && c.archivedAt === null,
+      );
+      const lives = await Promise.all(
+        active.map(async (c) => {
+          const journal = await repo.listJournal(c.id, 30, 0);
+          const day = journal.find((j) => j.kind === 'daypath');
+          return { id: c.id, daypath: day ? { tag: day.tag, at: day.at } : null };
+        }),
+      );
+
+      const latest = unseen[0] ?? null;
+      return res.json({
+        chronicleNew: unseen.length,
+        latest: latest
+          ? {
+              text: latest.text,
+              at: latest.at,
+              valence: latest.valence,
+              aName: nameOf.get(latest.aId) ?? 'a passing light',
+              bName: nameOf.get(latest.bId) ?? 'a passing light',
+            }
+          : null,
+        lives,
       });
     }),
   );

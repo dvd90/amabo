@@ -42,6 +42,37 @@ function creature(
 }
 
 describe('<Dashboard> (the roster)', () => {
+  it('the Living Shelf (M-L): away-digest, live card line, unread Chronicle badge', async () => {
+    const pulse = vi.fn().mockResolvedValue({
+      chronicleNew: 3,
+      latest: {
+        text: 'x',
+        at: Date.UTC(2026, 6, 4, 18, 0),
+        valence: 'warm',
+        aName: 'Pip',
+        bName: 'Bo',
+      },
+      lives: [
+        { id: 'c1', daypath: { tag: 'builtSmallThing', at: Date.UTC(2026, 6, 4, 18, 0) } },
+        { id: 'c2', daypath: null },
+      ],
+    });
+    useGame.setState({
+      creatures: [creature('c1', 'Pip'), creature('c2', 'Bo')],
+      client: { pulse, chronicle: vi.fn() } as never,
+    });
+    render(<Dashboard />);
+    // The banner names what happened, unbidden.
+    expect(await screen.findByText(/While you were away/)).toBeTruthy();
+    expect(screen.getByText(/Pip built a small thing to show you/)).toBeTruthy();
+
+    expect(screen.getByText(/Pip & Bo met/)).toBeTruthy();
+    // The card carries the chosen day as its live line (banner + card = two mentions).
+    expect(screen.getAllByText(/built a small thing to show you/).length).toBeGreaterThanOrEqual(2);
+    // The book announces its unread pages.
+    expect(screen.getByText(/3 new/)).toBeTruthy();
+  });
+
   it('opens the Chronicle: the shelf\u2019s book of encounters and standings (M-K)', async () => {
     const chronicle = vi.fn().mockResolvedValue({
       entries: [

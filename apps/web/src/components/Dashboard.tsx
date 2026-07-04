@@ -5,14 +5,14 @@
  */
 
 import { SLOTS } from '@amabo/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Creature } from './Creature.js';
 import { DuetScene } from './DuetScene.js';
 import { Farewell } from './Farewell.js';
 import { Introduce } from './Introduce.js';
 import { Settings } from './Settings.js';
 import { useGame } from '../store/useGame.js';
-import type { ChronicleView, LetterView, NeedFlag, RosterItem } from '../api/client.js';
+import type { ChronicleView, LetterView, NeedFlag, PulseView, RosterItem } from '../api/client.js';
 import { enableNotifications, type EnableResult } from '../push.js';
 
 const NOTIFY_NOTE: Record<EnableResult, string> = {
@@ -42,6 +42,48 @@ const NEED: Record<NeedFlag, { glyph: string; label: string; tone: string }> = {
   fading: { glyph: '·', label: 'fading', tone: 'warn' },
 };
 
+/** The glass's own clock-words — a timestamp that sounds inhabited (M-L). */
+export function timeWord(at: number): string {
+  const h = new Date(at).getHours();
+  if (h < 5) return 'in the small hours';
+  if (h < 8) return 'at first light';
+  if (h < 12) return 'in the morning';
+  if (h < 17) return 'in the afternoon';
+  if (h < 21) return 'at dusk';
+  return 'in the evening';
+}
+
+/** The chosen day, in plain words (tags from the engine's daypath pools). */
+const DAYPATH_PHRASE: Record<string, string> = {
+  keptWarmCorner: 'chose to keep the warm corner',
+  watchedGlass: 'chose to watch the light cross the glass',
+  triedAShape: 'spent the dark practising a new shape',
+  sortedSmallThings: 'sorted its small things',
+  hummedToItself: 'hummed a tune of its own',
+  builtSmallThing: 'built a small thing to show you',
+  tendedMoss: 'tended the moss till it stood up',
+  keptWelcome: 'kept a welcome ready by the door',
+  rounderShape: 'practised being rounder, kinder',
+  sangToGlass: 'sang quietly to the glass',
+  countedHours: 'counted the hours, twice',
+  stoppedClock: 'kept the stopped clock company',
+  waitedByDoor: 'waited where the light comes in',
+  listenedLatch: 'listened for the latch',
+  tidiedDark: 'tidied a corner of the dark',
+};
+
+/** One line of recent LIFE per card — the proof this is a world, not a database. */
+function liveLine(
+  c: RosterItem,
+  day: { tag: string; at: number } | null | undefined,
+): string | null {
+  if (!c.state.alive) return null;
+  if (day && DAYPATH_PHRASE[day.tag]) return `${DAYPATH_PHRASE[day.tag]} ${timeWord(day.at)}`;
+  if (c.state.asleep) return `asleep, holding its warm spot`;
+  if (c.manner) return `keeps the ${c.manner.haunt.replace('-', ' ')} · ${c.manner.ritual}`;
+  return null;
+}
+
 function fate(c: RosterItem): string {
   if (!c.state.alive) return 'a fading light';
   if (c.state.uncanny) return 'Yim · longing';
@@ -60,9 +102,18 @@ function lastSeenLabel(c: RosterItem): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function CreatureCard({ c, onOpen }: { c: RosterItem; onOpen: () => void }) {
+function CreatureCard({
+  c,
+  onOpen,
+  day,
+}: {
+  c: RosterItem;
+  onOpen: () => void;
+  day?: { tag: string; at: number } | null;
+}) {
   // Sleep is informational; if the only signal is "asleep", don't raise an alarm dot.
   const urgent = c.needs.some((n) => NEED[n].tone === 'warn');
+  const live = liveLine(c, day);
   return (
     <button
       className={`amabo-card${urgent ? ' is-urgent' : ''}${c.state.uncanny ? ' is-yim' : ''}`}
@@ -77,6 +128,7 @@ function CreatureCard({ c, onOpen }: { c: RosterItem; onOpen: () => void }) {
         {STAGE_LABEL[c.state.stage] ?? c.state.stage} · {lastSeenLabel(c)}
       </span>
       <span className="amabo-card-fate">{fate(c)}</span>
+      {live ? <span className="amabo-card-live">{live}</span> : null}
       {c.needs.length > 0 ? (
         <span className="amabo-card-pips">
           {c.needs.map((n) => (
@@ -107,6 +159,7 @@ export function Dashboard() {
   const [note, setNote] = useState<string | null>(null);
   const [letters, setLetters] = useState<LetterView[] | null>(null);
   const [chronicle, setChronicle] = useState<ChronicleView | null>(null);
+  const [pulse, setPulse] = useState<PulseView | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [farewell, setFarewell] = useState<RosterItem | null>(null);
 
@@ -114,6 +167,34 @@ export function Dashboard() {
   // ended-but-unfarewelled ones wait for their ceremony; archived ones become the sky
   // shelf (ascended → their stars remain) or a quiet count (faded → Lethe).
   const active = creatures.filter((c) => c.state.alive && !c.graduatedAt && !c.archivedAt);
+
+  // The living-world glance (M-L): what happened while the Light was away.
+  useEffect(() => {
+    if (creatures.length > 0)
+      void client
+        .pulse?.()
+        .then(setPulse)
+        .catch(() => {});
+  }, [creatures.length]);
+  const dayOf = new Map((pulse?.lives ?? []).map((l) => [l.id, l.daypath]));
+
+  // The away-digest banner: up to three lines of proof the world kept turning.
+  const digest: string[] = [];
+  if (pulse) {
+    for (const l of pulse.lives) {
+      const c = active.find((x) => x.id === l.id);
+      if (c && l.daypath && DAYPATH_PHRASE[l.daypath.tag] && digest.length < 2) {
+        digest.push(`${c.name} ${DAYPATH_PHRASE[l.daypath.tag]} ${timeWord(l.daypath.at)}`);
+      }
+    }
+    if (pulse.latest) {
+      digest.push(
+        pulse.chronicleNew > 1
+          ? `${pulse.latest.aName} & ${pulse.latest.bName} met — and ${pulse.chronicleNew - 1} more page${pulse.chronicleNew > 2 ? 's' : ''} in the Chronicle`
+          : `${pulse.latest.aName} & ${pulse.latest.bName} met ${timeWord(pulse.latest.at)}`,
+      );
+    }
+  }
   const ended = creatures.filter((c) => (!c.state.alive || c.graduatedAt) && !c.archivedAt);
   const skyNames = creatures
     .filter((c) => c.graduatedAt && c.archivedAt)
@@ -156,8 +237,19 @@ export function Dashboard() {
             </button>
           ) : null}
           {active.length >= 2 ? (
-            <button className="linkish" onClick={() => void client.chronicle().then(setChronicle)}>
+            <button
+              className="linkish"
+              onClick={() =>
+                void client.chronicle().then((book) => {
+                  setChronicle(book);
+                  setPulse((prev) => (prev ? { ...prev, chronicleNew: 0 } : prev));
+                })
+              }
+            >
               📖 The Chronicle
+              {pulse && pulse.chronicleNew > 0 ? (
+                <span className="chronicle-badge"> · {pulse.chronicleNew} new</span>
+              ) : null}
             </button>
           ) : null}
           <button
@@ -190,9 +282,25 @@ export function Dashboard() {
 
       {note ? <p className="dash-note">{note}</p> : null}
 
+      {digest.length > 0 ? (
+        <div className="away-digest" role="status">
+          <p className="away-digest-kicker">While you were away, the glass kept turning ☾</p>
+          <ul className="away-digest-lines">
+            {digest.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="amabo-grid">
         {active.map((c) => (
-          <CreatureCard key={c.id} c={c} onOpen={() => void openCreature(c.id)} />
+          <CreatureCard
+            key={c.id}
+            c={c}
+            day={dayOf.get(c.id)}
+            onOpen={() => void openCreature(c.id)}
+          />
         ))}
 
         {/* Ended lights awaiting their ceremony — tap to say the goodbye. */}

@@ -66,6 +66,8 @@ export interface UserRecord {
    *   UPDATE users SET unlocked = true WHERE email = '...';
    */
   unlocked: boolean;
+  /** When this Light last opened the Chronicle — unread pages are newer than this. */
+  chronicleSeenAt: number | null;
   createdAt: number;
 }
 
@@ -302,6 +304,8 @@ export interface Repository {
     at: number,
   ): Promise<void>;
   getStanding(ownerId: string | null, a: string, b: string): Promise<StandingRecord | null>;
+  /** The Light opened the book — everything written so far is now read. */
+  markChronicleSeen(userId: string, at: number): Promise<void>;
   /** All the owner's standings, most recently refreshed first. */
   listStandings(ownerId: string | null, limit: number): Promise<StandingRecord[]>;
   /** True the FIRST time an event id is seen — webhook idempotency. */

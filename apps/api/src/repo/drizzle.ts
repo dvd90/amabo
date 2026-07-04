@@ -627,6 +627,10 @@ export class DrizzleRepository implements Repository {
     await this.db.update(users).set({ unlocked }).where(eq(users.id, userId));
   }
 
+  async markChronicleSeen(userId: string, at: number): Promise<void> {
+    await this.db.update(users).set({ chronicleSeenAt: at }).where(eq(users.id, userId));
+  }
+
   async addChronicleEntries(rows: Omit<ChronicleRecord, 'id'>[]): Promise<void> {
     if (rows.length === 0) return;
     await this.db.insert(chronicle).values(rows);
@@ -878,6 +882,7 @@ function toUser(row: typeof users.$inferSelect): UserRecord {
     entitlements: (row.entitlements as EntitlementsT | null) ?? { ...DEFAULT_ENTITLEMENTS },
     stripeCustomerId: row.stripeCustomerId,
     unlocked: row.unlocked ?? false,
+    chronicleSeenAt: row.chronicleSeenAt ?? null,
     createdAt: row.createdAt.getTime(),
   };
 }

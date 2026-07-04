@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "chronicle_seen_at" double precision;

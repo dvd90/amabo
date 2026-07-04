@@ -181,6 +181,21 @@ export interface ChronicleView {
   standings: StandingView[];
 }
 
+/** The dashboard's glance at the living world (M-L): what happened while you were away. */
+export interface PulseView {
+  /** Chronicle pages written since the Light last opened the book. */
+  chronicleNew: number;
+  latest: {
+    text: string;
+    at: number;
+    valence: 'warm' | 'strained';
+    aName: string;
+    bName: string;
+  } | null;
+  /** Per active creature: the last day it CHOSE (null until a peek deals one). */
+  lives: { id: string; daypath: { tag: string; at: number } | null }[];
+}
+
 /** A minted share link. */
 export interface ShareLink {
   token: string;
@@ -257,6 +272,8 @@ export interface ApiClient {
   letters(): Promise<LetterView[]>;
   /** The Chronicle (STORY.md §8⅞): reads (and quietly extends) the shelf's book. */
   chronicle(): Promise<ChronicleView>;
+  /** The living-world glance for the dashboard — never marks the book read. */
+  pulse(): Promise<PulseView>;
   /** The friendship sky — every bond among your creatures. */
   sky(): Promise<SkyView>;
   /** Mint a scoped, expiring share link for a creature (incl. a 'gather' guest pass). */
@@ -383,6 +400,10 @@ export class HttpApiClient implements ApiClient {
   }
   async chronicle() {
     return this.req<ChronicleView>('/chronicle');
+  }
+
+  async pulse() {
+    return this.req<PulseView>('/chronicle/pulse');
   }
 
   async letters() {

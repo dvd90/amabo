@@ -26,21 +26,29 @@ export const MISS_MS = 24 * 60 * 60 * 1000;
 /** Most-urgent-first; only the actionable needs warrant interrupting someone's day. */
 const ORDER: NeedFlag[] = ['ill', 'souring', 'hungry', 'ready', 'overflowing'];
 
+// The title says who and what; the BODY is the creature's own voice (M-L: a ping
+// that sounds like a person is a heartbeat; one that sounds like an app is a chore).
 const COPY: Record<string, (name: string) => PushMessage> = {
   ill: (n) => ({
     title: `${n} isn't feeling well`,
-    body: 'A wash and some comfort would help it mend.',
+    body: '“I don\u2019t feel like myself. A little washing, a little warmth?”',
   }),
   souring: (n) => ({
     title: `${n} is dimming`,
-    body: 'The glass is going dark — comfort is the way back.',
+    body: '“The clock stopped at the same soft hour again.”',
   }),
-  hungry: (n) => ({ title: `${n}'s Ambra is low`, body: "It's waiting by the warm spot." }),
+  hungry: (n) => ({
+    title: `${n}'s Ambra is low`,
+    body: '“I saved you the warm spot. Bring something to share?”',
+  }),
   ready: (n) => ({
     title: `${n} is ready to ascend ✦`,
-    body: 'Too bright for the glass — look in before it goes.',
+    body: '“I\u2019m almost too bright for the glass. Come see me before I go.”',
   }),
-  overflowing: (n) => ({ title: `${n} is overflowing ✧`, body: 'It wants to share its light.' }),
+  overflowing: (n) => ({
+    title: `${n} is overflowing ✧`,
+    body: '“I have more light than I can hold. Help me share it?”',
+  }),
 };
 
 export function decideNotification(
@@ -65,7 +73,10 @@ export function decideNotification(
       c.state.stats.security < 60,
   );
   if (missed) {
-    return { title: `${missed.name} misses the Light`, body: 'The glass has been dark a while.' };
+    return {
+      title: `${missed.name} misses the Light`,
+      body: '\u201cI kept a light for you. The glass has been dark a while.\u201d',
+    };
   }
   return null;
 }

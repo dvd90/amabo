@@ -193,6 +193,7 @@ export class InMemoryRepository implements Repository {
       entitlements: { ...DEFAULT_ENTITLEMENTS },
       stripeCustomerId: null,
       unlocked: false,
+      chronicleSeenAt: null,
       createdAt: Date.now(),
     };
     this.users.set(user.id, user);
@@ -248,6 +249,11 @@ export class InMemoryRepository implements Repository {
       .sort((x, y) => y.updatedAt - x.updatedAt)
       .slice(0, limit)
       .map((s) => structuredClone(s));
+  }
+
+  async markChronicleSeen(userId: string, at: number): Promise<void> {
+    const u = this.users.get(userId);
+    if (u) u.chronicleSeenAt = at;
   }
 
   async setUnlocked(userId: string, unlocked: boolean): Promise<void> {
