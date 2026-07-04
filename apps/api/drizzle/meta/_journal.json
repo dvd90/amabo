@@ -92,6 +92,13 @@
       "when": 1783171598955,
       "tag": "0012_lyrical_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1783172422833,
+      "tag": "0013_lumpy_wither",
+      "breakpoints": true
     }
   ]
 }

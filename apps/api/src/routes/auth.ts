@@ -242,7 +242,11 @@ export function authRouter(deps: AuthDeps): Router {
         email: req.user!.email,
         displayName: req.user!.displayName,
         ageBand: req.user!.ageBand,
-        entitlements: req.user!.entitlements,
+        // The Keeper's Key presents as a lit Lantern so the UI drops every upsell.
+        entitlements: req.user!.unlocked
+          ? { tier: 'lantern' as const, renewsAt: null }
+          : req.user!.entitlements,
+        unlocked: req.user!.unlocked,
         preferences: req.user!.preferences,
       },
       csrfToken: req.csrfToken,

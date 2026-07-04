@@ -273,6 +273,55 @@ describe('the Little World (STORY.md §8¾) — daypaths and the manner', () => 
   });
 });
 
+describe("the Keeper's Key — a DB-only flag that unlocks everything", () => {
+  it('an unlocked Light has no shelf cap: creates past free AND lantern widths', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    await ctx.repo.setUnlocked(userId, true); // what `UPDATE users SET unlocked=true` does
+    for (let i = 0; i < 9; i++) {
+      const res = await agent
+        .post('/creatures')
+        .set('x-csrf-token', csrf)
+        .send({ name: `M${i}` });
+      expect(res.status).toBe(201); // free caps at 3, lantern at 8 — the key opens both
+    }
+  });
+
+  it('without the key the free shelf still holds three', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    for (let i = 0; i < 4; i++) {
+      const res = await agent
+        .post('/creatures')
+        .set('x-csrf-token', csrf)
+        .send({ name: `M${i}` });
+      expect(res.status).toBe(i < 3 ? 201 : 403);
+    }
+  });
+
+  it('/me shows the key holder as fully lit (so the UI drops every upsell)', async () => {
+    const ctx = setup();
+    const { agent, userId } = await login(ctx.app);
+    await ctx.repo.setUnlocked(userId, true);
+    const me = await agent.get('/me');
+    expect(me.body.user.unlocked).toBe(true);
+    expect(me.body.user.entitlements.tier).toBe('lantern');
+  });
+
+  it('the key can never arrive over the wire — no API surface writes it', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    // Try the obvious smuggling routes: preferences patch and age confirmation.
+    await agent
+      .patch('/me/preferences')
+      .set('x-csrf-token', csrf)
+      .send({ unlocked: true, theme: 'dusk' });
+    await agent.post('/me/age').set('x-csrf-token', csrf).send({ ageBand: '18+', unlocked: true });
+    const user = await ctx.repo.getUserById(userId);
+    expect(user!.unlocked).toBe(false);
+  });
+});
+
 describe('POST /creatures/:id/multiply — the Symposium split (M-F)', () => {
   it('refuses a creature that is not overflowing (409)', async () => {
     const { app } = setup();

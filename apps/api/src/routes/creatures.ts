@@ -127,9 +127,12 @@ export function creaturesRouter(deps: CreatureDeps): Router {
     }),
   );
 
-  /** The shelf's width for this Light: the till widens it, never the soul (L5). */
-  const shelfFor = (req: import('express').Request): number =>
-    req.user?.entitlements.tier === 'lantern' ? SLOTS.lantern : SLOTS.free;
+  /** The shelf's width for this Light: the till widens it, never the soul (L5).
+   *  The Keeper's Key (users.unlocked, DB-only) removes the cap entirely. */
+  const shelfFor = (req: import('express').Request): number => {
+    if (req.user?.unlocked) return Number.POSITIVE_INFINITY;
+    return req.user?.entitlements.tier === 'lantern' ? SLOTS.lantern : SLOTS.free;
+  };
 
   /** Living, present lights only — the shelf never counts the ascended or archived. */
   const activeCount = async (owner: string | null): Promise<number> => {

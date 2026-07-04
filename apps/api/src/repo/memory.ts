@@ -188,11 +188,17 @@ export class InMemoryRepository implements Repository {
       preferences: {},
       entitlements: { ...DEFAULT_ENTITLEMENTS },
       stripeCustomerId: null,
+      unlocked: false,
       createdAt: Date.now(),
     };
     this.users.set(user.id, user);
     this.identities.push({ provider: input.provider, subject: input.subject, userId: user.id });
     return { ...structuredClone(user), created: true };
+  }
+
+  async setUnlocked(userId: string, unlocked: boolean): Promise<void> {
+    const u = this.users.get(userId);
+    if (u) u.unlocked = unlocked;
   }
 
   async getUserById(id: string): Promise<UserRecord | null> {

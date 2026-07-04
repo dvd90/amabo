@@ -122,6 +122,23 @@ carries its own stamp: **Settings → “build abc1234”** at the bottom of the
 If the web stamp lags after a deploy, it's the PWA cache — reload twice or
 reinstall the app. Locally both stamps read `dev`.
 
+### The Keeper's Key (unlock your own account)
+
+`users.unlocked` is a DB-only flag — no API route can set it — that opens everything
+for one account: no shelf cap, no daily narration allowance, and the UI presents as a
+lit Lantern (no upsells). Meant for the owner and testers. In Railway → Postgres →
+**Data/Query**:
+
+```sql
+UPDATE users SET unlocked = true WHERE email = 'dvdsellam@gmail.com';
+-- and to hand it back:
+UPDATE users SET unlocked = false WHERE email = '...';
+```
+
+It takes effect on the next request (no re-login needed). The global narration
+breaker (`NARRATION_DAILY_CAP`) still applies — that one protects the bill, not a
+feature.
+
 ### Read the server log (where things fail, out loud)
 
 Railway → `amabo-api` → **Deployments** → click the **Active** deployment →
