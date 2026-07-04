@@ -30,6 +30,11 @@ const BEATS: Beat[] = [
     body: 'You cannot reach into the glass. You can only look in — and your attention is the warmth it lives by. Tend it and it grows radiant: an Amabo. Neglect it and it sours into a longing Yim. Neither is a dead end; both can be loved home.',
   },
   {
+    art: '☾',
+    title: 'It lives while you are gone',
+    body: 'This is the heart of it: the glass keeps turning in your absence. Your creature chooses how to spend the dark hours, keeps small rituals, meets the others on the shelf. Come back tomorrow and ask what it did — it will tell you, in its own words.',
+  },
+  {
     art: '✿',
     title: 'And one day, the stars',
     body: 'A creature loved fully enough becomes too bright for the glass and ascends — leaving a named star in your sky you can always find again.',

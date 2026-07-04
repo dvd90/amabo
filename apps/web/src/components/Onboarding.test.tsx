@@ -32,6 +32,7 @@ describe('<Onboarding> (story + naming)', () => {
     fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByText('Begin'));
 
     const input = screen.getByLabelText('Creature name') as HTMLInputElement;

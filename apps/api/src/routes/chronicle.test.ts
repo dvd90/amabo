@@ -102,6 +102,45 @@ describe('GET /chronicle — the shelf writes its own book (STORY.md §8⅞)', (
     expect(res.body.entries).toEqual([]);
   });
 
+  it('the pulse (M-L): unread pages, the freshest line, each creature\u2019s chosen day', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    await shelfOfThree(agent, csrf);
+
+    ctx.setNow(T0 + 25 * HOUR);
+    const pulse = await agent.get('/chronicle/pulse');
+    expect(pulse.status).toBe(200);
+    // The glance itself extends the book — pages exist and all are unread.
+    expect(pulse.body.chronicleNew).toBeGreaterThan(0);
+    expect(pulse.body.latest.text.length).toBeGreaterThan(0);
+    expect(typeof pulse.body.latest.aName).toBe('string');
+    // One life-entry per active creature (daypaths appear once a peek dealt one).
+    expect(pulse.body.lives).toHaveLength(3);
+
+    // Opening the book reads it: the badge falls back to zero…
+    await agent.get('/chronicle');
+    const after = await agent.get('/chronicle/pulse');
+    expect(after.body.chronicleNew).toBe(0);
+    // …and no duplicate pages were written by the extra glances.
+    const book = await agent.get('/chronicle');
+    const counts = new Set((book.body.entries as { at: number }[]).map((e) => `${e.at}`));
+    expect(counts.size).toBeLessThanOrEqual(2); // one roll's worth of timestamps
+  });
+
+  it('the pulse carries a creature\u2019s chosen day once a peek has dealt one', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    const ids = await shelfOfThree(agent, csrf);
+    ctx.setNow(T0 + 25 * HOUR);
+    await agent.post(`/creatures/${ids[0]}/peek`).set('x-csrf-token', csrf).send({});
+    const pulse = await agent.get('/chronicle/pulse');
+    const life = (pulse.body.lives as { id: string; daypath: unknown }[]).find(
+      (l) => l.id === ids[0],
+    );
+    expect(life!.daypath).toBeTruthy();
+    expect((life!.daypath as { tag: string }).tag.length).toBeGreaterThan(0);
+  });
+
   it('the book is owner-scoped: another Light reads their own shelf only', async () => {
     const ctx = setup();
     const a = await login(ctx.app, 'light-a');

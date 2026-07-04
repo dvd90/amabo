@@ -126,6 +126,8 @@ export const users = pgTable(
     entitlements: jsonb('entitlements'),
     // The Keeper's Key: all features unlocked. DB-only by design — no route writes it.
     unlocked: boolean('unlocked').notNull().default(false),
+    // When this Light last opened the Chronicle (unread badge = pages newer than this).
+    chronicleSeenAt: doublePrecision('chronicle_seen_at'),
     stripeCustomerId: text('stripe_customer_id'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
