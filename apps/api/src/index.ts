@@ -5,7 +5,12 @@
  * secrets are absent (local dev only). The AI narrator lands in M6.
  */
 
-import { makeAnthropicClient, makeGrokClient, type AnthropicLike } from '@amabo/ai';
+import {
+  makeAnthropicClient,
+  makeGrokClient,
+  makeOpenAiCompatClient,
+  type AnthropicLike,
+} from '@amabo/ai';
 import { existsSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
@@ -36,29 +41,61 @@ function webDistDir(): string | undefined {
 }
 
 /**
- * Which LLM speaks for the creatures (multi-LLM): Grok (xAI) when XAI_API_KEY is set
- * — the cheap starting provider — else Claude when ANTHROPIC_API_KEY is set, else
- * null (the local templated voice). NARRATOR_PROVIDER=anthropic|grok breaks a tie
- * when both keys are present. One client serves narration AND the Symposium, and
- * everything downstream (metering, ledger, fallbacks) is provider-agnostic.
+ * Which LLM speaks for the creatures (multi-LLM). Priority when several keys are
+ * set: NARRATOR_PROVIDER (llama|grok|anthropic) decides; otherwise the first key
+ * found wins in this order — LLAMA_API_KEY (Llama 3.3 70B, the current pick),
+ * XAI_API_KEY (Grok), ANTHROPIC_API_KEY (Claude). No key → the local templated
+ * voice. One client serves narration AND the Symposium, and everything downstream
+ * (metering, ledger, fallbacks) is provider-agnostic.
  */
-function buildLlmClient(): { client: AnthropicLike; provider: 'grok' | 'anthropic' } | null {
-  const xai = process.env.XAI_API_KEY;
-  const anthropic = process.env.ANTHROPIC_API_KEY;
+type LlmChoice = { client: AnthropicLike; provider: 'llama' | 'grok' | 'anthropic' };
+
+function buildLlmClient(): LlmChoice | null {
   const pick = process.env.NARRATOR_PROVIDER;
-  if (xai && pick !== 'anthropic') {
-    return {
+  const candidates: { provider: LlmChoice['provider']; make: () => AnthropicLike | null }[] = [
+    {
+      provider: 'llama',
+      make: () => {
+        const key = process.env.LLAMA_API_KEY;
+        if (!key) return null;
+        // Llama is open-weights: a HOST serves it. Default host is Groq (fast,
+        // cheap, free tier) — point LLAMA_BASE_URL at Together/DeepInfra/Fireworks
+        // etc. to switch hosts; every one speaks the same OpenAI-compatible dialect.
+        // Verify current model ids at the host's docs — override via env.
+        const model = process.env.LLAMA_MODEL ?? 'llama-3.3-70b-versatile';
+        return makeOpenAiCompatClient({
+          apiKey: key,
+          baseUrl: process.env.LLAMA_BASE_URL ?? 'https://api.groq.com/openai/v1',
+          peekModel: model,
+          milestoneModel: process.env.LLAMA_MODEL_MILESTONE ?? model,
+        });
+      },
+    },
+    {
       provider: 'grok',
-      client: makeGrokClient({
-        apiKey: xai,
-        // Cheapest xAI text tier for routine peeks; a step up for milestones.
-        // Verify current ids/pricing at https://docs.x.ai — override via env.
-        peekModel: process.env.XAI_MODEL_PEEK ?? 'grok-4-1-fast-non-reasoning',
-        milestoneModel: process.env.XAI_MODEL_MILESTONE ?? 'grok-4-1-fast-reasoning',
-      }),
-    };
+      make: () => {
+        const key = process.env.XAI_API_KEY;
+        if (!key) return null;
+        return makeGrokClient({
+          apiKey: key,
+          peekModel: process.env.XAI_MODEL_PEEK ?? 'grok-4-1-fast-non-reasoning',
+          milestoneModel: process.env.XAI_MODEL_MILESTONE ?? 'grok-4-1-fast-reasoning',
+        });
+      },
+    },
+    {
+      provider: 'anthropic',
+      make: () => {
+        const key = process.env.ANTHROPIC_API_KEY;
+        return key ? makeAnthropicClient(key) : null;
+      },
+    },
+  ];
+  const ordered = pick ? candidates.filter((c) => c.provider === pick) : candidates;
+  for (const c of ordered) {
+    const client = c.make();
+    if (client) return { provider: c.provider, client };
   }
-  if (anthropic) return { provider: 'anthropic', client: makeAnthropicClient(anthropic) };
   return null;
 }
 

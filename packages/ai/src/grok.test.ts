@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { makeGrokClient } from './grok.js';
+import { makeOpenAiCompatClient } from './openai-compat.js';
 import { MODEL_MILESTONE, MODEL_PEEK } from './models.js';
 import { narrate, type CreatureContext } from './narrate.js';
 
@@ -75,6 +76,27 @@ describe('the Grok adapter (multi-LLM) — one port, another voice', () => {
     await client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
     expect(JSON.parse(fetchFn.mock.calls[0]![1].body).model).toBe('grok-finer');
     expect(JSON.parse(fetchFn.mock.calls[1]![1].body).model).toBe('grok-cheap');
+  });
+
+  it('serves open-weights hosts too: Llama 3.3 70B on a custom base URL', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(grokResponse({ journal: 'a llama-written day', mood: 'warm' }));
+    const client = makeOpenAiCompatClient(
+      {
+        apiKey: 'gsk-test',
+        baseUrl: 'https://api.groq.com/openai/v1/',
+        peekModel: 'llama-3.3-70b-versatile',
+        milestoneModel: 'llama-3.3-70b-versatile',
+      },
+      fetchFn as unknown as typeof fetch,
+    );
+    const out = await narrate({ context: pip, newEvents: [], mode: 'peek' }, client);
+    expect(out.journal).toBe('a llama-written day');
+    const [url, init] = fetchFn.mock.calls[0]!;
+    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions'); // trailing / trimmed
+    expect(JSON.parse(init.body as string).model).toBe('llama-3.3-70b-versatile');
+    expect(init.headers.authorization).toBe('Bearer gsk-test');
   });
 
   it('a failing till of words degrades to the local voice — never an error', async () => {
