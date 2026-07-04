@@ -7,6 +7,7 @@
 
 import { MAX_MEMORIES, localDirection, type DirectInput, type Direction } from '@amabo/ai';
 import {
+  DAYPATH_MAKERS,
   applyDaypath,
   canMultiply,
   condenseMote,
@@ -247,6 +248,16 @@ export function creaturesRouter(deps: CreatureDeps): Router {
           const chosenDay = applyDaypath(dealt, direction.choiceId, now);
           events.push(chosenDay);
           await repo.appendEvents(record.id, [chosenDay], 'sim');
+          // Made things stay (STORY.md §8¾): a makerly chosen day leaves a keepsake.
+          if (chosenDay.tag && (DAYPATH_MAKERS as readonly string[]).includes(chosenDay.tag)) {
+            await repo.addKeepsake({
+              ownerId: getOwner(req),
+              creatureId: record.id,
+              name: (direction.made ?? 'a small made thing').slice(0, 60),
+              tag: chosenDay.tag,
+              at: now,
+            });
+          }
           const manner = Manner.safeParse(direction.manner);
           if (manner.success) {
             record.manner = manner.data;
@@ -281,6 +292,26 @@ export function creaturesRouter(deps: CreatureDeps): Router {
         graduated,
         away,
         needs: needs(record.state),
+      });
+    }),
+  );
+
+  // The museum of made things (STORY.md §8¾): what the shelf kept, most recent first.
+  router.get(
+    '/keepsakes',
+    asyncHandler(async (req, res) => {
+      const owner = getOwner(req);
+      const rows = await repo.listKeepsakes(owner, 100);
+      const recs = await repo.listCreaturesByOwner(owner);
+      const nameOf = new Map(recs.map((r) => [r.id, r.name]));
+      return res.json({
+        keepsakes: rows.map((k) => ({
+          id: k.id,
+          name: k.name,
+          tag: k.tag,
+          at: k.at,
+          creatureName: nameOf.get(k.creatureId) ?? 'a passing light',
+        })),
       });
     }),
   );

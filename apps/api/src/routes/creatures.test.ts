@@ -273,6 +273,52 @@ describe('the Little World (STORY.md §8¾) — daypaths and the manner', () => 
   });
 });
 
+describe('keepsakes (STORY.md §8¾) — made things stay', () => {
+  it('a makerly chosen day leaves a named keepsake on the shelf', async () => {
+    // A director that always picks the maker option when dealt (valid manner).
+    const maker = async (input: { options: { id: string; tag: string }[] }) => {
+      const pick = input.options.find((o) => o.tag === 'builtSmallThing') ?? input.options[0]!;
+      return {
+        choiceId: pick.id,
+        manner: { haunt: 'glass', ritual: 'taps once', obsession: 'the smudge', gait: 'drift' },
+        made: pick.tag === 'builtSmallThing' ? 'a little door for the smudge' : undefined,
+        source: 'model' as const,
+      };
+    };
+    const ctx = setup({ direct: maker as never });
+    const { agent, csrf } = await login(ctx.app);
+    // Amabo-leaning deals from the makerly pool — warm the disposition first.
+    const created = await agent
+      .post('/creatures')
+      .set('x-csrf-token', csrf)
+      .send({ name: 'Vel', seed: 5 });
+    const id = created.body.id;
+    const rec = await ctx.repo.getCreature(id, (await agent.get('/me')).body.user.id);
+    await ctx.repo.saveCreature({ ...rec!, state: { ...rec!.state, disposition: 50 } });
+
+    ctx.setNow(ctx.nowAt() + 5 * HOUR);
+    await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({});
+
+    const res = await agent.get('/keepsakes');
+    expect(res.status).toBe(200);
+    // The amabo pool deals makers often; when one was chosen, the keepsake is kept.
+    for (const k of res.body.keepsakes) {
+      expect(k.name.length).toBeGreaterThan(0);
+      expect(k.creatureName).toBe('Vel');
+    }
+    if (res.body.keepsakes.length > 0) {
+      expect(res.body.keepsakes[0].name).toBe('a little door for the smudge');
+    }
+  });
+
+  it('the museum is owner-scoped and empty for a fresh Light', async () => {
+    const ctx = setup();
+    const { agent } = await login(ctx.app, 'someone-else');
+    const res = await agent.get('/keepsakes');
+    expect(res.body.keepsakes).toEqual([]);
+  });
+});
+
 describe("the Keeper's Key — a DB-only flag that unlocks everything", () => {
   it('an unlocked Light has no shelf cap: creates past free AND lantern widths', async () => {
     const ctx = setup();

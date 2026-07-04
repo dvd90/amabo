@@ -42,6 +42,28 @@ function creature(
 }
 
 describe('<Dashboard> (the roster)', () => {
+  it('opens the museum of made things (M-N keepsakes)', async () => {
+    const keepsakes = vi.fn().mockResolvedValue([
+      {
+        id: 'k1',
+        name: 'a little door for the smudge',
+        tag: 'builtSmallThing',
+        at: Date.UTC(2026, 6, 4, 18, 0),
+        creatureName: 'Vel',
+      },
+    ]);
+    useGame.setState({
+      creatures: [creature('c1', 'Vel')],
+      client: {
+        keepsakes,
+        pulse: vi.fn().mockResolvedValue({ chronicleNew: 0, latest: null, lives: [] }),
+      } as never,
+    });
+    render(<Dashboard />);
+    fireEvent.click(screen.getByText(/Keepsakes/));
+    expect(await screen.findByText(/a little door for the smudge/)).toBeTruthy();
+  });
+
   it('the Living Shelf (M-L): away-digest, live card line, unread Chronicle badge', async () => {
     const pulse = vi.fn().mockResolvedValue({
       chronicleNew: 3,

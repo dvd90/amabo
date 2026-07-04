@@ -347,6 +347,13 @@ real, if tiny, agency:
   it is quietly fixated on, and a **gait**. The manner drifts as days pass; no two
   creatures move through the glass the same way.
 
+- **Made things stay.** Some chosen days *make* something — a built small thing, a
+  tended moss stood proud, a song sung to the glass, small things sorted into an
+  order only their maker understands. What a creature makes it **keeps**: the
+  keepsake stays on the shelf, named in the creature's own words, and the Amarium
+  slowly fills with the museum of everything it made while you were gone. Keepsakes
+  are pure memory — they hold no power and are never for sale.
+
 The law that makes this safe is the dealer's law: **the glass deals the cards; the
 soul only picks one.** Every offered daypath is legal and mechanically identical —
 choosing can never touch ambra, illness, souring, or death. A soul that answers

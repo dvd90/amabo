@@ -95,6 +95,16 @@ export interface StandingRecord {
   updatedAt: number;
 }
 
+/** A made thing that stayed (STORY.md §8¾ keepsakes) — pure memory, never power. */
+export interface KeepsakeRecord {
+  id: string;
+  ownerId: string | null;
+  creatureId: string;
+  name: string;
+  tag: string;
+  at: number;
+}
+
 export interface SessionRecord {
   id: string;
   userId: string;
@@ -306,6 +316,10 @@ export interface Repository {
   getStanding(ownerId: string | null, a: string, b: string): Promise<StandingRecord | null>;
   /** The Light opened the book — everything written so far is now read. */
   markChronicleSeen(userId: string, at: number): Promise<void>;
+  /** A chosen day made something: it stays on the shelf. */
+  addKeepsake(row: Omit<KeepsakeRecord, 'id'>): Promise<void>;
+  /** The owner's museum of made things, most recent first. */
+  listKeepsakes(ownerId: string | null, limit: number): Promise<KeepsakeRecord[]>;
   /** All the owner's standings, most recently refreshed first. */
   listStandings(ownerId: string | null, limit: number): Promise<StandingRecord[]>;
   /** True the FIRST time an event id is seen — webhook idempotency. */

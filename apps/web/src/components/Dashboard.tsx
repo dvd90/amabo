@@ -12,7 +12,14 @@ import { Farewell } from './Farewell.js';
 import { Introduce } from './Introduce.js';
 import { Settings } from './Settings.js';
 import { useGame } from '../store/useGame.js';
-import type { ChronicleView, LetterView, NeedFlag, PulseView, RosterItem } from '../api/client.js';
+import type {
+  ChronicleView,
+  KeepsakeView,
+  LetterView,
+  NeedFlag,
+  PulseView,
+  RosterItem,
+} from '../api/client.js';
 import { enableNotifications, type EnableResult } from '../push.js';
 
 const NOTIFY_NOTE: Record<EnableResult, string> = {
@@ -160,6 +167,7 @@ export function Dashboard() {
   const [letters, setLetters] = useState<LetterView[] | null>(null);
   const [chronicle, setChronicle] = useState<ChronicleView | null>(null);
   const [pulse, setPulse] = useState<PulseView | null>(null);
+  const [keepsakes, setKeepsakes] = useState<KeepsakeView[] | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [farewell, setFarewell] = useState<RosterItem | null>(null);
 
@@ -252,6 +260,9 @@ export function Dashboard() {
               ) : null}
             </button>
           ) : null}
+          <button className="linkish" onClick={() => void client.keepsakes().then(setKeepsakes)}>
+            ✦ Keepsakes
+          </button>
           <button
             className="linkish"
             onClick={() => void enableNotifications(client).then((r) => setNote(NOTIFY_NOTE[r]))}
@@ -390,6 +401,29 @@ export function Dashboard() {
       {introOpen ? <Introduce onClose={() => setIntroOpen(false)} onDone={setNote} /> : null}
       {farewell ? <Farewell creature={farewell} onClose={() => setFarewell(null)} /> : null}
       {settingsOpen ? <Settings onClose={() => setSettingsOpen(false)} /> : null}
+
+      {keepsakes ? (
+        <div className="letters-modal" role="dialog" aria-label="The museum of made things">
+          <div className="letters-sheet">
+            <button className="codex-close" onClick={() => setKeepsakes(null)} aria-label="Close">
+              ✕
+            </button>
+            <p className="codex-kicker">Keepsakes — everything they made while you were gone</p>
+            {keepsakes.length === 0 ? (
+              <p className="letters-empty">
+                Nothing yet. Leave a radiant creature to its own hours — some days it will make
+                something, and what it makes, it keeps.
+              </p>
+            ) : (
+              keepsakes.map((k) => (
+                <p className="chronicle-standing" key={k.id}>
+                  <span className="letters-meta">{k.creatureName}</span> {k.name} · {timeWord(k.at)}
+                </p>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
 
       {chronicle ? (
         <div className="letters-modal" role="dialog" aria-label="The Chronicle of your shelf">

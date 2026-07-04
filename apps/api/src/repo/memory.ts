@@ -17,6 +17,7 @@ import type {
   BondRecord,
   ChronicleRecord,
   CreatureRecord,
+  KeepsakeRecord,
   GatheringRecord,
   JournalEntry,
   LetterRecord,
@@ -60,6 +61,7 @@ export class InMemoryRepository implements Repository {
   private bonds: BondRecord[] = [];
   private chronicle: ChronicleRecord[] = [];
   private standings: StandingRecord[] = [];
+  private keepsakes: KeepsakeRecord[] = [];
   private letters: LetterRecord[] = [];
   private telemetry: TelemetryRecord[] = [];
   private stripeSeen = new Set<string>();
@@ -249,6 +251,18 @@ export class InMemoryRepository implements Repository {
       .sort((x, y) => y.updatedAt - x.updatedAt)
       .slice(0, limit)
       .map((s) => structuredClone(s));
+  }
+
+  async addKeepsake(row: Omit<KeepsakeRecord, 'id'>): Promise<void> {
+    this.keepsakes.push({ ...row, id: randomUUID() });
+  }
+
+  async listKeepsakes(ownerId: string | null, limit: number): Promise<KeepsakeRecord[]> {
+    return this.keepsakes
+      .filter((k) => k.ownerId === ownerId)
+      .sort((x, y) => y.at - x.at)
+      .slice(0, limit)
+      .map((k) => structuredClone(k));
   }
 
   async markChronicleSeen(userId: string, at: number): Promise<void> {
@@ -513,6 +527,7 @@ export class InMemoryRepository implements Repository {
     this.bonds = this.bonds.filter((b) => b.ownerId !== userId);
     this.chronicle = this.chronicle.filter((c) => c.ownerId !== userId);
     this.standings = this.standings.filter((st) => st.ownerId !== userId);
+    this.keepsakes = this.keepsakes.filter((k) => k.ownerId !== userId);
     this.letters = this.letters.filter((l) => l.ownerId !== userId);
     this.gatherings = new Map(
       [...this.gatherings.entries()].filter(([, g]) => g.ownerId !== userId),

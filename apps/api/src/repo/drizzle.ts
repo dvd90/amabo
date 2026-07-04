@@ -21,6 +21,7 @@ import {
   bonds,
   chronicle,
   creatures,
+  keepsakes,
   events as eventsTable,
   gatherings,
   interactions,
@@ -41,6 +42,7 @@ import type {
   BondRecord,
   ChronicleRecord,
   CreatureRecord,
+  KeepsakeRecord,
   GatheringRecord,
   JournalEntry,
   LetterRecord,
@@ -631,6 +633,19 @@ export class DrizzleRepository implements Repository {
     await this.db.update(users).set({ chronicleSeenAt: at }).where(eq(users.id, userId));
   }
 
+  async addKeepsake(row: Omit<KeepsakeRecord, 'id'>): Promise<void> {
+    await this.db.insert(keepsakes).values(row);
+  }
+
+  async listKeepsakes(ownerId: string | null, limit: number): Promise<KeepsakeRecord[]> {
+    return this.db
+      .select()
+      .from(keepsakes)
+      .where(ownerId === null ? isNull(keepsakes.ownerId) : eq(keepsakes.ownerId, ownerId))
+      .orderBy(desc(keepsakes.at))
+      .limit(limit);
+  }
+
   async addChronicleEntries(rows: Omit<ChronicleRecord, 'id'>[]): Promise<void> {
     if (rows.length === 0) return;
     await this.db.insert(chronicle).values(rows);
@@ -715,6 +730,7 @@ export class DrizzleRepository implements Repository {
       await tx.delete(bonds).where(eq(bonds.ownerId, userId));
       await tx.delete(chronicle).where(eq(chronicle.ownerId, userId));
       await tx.delete(standings).where(eq(standings.ownerId, userId));
+      await tx.delete(keepsakes).where(eq(keepsakes.ownerId, userId));
       await tx.delete(letters).where(eq(letters.ownerId, userId));
       await tx.delete(gatherings).where(eq(gatherings.ownerId, userId));
       await tx
