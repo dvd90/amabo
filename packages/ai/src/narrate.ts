@@ -22,6 +22,8 @@ export interface CreatureContext {
   alive: boolean;
   /** The Soulmark (STORY.md §8½): honored in every journal, never rewritten. */
   persona?: PersonaT;
+  /** The glass's weather today (M-O) — shared by the whole shelf, engine-derived. */
+  weather?: string;
 }
 
 export interface NarrateEvent {
@@ -121,7 +123,7 @@ export async function narrate(
       system: [
         {
           type: 'text',
-          text: systemPrompt(register, graduating),
+          text: systemPrompt(register, graduating, context.asleep),
           cache_control: { type: 'ephemeral' },
         },
       ],

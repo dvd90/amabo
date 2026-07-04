@@ -231,6 +231,13 @@ export const localNarrator: Narrator = {
     if (chosen?.tag && DAYPATH_LINES[chosen.tag] && ctx.state.alive) {
       journal = `${journal} ${DAYPATH_LINES[chosen.tag]}`;
     }
+    // The deep weave (M-O): naming-days and shelf news, noticed quietly.
+    if (ctx.state.alive && events.some((e) => e.kind === 'memoryDay')) {
+      journal = `${journal} Today marks the day I first condensed. I noticed, and let it pass warmly.`;
+    }
+    if (ctx.state.alive && events.some((e) => e.kind === 'echo' && e.tag === 'newStar')) {
+      journal = `${journal} There is a new light above the shelf tonight. I think I knew them.`;
+    }
     const out: NarrateOutput = { journal, mood: reg.mood };
     if (reg.memory) out.newMemories = [{ text: reg.memory, salience: 5 }];
     return out;

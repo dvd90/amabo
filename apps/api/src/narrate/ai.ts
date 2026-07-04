@@ -22,6 +22,7 @@ export function aiNarrator(client: AnthropicLike, logger: Logger = noopLogger): 
             asleep: ctx.state.asleep,
             alive: ctx.state.alive,
             persona: ctx.persona ?? undefined,
+            weather: ctx.weather,
           },
           newEvents: events.map((e) => ({ kind: e.kind, tag: e.tag, salience: e.salience })),
           mode,

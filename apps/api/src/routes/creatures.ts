@@ -9,6 +9,8 @@ import { MAX_MEMORIES, localDirection, type DirectInput, type Direction } from '
 import {
   DAYPATH_MAKERS,
   applyDaypath,
+  memoryDayIn,
+  weatherFor,
   canMultiply,
   condenseMote,
   dealDaypaths,
@@ -266,6 +268,26 @@ export function creaturesRouter(deps: CreatureDeps): Router {
         }
       }
 
+      // The deep weave (M-O): a whole-week naming-day that fell inside the gap is
+      // remembered — a pure story mark, zero deltas, noticed quietly in the diary.
+      if (record.graduatedAt === null && prevSeen != null) {
+        // Born-at from the engine's own age (sim-time), not the row's wall clock.
+        const bornAt = now - record.state.ageMinutes * 60_000;
+        const week = memoryDayIn(bornAt, prevSeen, now);
+        if (week != null) {
+          const mark = {
+            at: now,
+            kind: 'memoryDay' as const,
+            statDeltas: {},
+            dispositionDelta: 0,
+            salience: 3,
+            tag: `week-${week}`,
+          };
+          events.push(mark);
+          await repo.appendEvents(record.id, [mark], 'sim');
+        }
+      }
+
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
       const memories = await repo.topMemories(record.id, MAX_MEMORIES);
@@ -276,6 +298,8 @@ export function creaturesRouter(deps: CreatureDeps): Router {
           memories,
           ownerId: getOwner(req),
           persona: record.persona,
+          // The glass shares one sky today (M-O) — engine-derived, story only.
+          weather: weatherFor(now),
         },
         events,
         mode,

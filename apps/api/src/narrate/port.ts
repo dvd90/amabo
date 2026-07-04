@@ -17,6 +17,8 @@ export interface NarrateContext {
   ownerId?: string | null;
   /** The Soulmark (STORY.md §8½) — the narrator writes in THIS creature's grain. */
   persona?: PersonaT | null;
+  /** The glass's weather today (M-O) — shared by the whole shelf, engine-derived. */
+  weather?: string;
 }
 
 export interface NarrateOutput {

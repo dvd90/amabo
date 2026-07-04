@@ -81,7 +81,10 @@ export type SimEventKind =
   | 'resonance'
   | 'visit'
   // M-J — the Little World: the day it chose while the glass was dark (STORY.md §8¾)
-  | 'daypath';
+  | 'daypath'
+  // M-O — the deep weave: pure story marks (zero deltas, always)
+  | 'memoryDay' // a whole-week anniversary of its condensation fell in the gap
+  | 'echo'; // news of the shelf reached it (e.g. a sibling became a star)
 
 export interface SimEvent {
   at: number;

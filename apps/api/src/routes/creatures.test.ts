@@ -273,6 +273,49 @@ describe('the Little World (STORY.md §8¾) — daypaths and the manner', () => 
   });
 });
 
+describe('the deep weave (M-O) — naming-days, echoes, weather', () => {
+  it('a naming-day inside the gap lands in the journal, pure story', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+    const id = created.body.id;
+
+    ctx.setNow(ctx.nowAt() + 8 * 24 * HOUR); // a week and a day in the dark
+    await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({});
+    const journal = await ctx.repo.listJournal(id, 80, 0);
+    const mark = journal.find((e) => e.kind === 'memoryDay');
+    expect(mark).toBeTruthy();
+    expect(mark!.tag).toBe('week-1');
+    // Story, never fate: the mark itself carries no deltas (health moved only
+    // because eight unattended days of ordinary decay did their ordinary work).
+    const rec = await ctx.repo.getCreature(id, userId);
+    expect(rec!.state.alive).toBe(true);
+  });
+
+  it('an ascension echoes to the rest of the shelf: siblings glance up', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    const sib = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Bo' });
+    const ready: CreatureState = {
+      ...condenseMote(7, ctx.nowAt()),
+      stage: 'bloom',
+      disposition: 90,
+      ageMinutes: GRADUATION.ageMinutes + 100,
+      stats: { ambra: 95, energy: 80, cleanliness: 100, health: 100, affection: 95, security: 90 },
+    };
+    const lumen = await ctx.repo.createCreature({ ownerId: userId, name: 'Lumen', state: ready });
+
+    ctx.setNow(ctx.nowAt() + HOUR);
+    const read = await agent.get(`/creatures/${lumen.id}`);
+    expect(read.body.graduatedAt).not.toBeNull();
+
+    const journal = await ctx.repo.listJournal(sib.body.id, 50, 0);
+    const echo = journal.find((e) => e.kind === 'echo');
+    expect(echo).toBeTruthy();
+    expect(echo!.tag).toBe('newStar');
+  });
+});
+
 describe('keepsakes (STORY.md §8¾) — made things stay', () => {
   it('a makerly chosen day leaves a named keepsake on the shelf', async () => {
     // A director that always picks the maker option when dealt (valid manner).
