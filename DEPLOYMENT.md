@@ -35,26 +35,29 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
 3. **Settings → Networking → Generate Domain** (note the URL, e.g. `https://amabo-api.up.railway.app`).
 4. **Variables** → add:
 
-   | Variable                   | Required   | Value / notes                                                                                          |
-   | -------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
-   | `NODE_ENV`                 | ✅         | `production` — enables Secure cookies, trust-proxy, and `SameSite=None`                                |
-   | `DATABASE_URL`             | ✅         | `${{ Postgres.DATABASE_URL }}` (reference the Postgres service)                                        |
-   | `BASE_URL`                 | ✅         | the **API's own** URL, e.g. `https://amabo-api.up.railway.app` (OAuth redirect + share links)          |
-   | `WEB_ORIGIN`               | ✅         | the **web app's** URL, e.g. `https://amabo-web.up.railway.app` (CORS allow-list + post-login redirect) |
-   | `XAI_API_KEY`              | optional   | narration via xAI's Grok (the cheap default provider). Metered exactly like Claude (L3)                |
-   | `XAI_MODEL_PEEK`           | optional   | Grok model for routine peeks (default `grok-4-1-fast-non-reasoning` — verify at docs.x.ai)             |
-   | `XAI_MODEL_MILESTONE`      | optional   | Grok model for milestones (default `grok-4-1-fast-reasoning`)                                          |
-   | `NARRATOR_PROVIDER`        | optional   | `grok` or `anthropic` — breaks the tie when both keys are set (default: grok wins)                     |
-   | `ANTHROPIC_API_KEY`        | optional   | narration via Anthropic's Claude. Either key alone works; neither → local templated narrator           |
-   | `NARRATION_USER_ALLOWANCE` | optional   | model-narrated peeks per Light per rolling day (default 10); over it → local voice                     |
-   | `NARRATION_DAILY_CAP`      | optional   | global model calls per rolling day (default 2000) — the no-surprise-bill breaker                       |
-   | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                             |
-   | `STRIPE_SECRET_KEY`        | optional   | the till (L5). All three Stripe vars set → the Keeper's Lantern sells; any missing → free mode         |
-   | `STRIPE_PRICE_LANTERN`     | optional   | the Lantern's subscription price id (`price_…`, ~$3.99/mo)                                             |
-   | `STRIPE_WEBHOOK_SECRET`    | optional   | signing secret of a webhook endpoint pointed at `https://<api-url>/billing/webhook`                    |
-   | `GOOGLE_CLIENT_ID`         | optional\* | Google OAuth client ID (alias: `GOOGLE_OAUTH_ID`)                                                      |
-   | `GOOGLE_CLIENT_SECRET`     | optional\* | Google OAuth client secret (alias: `GOOGLE_OAUTH_SECRET`)                                              |
-   | `GOOGLE_CALLBACK_URL`      | optional   | Pin the exact redirect URI, e.g. `https://<api-url>/auth/google/callback`. Must match the console.     |
+   | Variable                   | Required   | Value / notes                                                                                             |
+   | -------------------------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+   | `NODE_ENV`                 | ✅         | `production` — enables Secure cookies, trust-proxy, and `SameSite=None`                                   |
+   | `DATABASE_URL`             | ✅         | `${{ Postgres.DATABASE_URL }}` (reference the Postgres service)                                           |
+   | `BASE_URL`                 | ✅         | the **API's own** URL, e.g. `https://amabo-api.up.railway.app` (OAuth redirect + share links)             |
+   | `WEB_ORIGIN`               | ✅         | the **web app's** URL, e.g. `https://amabo-web.up.railway.app` (CORS allow-list + post-login redirect)    |
+   | `LLAMA_API_KEY`            | optional   | narration via Llama 3.3 70B (the current pick). Key is from the HOST (default: Groq — console.groq.com)   |
+   | `LLAMA_BASE_URL`           | optional   | the host's OpenAI-compatible root (default `https://api.groq.com/openai/v1`; Together/DeepInfra work too) |
+   | `LLAMA_MODEL`              | optional   | model id at the host (default `llama-3.3-70b-versatile` on Groq — verify at the host's docs)              |
+   | `XAI_API_KEY`              | optional   | narration via xAI's Grok. Metered exactly like the others (L3)                                            |
+   | `XAI_MODEL_PEEK`           | optional   | Grok model for routine peeks (default `grok-4-1-fast-non-reasoning` — verify at docs.x.ai)                |
+   | `XAI_MODEL_MILESTONE`      | optional   | Grok model for milestones (default `grok-4-1-fast-reasoning`)                                             |
+   | `NARRATOR_PROVIDER`        | optional   | `llama`, `grok`, or `anthropic` — picks when several keys are set (default order: llama → grok → claude)  |
+   | `ANTHROPIC_API_KEY`        | optional   | narration via Anthropic's Claude. Either key alone works; neither → local templated narrator              |
+   | `NARRATION_USER_ALLOWANCE` | optional   | model-narrated peeks per Light per rolling day (default 10); over it → local voice                        |
+   | `NARRATION_DAILY_CAP`      | optional   | global model calls per rolling day (default 2000) — the no-surprise-bill breaker                          |
+   | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                                |
+   | `STRIPE_SECRET_KEY`        | optional   | the till (L5). All three Stripe vars set → the Keeper's Lantern sells; any missing → free mode            |
+   | `STRIPE_PRICE_LANTERN`     | optional   | the Lantern's subscription price id (`price_…`, ~$3.99/mo)                                                |
+   | `STRIPE_WEBHOOK_SECRET`    | optional   | signing secret of a webhook endpoint pointed at `https://<api-url>/billing/webhook`                       |
+   | `GOOGLE_CLIENT_ID`         | optional\* | Google OAuth client ID (alias: `GOOGLE_OAUTH_ID`)                                                         |
+   | `GOOGLE_CLIENT_SECRET`     | optional\* | Google OAuth client secret (alias: `GOOGLE_OAUTH_SECRET`)                                                 |
+   | `GOOGLE_CALLBACK_URL`      | optional   | Pin the exact redirect URI, e.g. `https://<api-url>/auth/google/callback`. Must match the console.        |
 
    \*Passwordless **email sign-in is always available** and needs no setup — it's the
    primary login. The Google vars are optional and only enable the "Continue with

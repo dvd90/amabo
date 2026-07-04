@@ -52,8 +52,9 @@ amabo/
   stages `mote→spark→velveteen→bloom`, `elysium`/`stars`. Use them exactly.
 - Validate every boundary (API in/out, AI output) with shared **zod** schemas.
 - Tunables live in `packages/engine/config.ts`; no magic numbers inline.
-- Narration is provider-pluggable behind `@amabo/ai`'s `AnthropicLike` port: xAI's
-  Grok (`XAI_API_KEY`, the cheap launch provider) or Anthropic Claude
+- Narration is provider-pluggable behind `@amabo/ai`'s `AnthropicLike` port:
+  Llama 3.3 70B via an OpenAI-compatible host (`LLAMA_API_KEY`, the current launch
+  provider — default host Groq), xAI Grok (`XAI_API_KEY`), or Anthropic Claude
   (`ANTHROPIC_API_KEY`; `claude-haiku-4-5` peeks / `claude-sonnet-4-6` milestones).
   Two tiers always: cheap for routine peeks, finer for milestones. Structured output
   via the `record_life` tool; prompt caching on where the provider supports it.
