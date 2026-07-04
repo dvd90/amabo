@@ -60,6 +60,12 @@ export interface UserRecord {
   /** The till (L5): the account's tier; every gate reads this, never Stripe. */
   entitlements: EntitlementsT;
   stripeCustomerId: string | null;
+  /**
+   * The Keeper's Key: every feature unlocked, no shelf cap, no narration allowance.
+   * DB-ONLY by design — no API surface writes it; set it by hand:
+   *   UPDATE users SET unlocked = true WHERE email = '...';
+   */
+  unlocked: boolean;
   createdAt: number;
 }
 
@@ -253,6 +259,8 @@ export interface Repository {
     stripeCustomerId?: string,
   ): Promise<void>;
   getUserByStripeCustomer(customerId: string): Promise<UserRecord | null>;
+  /** Turn the Keeper's Key (ops scripts and tests only — never exposed as a route). */
+  setUnlocked(userId: string, unlocked: boolean): Promise<void>;
   /** True the FIRST time an event id is seen — webhook idempotency. */
   markStripeEventSeen(id: string, at: number): Promise<boolean>;
 

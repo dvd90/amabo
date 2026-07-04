@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "unlocked" boolean DEFAULT false NOT NULL;

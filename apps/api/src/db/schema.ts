@@ -124,6 +124,8 @@ export const users = pgTable(
     preferences: jsonb('preferences'),
     // The till (L5): what this Light is entitled to, and the Stripe customer behind it.
     entitlements: jsonb('entitlements'),
+    // The Keeper's Key: all features unlocked. DB-only by design — no route writes it.
+    unlocked: boolean('unlocked').notNull().default(false),
     stripeCustomerId: text('stripe_customer_id'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },

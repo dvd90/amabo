@@ -619,6 +619,10 @@ export class DrizzleRepository implements Repository {
     await this.db.update(creatures).set({ manner }).where(eq(creatures.id, id));
   }
 
+  async setUnlocked(userId: string, unlocked: boolean): Promise<void> {
+    await this.db.update(users).set({ unlocked }).where(eq(users.id, userId));
+  }
+
   async setAgeBand(userId: string, band: string): Promise<void> {
     await this.db.update(users).set({ ageBand: band }).where(eq(users.id, userId));
   }
@@ -795,6 +799,7 @@ function toUser(row: typeof users.$inferSelect): UserRecord {
     preferences: (row.preferences as UserPreferencesT | null) ?? {},
     entitlements: (row.entitlements as EntitlementsT | null) ?? { ...DEFAULT_ENTITLEMENTS },
     stripeCustomerId: row.stripeCustomerId,
+    unlocked: row.unlocked ?? false,
     createdAt: row.createdAt.getTime(),
   };
 }

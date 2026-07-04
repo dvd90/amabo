@@ -138,6 +138,7 @@ function buildNarrator(
       // The Keeper's Lantern buys a wider voice (L5); the gate reads the tier only.
       allowanceFor: async (userId) => {
         const user = await repo.getUserById(userId);
+        if (user?.unlocked) return Number.POSITIVE_INFINITY; // the Keeper's Key
         return user?.entitlements.tier === 'lantern' ? lantern : free;
       },
       globalCallsPerDay: Number(process.env.NARRATION_DAILY_CAP ?? 2000),
