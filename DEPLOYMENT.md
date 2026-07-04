@@ -41,7 +41,11 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `DATABASE_URL`             | ✅         | `${{ Postgres.DATABASE_URL }}` (reference the Postgres service)                                        |
    | `BASE_URL`                 | ✅         | the **API's own** URL, e.g. `https://amabo-api.up.railway.app` (OAuth redirect + share links)          |
    | `WEB_ORIGIN`               | ✅         | the **web app's** URL, e.g. `https://amabo-web.up.railway.app` (CORS allow-list + post-login redirect) |
-   | `ANTHROPIC_API_KEY`        | optional   | omit → local templated narrator (zero AI cost). With it set, narration is METERED (L3)                 |
+   | `XAI_API_KEY`              | optional   | narration via xAI's Grok (the cheap default provider). Metered exactly like Claude (L3)                |
+   | `XAI_MODEL_PEEK`           | optional   | Grok model for routine peeks (default `grok-4-1-fast-non-reasoning` — verify at docs.x.ai)             |
+   | `XAI_MODEL_MILESTONE`      | optional   | Grok model for milestones (default `grok-4-1-fast-reasoning`)                                          |
+   | `NARRATOR_PROVIDER`        | optional   | `grok` or `anthropic` — breaks the tie when both keys are set (default: grok wins)                     |
+   | `ANTHROPIC_API_KEY`        | optional   | narration via Anthropic's Claude. Either key alone works; neither → local templated narrator           |
    | `NARRATION_USER_ALLOWANCE` | optional   | model-narrated peeks per Light per rolling day (default 10); over it → local voice                     |
    | `NARRATION_DAILY_CAP`      | optional   | global model calls per rolling day (default 2000) — the no-surprise-bill breaker                       |
    | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                             |

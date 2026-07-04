@@ -52,8 +52,11 @@ amabo/
   stages `mote→spark→velveteen→bloom`, `elysium`/`stars`. Use them exactly.
 - Validate every boundary (API in/out, AI output) with shared **zod** schemas.
 - Tunables live in `packages/engine/config.ts`; no magic numbers inline.
-- Model tiering: `claude-haiku-4-5` for routine peeks, `claude-sonnet-4-6` for
-  milestones. Structured output via the `record_life` tool. Prompt caching on.
+- Narration is provider-pluggable behind `@amabo/ai`'s `AnthropicLike` port: xAI's
+  Grok (`XAI_API_KEY`, the cheap launch provider) or Anthropic Claude
+  (`ANTHROPIC_API_KEY`; `claude-haiku-4-5` peeks / `claude-sonnet-4-6` milestones).
+  Two tiers always: cheap for routine peeks, finer for milestones. Structured output
+  via the `record_life` tool; prompt caching on where the provider supports it.
 - New world facts go into `STORY.md` **first**, then code. Never invent lore inline.
 - Crypto (`packages/chain`) is **optional, isolated, off by default** — Solana + USDC,
   non-custodial, keepsakes only. The core must build/run/test with it absent; it never
