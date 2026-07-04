@@ -8,15 +8,8 @@
 import {
   directLife,
   generatePersona,
-  localChronicle,
   localDirection,
   localPersona,
-  voiceChronicle,
-  type ChronicleSceneInput,
-  makeAnthropicClient,
-  makeGrokClient,
-  makeOpenAiCompatClient,
-  type AnthropicLike,
   type DirectInput,
 } from '@amabo/ai';
 import { existsSync } from 'node:fs';
@@ -24,6 +17,8 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
+import { buildLlmClient } from './llm.js';
+import { makeChronicler } from './service/chronicle.js';
 import { stripeBilling } from './billing/stripe.js';
 import { envLogger, type Logger } from './logger.js';
 import { nullMonitor, sentryMonitor, type Monitor } from './monitor.js';
@@ -47,75 +42,6 @@ function webDistDir(): string | undefined {
   if (explicit) return existsSync(explicit) ? explicit : undefined;
   const guess = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../web/dist');
   return existsSync(guess) ? guess : undefined;
-}
-
-/**
- * Which LLM speaks for the creatures (multi-LLM). Priority when several keys are
- * set: NARRATOR_PROVIDER (llama|grok|anthropic) decides; otherwise the first key
- * found wins in this order — LLAMA_API_KEY (Llama 3.3 70B, the current pick),
- * XAI_API_KEY (Grok), ANTHROPIC_API_KEY (Claude). No key → the local templated
- * voice. One client serves narration AND the Symposium, and everything downstream
- * (metering, ledger, fallbacks) is provider-agnostic.
- */
-type LlmChoice = { client: AnthropicLike; provider: 'llama' | 'grok' | 'anthropic' };
-
-function buildLlmClient(logger: Logger): LlmChoice | null {
-  const pick = process.env.NARRATOR_PROVIDER;
-  // Deploy truth for the voice: one log line names the ids narration will use and
-  // whether they came from the host's live /models list or straight from config.
-  const onResolve = (info: { peek: string; milestone: string; via: string }) =>
-    logger.child('narration').info('model ids resolved', info);
-  const candidates: { provider: LlmChoice['provider']; make: () => AnthropicLike | null }[] = [
-    {
-      provider: 'llama',
-      make: () => {
-        const key = process.env.LLAMA_API_KEY;
-        if (!key) return null;
-        // Llama is open-weights: a HOST serves it. Default host is Groq (fast,
-        // cheap, free tier) — point LLAMA_BASE_URL at Together/DeepInfra/Fireworks
-        // etc. to switch hosts; every one speaks the same OpenAI-compatible dialect.
-        // Verify current model ids at the host's docs — override via env.
-        const model = process.env.LLAMA_MODEL ?? 'llama-3.3-70b-versatile';
-        return makeOpenAiCompatClient({
-          apiKey: key,
-          baseUrl: process.env.LLAMA_BASE_URL ?? 'https://api.groq.com/openai/v1',
-          peekModel: model,
-          milestoneModel: process.env.LLAMA_MODEL_MILESTONE ?? model,
-          onResolve,
-          // Self-healing (like the Grok preset): if the host renamed the model,
-          // resolve against its live /models list — a key alone stays enough.
-          peekCandidates: [/llama-3\.3-70b/i, /llama-3\.3/i, /llama.*70b/i, /llama/i],
-          milestoneCandidates: [/llama-3\.3-70b/i, /llama-3\.3/i, /llama.*70b/i, /llama/i],
-        });
-      },
-    },
-    {
-      provider: 'grok',
-      make: () => {
-        const key = process.env.XAI_API_KEY;
-        if (!key) return null;
-        return makeGrokClient({
-          apiKey: key,
-          peekModel: process.env.XAI_MODEL_PEEK ?? 'grok-4-1-fast-non-reasoning',
-          milestoneModel: process.env.XAI_MODEL_MILESTONE ?? 'grok-4-1-fast-reasoning',
-          onResolve,
-        });
-      },
-    },
-    {
-      provider: 'anthropic',
-      make: () => {
-        const key = process.env.ANTHROPIC_API_KEY;
-        return key ? makeAnthropicClient(key) : null;
-      },
-    },
-  ];
-  const ordered = pick ? candidates.filter((c) => c.provider === pick) : candidates;
-  for (const c of ordered) {
-    const client = c.make();
-    if (client) return { provider: c.provider, client };
-  }
-  return null;
 }
 
 function buildNarrator(
@@ -367,44 +293,8 @@ if (process.env.NODE_ENV !== 'test') {
     }
   };
 
-  // The chronicler (STORY.md §8⅞): AI-voiced when a provider is awake, sharing the
-  // narration breaker; model calls land in the cost ledger (mode 'chronicle').
-  const chronicleLog = logger.child('chronicle');
-  const chronicler = async (input: ChronicleSceneInput & { ownerId: string | null }) => {
-    if (!llm) return localChronicle(input);
-    try {
-      const since = systemClock() - 24 * 60 * 60 * 1000;
-      if ((await repo.countTelemetry('narration', { since })) >= dailyCap) {
-        return localChronicle(input);
-      }
-      const out = await voiceChronicle(input, llm.client);
-      if (out.source === 'local') {
-        chronicleLog.warn('model chronicle fell back to the local book', {
-          provider: llm.provider,
-          reason: out.reason ?? null,
-        });
-      } else {
-        await repo.addTelemetry([
-          {
-            name: 'narration',
-            anonId: null,
-            userId: input.ownerId,
-            at: systemClock(),
-            props: {
-              mode: 'chronicle',
-              provider: llm.provider,
-              inputTokens: out.usage?.inputTokens ?? null,
-              outputTokens: out.usage?.outputTokens ?? null,
-            },
-          },
-        ]);
-      }
-      return out;
-    } catch (err) {
-      chronicleLog.error('the chronicler failed — the local book stands in', { err });
-      return localChronicle(input);
-    }
-  };
+  // The chronicler (STORY.md §8⅞): shared with the notify cron via the service.
+  const chronicler = makeChronicler(llm, repo, logger, systemClock, dailyCap);
 
   const app = createApp({
     repo,

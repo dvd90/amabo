@@ -51,17 +51,35 @@ const COPY: Record<string, (name: string) => PushMessage> = {
   }),
 };
 
+/** A fresh Chronicle page worth telling the Light about (M-M). */
+export interface SocialCandidate {
+  aName: string;
+  bName: string;
+  valence: 'warm' | 'strained';
+  text: string;
+}
+
 export function decideNotification(
   creatures: NotifyCandidate[],
   now: number,
   lastNotifiedAt: number | null,
   cooldownMs: number = NOTIFY_COOLDOWN_MS,
+  social?: SocialCandidate | null,
 ): PushMessage | null {
   if (lastNotifiedAt != null && now - lastNotifiedAt < cooldownMs) return null;
 
   for (const need of ORDER) {
     const hit = creatures.find((c) => needs(c.state).includes(need));
     if (hit) return COPY[need]!(hit.name);
+  }
+
+  // Nothing urgent — but the shelf wrote a page: the strongest proof of a living
+  // world is news about something two creatures did to each other, unprompted.
+  if (social) {
+    return {
+      title: `${social.aName} & ${social.bName} met while you were away`,
+      body: social.text.slice(0, 160),
+    };
   }
 
   // Nothing urgent — but if one has been alone in the dark a long while, a soft nudge.
