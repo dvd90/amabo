@@ -42,6 +42,34 @@ function creature(
 }
 
 describe('<Dashboard> (the roster)', () => {
+  it('opens the Chronicle: the shelf\u2019s book of encounters and standings (M-K)', async () => {
+    const chronicle = vi.fn().mockResolvedValue({
+      entries: [
+        {
+          at: 1,
+          text: 'Pip and Bo found the same patch of warmth and shared it without a word.',
+          valence: 'warm',
+          tag: 'sharedWarmth',
+          aName: 'Pip',
+          bName: 'Bo',
+        },
+      ],
+      standings: [
+        { aName: 'Pip', bName: 'Bo', valence: 'warm', line: 'Easy company now.', updatedAt: 1 },
+      ],
+    });
+    useGame.setState({
+      creatures: [creature('c1', 'Pip'), creature('c2', 'Bo')],
+      client: { chronicle } as never,
+    });
+    render(<Dashboard />);
+    fireEvent.click(screen.getByText(/The Chronicle/));
+    expect(chronicle).toHaveBeenCalled();
+    expect(await screen.findByText(/shared it without a word/)).toBeTruthy();
+    expect(screen.getByText(/Easy company now/)).toBeTruthy();
+    expect(screen.getByText(/how things stand/i)).toBeTruthy();
+  });
+
   it('shows every amabo and opens one on click', () => {
     const openCreature = vi.fn().mockResolvedValue(undefined);
     useGame.setState({

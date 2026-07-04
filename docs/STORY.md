@@ -355,6 +355,37 @@ can never deal itself a better hand. Agency here is *expressive*, not economic.
 
 ---
 
+## 8⅞. The Chronicle — the shelf writes its own book
+
+All of one Light's glasses stand on the same shelf, and the worlds inside them
+brush at the edges (the glade between worlds, §6½, is where they gather on purpose;
+the brushing happens on its own). While the Light is away, creatures sometimes
+drift to the glade unprompted and meet — and the shelf keeps a book of it: **the
+Chronicle**, the running story of the company.
+
+- **Encounters.** During a long dark stretch the glass may bring two creatures
+  together. An encounter is **warm** (shared warmth, a small gift, an old story
+  retold) or **strained** — and a strain is always a *small friction*, never harm:
+  two souls wanting the same warm corner, a borrowed light returned late, envy
+  that is really longing pointed sideways. Whether a meeting warms or strains
+  follows from who they are (their tempers, their hearts' distance); even a
+  strained meeting leaves a thread in the sky, because attention is attention.
+- **Standings.** Between any two creatures who have met, the Chronicle keeps one
+  line of *how things stand* — refreshed as they meet again, warm or wary, never
+  final. A strain can soften; a warmth can cool to fondness. Standings are story,
+  not fate: no standing can sour a heart, sicken a body, or close a door.
+- **The dealer's law, again.** The glass decides *who met and how it went* (the
+  engine, from tempers and chance); the chronicler — the AI, in the shelf's own
+  voice — only writes the scene and the standing line. A chronicler that strays
+  is simply not transcribed.
+
+Every creature is born with a **temper** under its soulmark — small seeded leanings
+(boldness, warmth, jealousy, curiosity, sociability) that tilt who it drifts
+toward and how meetings go. Tempers are dealt at condensation, like the soulmark;
+they color the Chronicle and nothing else.
+
+---
+
 ## 9. The Narration Voice Guide  ← the AI layer reads this directly
 
 `packages/ai` must write journals and reactions in these registers. The engine
@@ -421,6 +452,8 @@ richer model (Sonnet); routine days get the cheap one (Haiku). See `ARCHITECTURE
 | No two Motes alike | the soulmark: a fixed persona struck at condensation, woven into every journal |
 | The glass deals, the soul picks | daypaths: engine deals equal options, the AI chooses in character, engine validates |
 | No two creatures keep the glass alike | the manner: haunt + ritual + obsession + gait, AI-directed, presentation-only |
+| The shelf writes its own book | the Chronicle: engine-rolled encounters (warm/strained), AI-voiced, bonds move, stats never |
+| Small frictions, never harm | strained encounters: envy-as-longing; a trace of bond even in a clash; standings are story, not fate |
 
 ---
 

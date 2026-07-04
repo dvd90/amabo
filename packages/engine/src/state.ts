@@ -5,7 +5,8 @@
  */
 
 import type { Mortality, Stage } from '@amabo/shared';
-import { UNCANNY_THRESHOLD } from './config.js';
+import { TEMPER_KEYS, UNCANNY_THRESHOLD } from './config.js';
+import { deriveSeed, mulberry32 } from './rng.js';
 
 /** Derived presentation: a soured creature (low disposition) shows as a Yim (STORY.md §4). */
 export function deriveUncanny(disposition: number): boolean {
@@ -99,6 +100,11 @@ export interface SimEvent {
  * The API supplies the random `seed` and the `now`; this stays pure.
  */
 export function condenseMote(seed: number, now: number): CreatureState {
+  // The temper (STORY.md §8⅞): seeded leanings dealt at condensation, one per key.
+  // They tilt the Chronicle's encounters and color nothing else.
+  const temperRng = mulberry32(deriveSeed(seed, 0x7e39));
+  const traits: Record<string, number> = {};
+  for (const key of TEMPER_KEYS) traits[key] = Math.round(temperRng() * 100);
   return {
     seed,
     stage: 'mote',
@@ -117,7 +123,7 @@ export function condenseMote(seed: number, now: number): CreatureState {
     uncanny: false,
     alive: true,
     mortality: 'soft',
-    traits: {},
+    traits,
     careHistory: { fed: 0, cleaned: 0, played: 0, comforted: 0, neglectedSteps: 0 },
     lastTickAt: now,
   };

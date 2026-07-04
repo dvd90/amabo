@@ -36,6 +36,23 @@ export interface Direction {
   manner: MannerT;
   source: 'model' | 'local';
   usage?: { inputTokens: number; outputTokens: number };
+  /** Why the seeded direction stood in (only when source is 'local') — for the log. */
+  reason?: string;
+}
+
+/** Soften a model's manner toward the schema (trim/truncate/normalise enums) before judging it. */
+function clampManner(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : v);
+  const word = (v: unknown) =>
+    typeof v === 'string' ? v.trim().toLowerCase().replace(/\s+/g, '-') : v;
+  return {
+    haunt: word(r.haunt),
+    ritual: str(r.ritual, 80),
+    obsession: str(r.obsession, 60),
+    gait: word(r.gait),
+  };
 }
 
 // ── The seeded floor: works keyless, deterministic per creature ─────────────────
@@ -157,15 +174,33 @@ export async function directLife(input: DirectInput, client: AnthropicLike): Pro
     });
     const toolUse = res.content.find((c) => c.type === 'tool_use' && c.name === 'direct_scene');
     const raw = toolUse?.input as { choiceId?: unknown; manner?: unknown } | undefined;
-    const manner = DirectionAnswer.safeParse(raw?.manner);
-    const picked = input.options.find((o) => o.id === raw?.choiceId);
-    if (!manner.success || !picked) return fallback;
+    const manner = DirectionAnswer.safeParse(clampManner(raw?.manner));
+    const picked = input.options.find(
+      (o) =>
+        o.id ===
+        String(raw?.choiceId ?? '')
+          .trim()
+          .toLowerCase(),
+    );
+    if (!manner.success || !picked) {
+      return {
+        ...fallback,
+        reason: !toolUse
+          ? 'model returned no direct_scene tool call'
+          : !picked
+            ? `off-hand pick: ${String(raw?.choiceId ?? '(none)').slice(0, 60)}`
+            : `invalid manner: ${manner.success ? '' : manner.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}`.slice(
+                0,
+                200,
+              ),
+      };
+    }
     const usage =
       res.usage?.input_tokens !== undefined && res.usage?.output_tokens !== undefined
         ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
         : undefined;
     return { choiceId: picked.id, manner: manner.data, source: 'model', usage };
-  } catch {
-    return fallback;
+  } catch (err) {
+    return { ...fallback, reason: (err as Error).message?.slice(0, 240) };
   }
 }

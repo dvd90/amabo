@@ -22,3 +22,4 @@ export * from './advance.js';
 export * from './gap.js';
 export * from './needs.js';
 export * from './daypath.js';
+export * from './chronicle.js';

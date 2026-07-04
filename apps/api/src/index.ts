@@ -8,8 +8,11 @@
 import {
   directLife,
   generatePersona,
+  localChronicle,
   localDirection,
   localPersona,
+  voiceChronicle,
+  type ChronicleSceneInput,
   makeAnthropicClient,
   makeGrokClient,
   makeOpenAiCompatClient,
@@ -300,6 +303,7 @@ if (process.env.NODE_ENV !== 'test') {
       soulLog.warn('model soulmark failed — the seeded mark stands in', {
         provider: llm.provider,
         creature: input.name,
+        reason: out.reason ?? null,
       });
     }
     if (out.source === 'model') {
@@ -338,6 +342,7 @@ if (process.env.NODE_ENV !== 'test') {
         worldLog.warn('model direction fell back to the seeded way', {
           provider: llm.provider,
           creature: input.name,
+          reason: out.reason ?? null,
         });
       } else {
         await repo.addTelemetry([
@@ -362,6 +367,45 @@ if (process.env.NODE_ENV !== 'test') {
     }
   };
 
+  // The chronicler (STORY.md §8⅞): AI-voiced when a provider is awake, sharing the
+  // narration breaker; model calls land in the cost ledger (mode 'chronicle').
+  const chronicleLog = logger.child('chronicle');
+  const chronicler = async (input: ChronicleSceneInput & { ownerId: string | null }) => {
+    if (!llm) return localChronicle(input);
+    try {
+      const since = systemClock() - 24 * 60 * 60 * 1000;
+      if ((await repo.countTelemetry('narration', { since })) >= dailyCap) {
+        return localChronicle(input);
+      }
+      const out = await voiceChronicle(input, llm.client);
+      if (out.source === 'local') {
+        chronicleLog.warn('model chronicle fell back to the local book', {
+          provider: llm.provider,
+          reason: out.reason ?? null,
+        });
+      } else {
+        await repo.addTelemetry([
+          {
+            name: 'narration',
+            anonId: null,
+            userId: input.ownerId,
+            at: systemClock(),
+            props: {
+              mode: 'chronicle',
+              provider: llm.provider,
+              inputTokens: out.usage?.inputTokens ?? null,
+              outputTokens: out.usage?.outputTokens ?? null,
+            },
+          },
+        ]);
+      }
+      return out;
+    } catch (err) {
+      chronicleLog.error('the chronicler failed — the local book stands in', { err });
+      return localChronicle(input);
+    }
+  };
+
   const app = createApp({
     repo,
     clock: systemClock,
@@ -369,6 +413,7 @@ if (process.env.NODE_ENV !== 'test') {
     narrator: buildNarrator(llm, repo, monitor, logger),
     condenseSoul,
     direct,
+    chronicler,
     billing,
     symposiumNarrator: buildSymposiumNarrator(llm, logger),
     authProvider: buildAuthProvider(boot),

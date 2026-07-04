@@ -15,6 +15,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import type {
   BondRecord,
+  ChronicleRecord,
   CreatureRecord,
   GatheringRecord,
   JournalEntry,
@@ -25,6 +26,7 @@ import type {
   RehomeRecord,
   Repository,
   SessionRecord,
+  StandingRecord,
   ShareLinkRecord,
   StarRecord,
   TranscriptLine,
@@ -56,6 +58,8 @@ export class InMemoryRepository implements Repository {
   private pushSubs = new Map<string, PushSubscriptionRecord>();
   private gatherings = new Map<string, GatheringRecord>();
   private bonds: BondRecord[] = [];
+  private chronicle: ChronicleRecord[] = [];
+  private standings: StandingRecord[] = [];
   private letters: LetterRecord[] = [];
   private telemetry: TelemetryRecord[] = [];
   private stripeSeen = new Set<string>();
@@ -194,6 +198,56 @@ export class InMemoryRepository implements Repository {
     this.users.set(user.id, user);
     this.identities.push({ provider: input.provider, subject: input.subject, userId: user.id });
     return { ...structuredClone(user), created: true };
+  }
+
+  async addChronicleEntries(rows: Omit<ChronicleRecord, 'id'>[]): Promise<void> {
+    for (const row of rows) this.chronicle.push({ ...row, id: randomUUID() });
+  }
+
+  async listChronicle(ownerId: string | null, limit: number): Promise<ChronicleRecord[]> {
+    return this.chronicle
+      .filter((c) => c.ownerId === ownerId)
+      .sort((x, y) => y.at - x.at)
+      .slice(0, limit)
+      .map((c) => structuredClone(c));
+  }
+
+  async lastChronicleAt(ownerId: string | null): Promise<number | null> {
+    const mine = this.chronicle.filter((c) => c.ownerId === ownerId);
+    return mine.length === 0 ? null : Math.max(...mine.map((c) => c.at));
+  }
+
+  async upsertStanding(
+    ownerId: string | null,
+    a: string,
+    b: string,
+    valence: 'warm' | 'strained',
+    line: string,
+    at: number,
+  ): Promise<void> {
+    const [lo, hi] = a < b ? [a, b] : [b, a];
+    const found = this.standings.find((s) => s.ownerId === ownerId && s.a === lo && s.b === hi);
+    if (found) {
+      found.valence = valence;
+      found.line = line;
+      found.updatedAt = at;
+      return;
+    }
+    this.standings.push({ id: randomUUID(), ownerId, a: lo, b: hi, valence, line, updatedAt: at });
+  }
+
+  async getStanding(ownerId: string | null, a: string, b: string): Promise<StandingRecord | null> {
+    const [lo, hi] = a < b ? [a, b] : [b, a];
+    const found = this.standings.find((s) => s.ownerId === ownerId && s.a === lo && s.b === hi);
+    return found ? structuredClone(found) : null;
+  }
+
+  async listStandings(ownerId: string | null, limit: number): Promise<StandingRecord[]> {
+    return this.standings
+      .filter((s) => s.ownerId === ownerId)
+      .sort((x, y) => y.updatedAt - x.updatedAt)
+      .slice(0, limit)
+      .map((s) => structuredClone(s));
   }
 
   async setUnlocked(userId: string, unlocked: boolean): Promise<void> {
@@ -451,6 +505,8 @@ export class InMemoryRepository implements Repository {
     this.interactions = this.interactions.filter((i) => !creatureIds.has(i.creatureId));
     this.stars = this.stars.filter((s) => s.ownerId !== userId);
     this.bonds = this.bonds.filter((b) => b.ownerId !== userId);
+    this.chronicle = this.chronicle.filter((c) => c.ownerId !== userId);
+    this.standings = this.standings.filter((st) => st.ownerId !== userId);
     this.letters = this.letters.filter((l) => l.ownerId !== userId);
     this.gatherings = new Map(
       [...this.gatherings.entries()].filter(([, g]) => g.ownerId !== userId),

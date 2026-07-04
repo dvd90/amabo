@@ -63,6 +63,7 @@ function fakeClient(): ApiClient {
       outcomes: [],
       transcript: [],
     }),
+    chronicle: vi.fn().mockResolvedValue({ entries: [], standings: [] }),
     letters: vi.fn().mockResolvedValue([]),
     sky: vi.fn().mockResolvedValue({ stars: [], threads: [] }),
     archive: vi.fn().mockResolvedValue(undefined),

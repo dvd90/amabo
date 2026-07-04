@@ -277,6 +277,39 @@ export const bonds = pgTable(
   (t) => [index('bonds_pair_idx').on(t.ownerId, t.creatureA, t.creatureB)],
 );
 
+// The Chronicle (STORY.md §8⅞): the shelf's own book — engine-rolled encounters,
+// AI-voiced. Story only; no row here can touch a stat.
+export const chronicle = pgTable(
+  'chronicle',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id'),
+    at: doublePrecision('at').notNull(),
+    aId: uuid('a_id').notNull(),
+    bId: uuid('b_id').notNull(),
+    valence: text('valence').notNull(),
+    tag: text('tag').notNull(),
+    text: text('text').notNull(),
+  },
+  (t) => [index('chronicle_owner_idx').on(t.ownerId, t.at)],
+);
+
+// How things stand between two creatures (unordered pair, a < b) — one line,
+// refreshed as they meet again. Story, not fate.
+export const standings = pgTable(
+  'standings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id'),
+    a: uuid('a').notNull(),
+    b: uuid('b').notNull(),
+    valence: text('valence').notNull(),
+    line: text('line').notNull(),
+    updatedAt: doublePrecision('updated_at').notNull(),
+  },
+  (t) => [index('standings_pair_idx').on(t.ownerId, t.a, t.b)],
+);
+
 // The funnel (LAUNCH_PLAN.md L1): named product beats in our own Postgres — no third
 // party. Doubles as the narration cost ledger in L3 (name = 'narration', props = usage).
 export const telemetry = pgTable(

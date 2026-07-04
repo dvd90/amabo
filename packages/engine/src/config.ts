@@ -230,6 +230,29 @@ export const DAYPATH = {
 } as const;
 
 /**
+ * The Chronicle (STORY.md §8⅞) — tempers and encounters. Every creature is dealt a
+ * TEMPER at condensation (seeded leanings stored in `traits`); while a company sits
+ * long in the dark, the glass may bring pairs together. Encounters move bonds and
+ * story only — never stats, never disposition (small frictions, never harm).
+ */
+export const TEMPER_KEYS = ['boldness', 'warmth', 'jealousy', 'curiosity', 'sociability'] as const;
+export type TemperKey = (typeof TEMPER_KEYS)[number];
+
+export const CHRONICLE = {
+  /** Only a company left at least this long may have met (6 hours). */
+  minGapMs: 6 * MS_PER_HOUR,
+  /** At most this many encounters per chronicled gap. */
+  maxPerGap: 3,
+  /** Base chance one encounter happened per 6h chunk (scaled by sociability). */
+  encounterChancePerChunk: 0.45,
+  /** |disposition gap| at/below this leans warm; beyond it, strain grows. */
+  warmGap: HARMONY_GAP,
+  /** Bond threads: even a strain leaves a trace (attention is attention). */
+  bondWarm: 1,
+  bondStrained: 0.25,
+} as const;
+
+/**
  * "While you were away" recap (STORY.md §2 — the magic beat). Thresholds for turning a
  * before/after gap into a few factual highlights the device reveals on return. The
  * creature's *voice* still comes from the AI; the engine only says what changed.
