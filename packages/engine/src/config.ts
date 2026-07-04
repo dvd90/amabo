@@ -214,6 +214,22 @@ export const GATHER = {
 } as const;
 
 /**
+ * The Little World (STORY.md §8¾) — daypaths. After a long-enough absence the glass
+ * deals the creature a few EQUAL ways it might have spent the stretch; the soul (the
+ * AI, at the API layer) picks one, and the engine records it as pure flavor. The
+ * dealer's law lives in daypath.ts: every option is legal, identical in weight, and
+ * carries zero stat/disposition deltas.
+ */
+export const DAYPATH = {
+  /** Only an absence at least this long earns a dealt day (4 hours). */
+  minAbsenceMs: 4 * MS_PER_HOUR,
+  /** How many equal options the glass deals. */
+  options: 3,
+  /** Worth remembering, never a milestone. */
+  salience: 2,
+} as const;
+
+/**
  * "While you were away" recap (STORY.md §2 — the magic beat). Thresholds for turning a
  * before/after gap into a few factual highlights the device reveals on return. The
  * creature's *voice* still comes from the AI; the engine only says what changed.

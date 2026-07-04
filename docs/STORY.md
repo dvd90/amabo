@@ -317,6 +317,44 @@ New Motes condense from love that had nowhere to land. Touchstones for that imag
 
 ---
 
+## 8½. The Soulmark — no two Motes alike
+
+Every condensed Mote carries a **soulmark**: a small, fixed inner signature — an
+*essence* ("I am…"), a *temperament*, one to three *loves*, one or two *fears*, and a
+*quirk*. It is struck at condensation and never rewritten; the creature does not
+restate it, it **lives** it, and every journal is written through it.
+
+The soulmark is **flavor, never fate**: it colors how a life is told, never what
+happens in it. Mechanics (decay, illness, disposition, Lethe) neither read it nor
+bend to it.
+
+---
+
+## 8¾. The Little World — the days it chooses
+
+A creature is not furniture between your visits. While the glass is dark, small
+things remain its own to decide — and this is the one place the world grants it
+real, if tiny, agency:
+
+- **Daypaths.** When a Light has been away a long while, the glass offers the
+  creature a few *equal* ways it might have spent that stretch — kept the warm
+  corner, watched the rain on the glass, built a small thing; a soured Yim is
+  offered its own kind of hours (counting them, keeping the stopped clock). The
+  creature — its soul, speaking through the soulmark — **chooses one**, and the day
+  it chose becomes part of its story, remembered and narrated like any other moment.
+- **Manner.** At any moment the creature carries a *manner*: its **haunt** (the spot
+  in the Amarium it currently keeps), a small **ritual** it repeats, an **obsession**
+  it is quietly fixated on, and a **gait**. The manner drifts as days pass; no two
+  creatures move through the glass the same way.
+
+The law that makes this safe is the dealer's law: **the glass deals the cards; the
+soul only picks one.** Every offered daypath is legal and mechanically identical —
+choosing can never touch ambra, illness, souring, or death. A soul that answers
+nonsense (or nothing) gets the first-dealt path; the world never waits on it, and it
+can never deal itself a better hand. Agency here is *expressive*, not economic.
+
+---
+
 ## 9. The Narration Voice Guide  ← the AI layer reads this directly
 
 `packages/ai` must write journals and reactions in these registers. The engine
@@ -380,6 +418,9 @@ richer model (Sonnet); routine days get the cheap one (Haiku). See `ARCHITECTURE
 | More than one Light | visits: another user looks in (read-mostly), warming the creature |
 | A duet, never a duel | resonance meetings — pure `engine.resonate`, no combat |
 | Love is not for sale | Ambra is always off-chain and free; no buy-Ambra, no pay-to-revive |
+| No two Motes alike | the soulmark: a fixed persona struck at condensation, woven into every journal |
+| The glass deals, the soul picks | daypaths: engine deals equal options, the AI chooses in character, engine validates |
+| No two creatures keep the glass alike | the manner: haunt + ritual + obsession + gait, AI-directed, presentation-only |
 
 ---
 

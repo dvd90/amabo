@@ -21,3 +21,4 @@ export * from './gather.js';
 export * from './advance.js';
 export * from './gap.js';
 export * from './needs.js';
+export * from './daypath.js';

@@ -8,6 +8,7 @@ import type { SimEvent } from '@amabo/engine';
 import {
   DEFAULT_ENTITLEMENTS,
   type EntitlementsT,
+  type MannerT,
   type PersonaT,
   type UserPreferencesT,
 } from '@amabo/shared';
@@ -69,6 +70,7 @@ export class InMemoryRepository implements Repository {
       archivedAt: null,
       lastSeenAt: null,
       persona: null,
+      manner: null,
       createdAt: Date.now(),
     };
     this.creatures.set(rec.id, rec);
@@ -417,6 +419,11 @@ export class InMemoryRepository implements Repository {
     if (this.stripeSeen.has(id)) return false;
     this.stripeSeen.add(id);
     return true;
+  }
+
+  async setManner(id: string, manner: MannerT): Promise<void> {
+    const rec = this.creatures.get(id);
+    if (rec) rec.manner = structuredClone(manner);
   }
 
   async setPersona(id: string, persona: PersonaT): Promise<void> {

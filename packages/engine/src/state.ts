@@ -78,7 +78,9 @@ export type SimEventKind =
   | 'lightWentOut'
   // M9.5 — sharing
   | 'resonance'
-  | 'visit';
+  | 'visit'
+  // M-J — the Little World: the day it chose while the glass was dark (STORY.md §8¾)
+  | 'daypath';
 
 export interface SimEvent {
   at: number;
