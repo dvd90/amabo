@@ -5,11 +5,15 @@
  * or cross-owner creature returns 404 (never 403 — don't leak existence).
  */
 
-import { MAX_MEMORIES } from '@amabo/ai';
+import { MAX_MEMORIES, localDirection, type DirectInput, type Direction } from '@amabo/ai';
 import {
+  applyDaypath,
   canMultiply,
   condenseMote,
+  dealDaypaths,
+  deriveSeed,
   interact,
+  mulberry32,
   multiply,
   needs,
   summarizeGap,
@@ -20,6 +24,7 @@ import {
   CreateCreatureRequest,
   CreatureView,
   InteractRequest,
+  Manner,
   type CreatureViewT,
   SLOTS,
   type PersonaT,
@@ -60,6 +65,12 @@ export interface CreatureDeps {
     seed: number;
     ownerId: string | null;
   }) => Promise<PersonaT>;
+  /**
+   * The Little World director (STORY.md §8¾): picks one of the ENGINE-DEALT daypaths
+   * and sets the manner — seeded by default, maybe LLM-voiced. Never trusted: the
+   * pick is validated by the engine, the manner by zod, right here at the boundary.
+   */
+  direct?: (input: DirectInput & { ownerId: string | null }) => Promise<Direction>;
 }
 
 function toView(rec: CreatureRecord): CreatureViewT {
@@ -71,6 +82,7 @@ function toView(rec: CreatureRecord): CreatureViewT {
     archivedAt: rec.archivedAt,
     lastSeenAt: rec.lastSeenAt,
     persona: rec.persona,
+    manner: rec.manner,
     createdAt: rec.createdAt,
   });
 }
@@ -82,6 +94,7 @@ const asyncHandler =
 
 export function creaturesRouter(deps: CreatureDeps): Router {
   const { repo, clock, seed, narrator, getOwner, condenseSoul } = deps;
+  const direct = deps.direct ?? (async (input) => localDirection(input));
   const router = Router();
   const createLimiter = rateLimit({
     windowMs: CREATE_WINDOW_MS,
@@ -205,6 +218,40 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       ]);
       const elapsedMs = prevSeen == null ? 0 : now - prevSeen;
       const away = summarizeGap(before, record.state, events, elapsedMs);
+
+      // The Little World (STORY.md §8¾): a long-enough absence deals the creature a
+      // small hand of EQUAL days; the soul picks one; the engine records pure flavor.
+      // The dealer's law twice over: the engine collapses an off-hand pick, and an
+      // invalid manner is refused right here — an untrusted director bends nothing.
+      if (record.graduatedAt === null) {
+        const dealt = dealDaypaths(
+          record.state,
+          elapsedMs,
+          mulberry32(deriveSeed(record.state.seed, now)),
+        );
+        if (dealt.length > 0) {
+          const direction = await direct({
+            id: record.id,
+            name: record.name,
+            seed: record.state.seed,
+            stage: record.state.stage,
+            disposition: record.state.disposition,
+            uncanny: record.state.uncanny,
+            persona: record.persona,
+            options: dealt,
+            ownerId: getOwner(req),
+          });
+          const chosenDay = applyDaypath(dealt, direction.choiceId, now);
+          events.push(chosenDay);
+          await repo.appendEvents(record.id, [chosenDay], 'sim');
+          const manner = Manner.safeParse(direction.manner);
+          if (manner.success) {
+            record.manner = manner.data;
+            await repo.setManner(record.id, manner.data);
+          }
+        }
+      }
+
       const mode = events.some((e) => e.salience >= 4) ? 'milestone' : 'peek';
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
       const memories = await repo.topMemories(record.id, MAX_MEMORIES);

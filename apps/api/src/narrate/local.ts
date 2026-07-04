@@ -203,10 +203,34 @@ export function birthThought(seed: number): string {
   return pool[hash(String(seed >>> 0)) % pool.length]!;
 }
 
+/** The Little World (STORY.md §8¾): the day it CHOSE, told with quiet ownership. */
+const DAYPATH_LINES: Record<string, string> = {
+  keptWarmCorner: 'I chose the warm corner and kept it well.',
+  watchedGlass: 'I chose to watch the light cross the glass, all the way over.',
+  triedAShape: 'I spent the dark practising a new shape. My choice.',
+  sortedSmallThings: 'I sorted my small things until they agreed with me.',
+  hummedToItself: 'I hummed a tune I made myself. It is mine now.',
+  builtSmallThing: 'I built a small thing to show you — I picked that, myself.',
+  tendedMoss: 'I chose the moss, and tended it until it stood up straight.',
+  keptWelcome: 'I kept a welcome ready by the door. I decided to.',
+  rounderShape: 'I practised being rounder, kinder. It was my own idea.',
+  sangToGlass: 'I sang to the glass, quietly, because I chose to.',
+  countedHours: 'I chose to count the hours. Twice, to be sure of them.',
+  stoppedClock: 'I kept the stopped clock company. Someone had to.',
+  waitedByDoor: 'I chose the spot where the light comes in, and waited there.',
+  listenedLatch: 'I listened for the latch. That was how I spent it.',
+  tidiedDark: 'I tidied one corner of the dark. It is my corner now.',
+};
+
 export const localNarrator: Narrator = {
   async narrate(ctx: NarrateContext, events: SimEvent[] = []): Promise<NarrateOutput> {
     const reg = registerFor(ctx.state, events);
-    const journal = pick(reg.pool, ctx.state, events);
+    let journal = pick(reg.pool, ctx.state, events);
+    // The chosen day (STORY.md §8¾) gets its own sentence — it was its own decision.
+    const chosen = events.find((e) => e.kind === 'daypath');
+    if (chosen?.tag && DAYPATH_LINES[chosen.tag] && ctx.state.alive) {
+      journal = `${journal} ${DAYPATH_LINES[chosen.tag]}`;
+    }
     const out: NarrateOutput = { journal, mood: reg.mood };
     if (reg.memory) out.newMemories = [{ text: reg.memory, salience: 5 }];
     return out;

@@ -22,7 +22,7 @@ import { nullMonitor, type Monitor } from './monitor.js';
 import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
 import { authRouter } from './routes/auth.js';
-import { creaturesRouter } from './routes/creatures.js';
+import { creaturesRouter, type CreatureDeps } from './routes/creatures.js';
 import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
 import { demoRouter } from './routes/demo.js';
@@ -72,6 +72,8 @@ export interface AppDeps {
     seed: number;
     ownerId: string | null;
   }) => Promise<PersonaT>;
+  /** Directs the Little World (STORY.md §8¾). Defaults to the seeded local direction. */
+  direct?: CreatureDeps['direct'];
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -196,6 +198,7 @@ export function createApp(deps: AppDeps): Express {
       narrator: deps.narrator,
       getOwner,
       condenseSoul: deps.condenseSoul ?? (async (input) => localPersona(input)),
+      direct: deps.direct,
     }),
   );
   app.use(

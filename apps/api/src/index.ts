@@ -6,12 +6,15 @@
  */
 
 import {
+  directLife,
   generatePersona,
+  localDirection,
   localPersona,
   makeAnthropicClient,
   makeGrokClient,
   makeOpenAiCompatClient,
   type AnthropicLike,
+  type DirectInput,
 } from '@amabo/ai';
 import { existsSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
@@ -311,12 +314,54 @@ if (process.env.NODE_ENV !== 'test') {
     return out.persona;
   };
 
+  // The Little World director (STORY.md §8¾): LLM-voiced when a provider is awake,
+  // sharing the narration breaker so a dealt day can never bust the budget; model
+  // calls land in the same cost ledger (mode 'world'). Seeded local otherwise.
+  const worldLog = logger.child('world');
+  const dailyCap = Number(process.env.NARRATION_DAILY_CAP ?? 2000);
+  const direct = async (input: DirectInput & { ownerId: string | null }) => {
+    if (!llm) return localDirection(input);
+    try {
+      const since = systemClock() - 24 * 60 * 60 * 1000;
+      if ((await repo.countTelemetry('narration', { since })) >= dailyCap) {
+        return localDirection(input);
+      }
+      const out = await directLife(input, llm.client);
+      if (out.source === 'local') {
+        worldLog.warn('model direction fell back to the seeded way', {
+          provider: llm.provider,
+          creature: input.name,
+        });
+      } else {
+        await repo.addTelemetry([
+          {
+            name: 'narration',
+            anonId: null,
+            userId: input.ownerId,
+            at: systemClock(),
+            props: {
+              mode: 'world',
+              provider: llm.provider,
+              inputTokens: out.usage?.inputTokens ?? null,
+              outputTokens: out.usage?.outputTokens ?? null,
+            },
+          },
+        ]);
+      }
+      return out;
+    } catch (err) {
+      worldLog.error('the director failed — the seeded way stands in', { err });
+      return localDirection(input);
+    }
+  };
+
   const app = createApp({
     repo,
     clock: systemClock,
     seed: randomSeed,
     narrator: buildNarrator(llm, repo, monitor, logger),
     condenseSoul,
+    direct,
     billing,
     symposiumNarrator: buildSymposiumNarrator(llm, logger),
     authProvider: buildAuthProvider(boot),

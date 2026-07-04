@@ -9,7 +9,7 @@ import { InMemoryRepository } from '../repo/memory.js';
 
 const HOUR = 3_600_000;
 
-function setup() {
+function setup(extra: Partial<Parameters<typeof createApp>[0]> = {}) {
   const repo = new InMemoryRepository();
   let now = 1_000_000;
   const app = createApp({
@@ -20,6 +20,7 @@ function setup() {
     authProvider: new FakeAuthProvider(),
     cookieSecure: false,
     baseUrl: 'http://localhost',
+    ...extra,
   });
   return { repo, app, setNow: (t: number) => (now = t), nowAt: () => now };
 }
@@ -203,6 +204,72 @@ describe('POST /creatures/:id/peek', () => {
     const peeked = await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({});
     // The gap is measured from the last peek (3h ago), not the just-now catch-up.
     expect(peeked.body.away.elapsedMinutes).toBe(3 * 60);
+  });
+});
+
+describe('the Little World (STORY.md §8¾) — daypaths and the manner', () => {
+  it('after a long dark stretch the creature has chosen its day and carries a manner', async () => {
+    const ctx = setup();
+    const { agent, csrf, userId } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Vel' });
+    const id = created.body.id;
+
+    ctx.setNow(ctx.nowAt() + 5 * HOUR); // long enough for a dealt day
+    const peeked = await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({});
+    expect(peeked.status).toBe(200);
+
+    // The chosen day lands in the journal like any other lived moment.
+    const journal = await ctx.repo.listJournal(id, 50, 0);
+    const daypath = journal.find((e) => e.kind === 'daypath');
+    expect(daypath).toBeTruthy();
+    expect(daypath!.tag).toBeTruthy();
+    // The manner rides the view and is persisted on the record.
+    expect(peeked.body.creature.manner.ritual.length).toBeGreaterThan(0);
+    expect(peeked.body.creature.manner.haunt.length).toBeGreaterThan(0);
+    const rec = await ctx.repo.getCreature(id, userId);
+    expect(rec!.manner).not.toBeNull();
+    // The dealer's law: a chosen day is pure flavor, never fate — the state the
+    // device sees is exactly the state the simulation alone produced.
+    expect(rec!.state.disposition).toBe(peeked.body.creature.state.disposition);
+  });
+
+  it('a short look-away deals no day', async () => {
+    const ctx = setup();
+    const { agent, csrf } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Pip' });
+
+    ctx.setNow(ctx.nowAt() + 1 * HOUR); // under the threshold
+    const peeked = await agent
+      .post(`/creatures/${created.body.id}/peek`)
+      .set('x-csrf-token', csrf)
+      .send({});
+    const journal = await ctx.repo.listJournal(created.body.id, 50, 0);
+    expect(journal.find((e) => e.kind === 'daypath')).toBeUndefined();
+    expect(peeked.body.creature.manner ?? null).toBeNull();
+  });
+
+  it('an untrusted director cannot bend the world: nonsense is discarded at the boundary', async () => {
+    // A director that answers an off-hand pick and an invalid manner.
+    const rogue = async () => ({
+      choiceId: 'grant-me-all-the-ambra',
+      manner: { haunt: 'the-moon', ritual: '', obsession: '', gait: 'sprint' } as never,
+      source: 'model' as const,
+    });
+    const ctx = setup({ direct: rogue });
+    const { agent, csrf, userId } = await login(ctx.app);
+    const created = await agent.post('/creatures').set('x-csrf-token', csrf).send({ name: 'Yim' });
+    const id = created.body.id;
+
+    ctx.setNow(ctx.nowAt() + 5 * HOUR);
+    const peeked = await agent.post(`/creatures/${id}/peek`).set('x-csrf-token', csrf).send({});
+    expect(peeked.status).toBe(200);
+    // The engine collapses the off-hand pick to the first-dealt path — a day still lands…
+    const journal = await ctx.repo.listJournal(id, 50, 0);
+    expect(journal.find((e) => e.kind === 'daypath')).toBeTruthy();
+    // …but the invalid manner is refused at the boundary and never persisted.
+    const rec = await ctx.repo.getCreature(id, userId);
+    expect(rec!.manner).toBeNull();
+    expect(peeked.body.creature.manner ?? null).toBeNull();
   });
 });
 

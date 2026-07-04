@@ -48,6 +48,9 @@ export const creatures = pgTable(
     // The Soulmark (STORY.md §8½): who it is, set once at condensation. Flavor, never
     // fate — narration honors it; the engine never reads it.
     persona: jsonb('persona'),
+    // The Manner (STORY.md §8¾): its current bearing (haunt/ritual/obsession/gait).
+    // AI-directed, presentation-only; the engine never reads it.
+    manner: jsonb('manner'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [index('creatures_owner_idx').on(t.ownerId)],

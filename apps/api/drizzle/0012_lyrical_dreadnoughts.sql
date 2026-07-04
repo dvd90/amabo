@@ -1,0 +1,1 @@
+ALTER TABLE "creatures" ADD COLUMN "manner" jsonb;

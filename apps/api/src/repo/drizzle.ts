@@ -8,6 +8,7 @@ import type { CreatureState, SimEvent } from '@amabo/engine';
 import {
   DEFAULT_ENTITLEMENTS,
   type EntitlementsT,
+  type MannerT,
   type PersonaT,
   type UserPreferencesT,
 } from '@amabo/shared';
@@ -81,6 +82,7 @@ function rowToRecord(row: Row): CreatureRecord {
     archivedAt: row.archivedAt,
     lastSeenAt: row.lastSeenAt,
     persona: (row.persona as PersonaT | null) ?? null,
+    manner: (row.manner as MannerT | null) ?? null,
     createdAt: row.createdAt.getTime(),
   };
 }
@@ -611,6 +613,10 @@ export class DrizzleRepository implements Repository {
 
   async setPersona(id: string, persona: PersonaT): Promise<void> {
     await this.db.update(creatures).set({ persona }).where(eq(creatures.id, id));
+  }
+
+  async setManner(id: string, manner: MannerT): Promise<void> {
+    await this.db.update(creatures).set({ manner }).where(eq(creatures.id, id));
   }
 
   async setAgeBand(userId: string, band: string): Promise<void> {

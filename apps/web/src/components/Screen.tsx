@@ -127,6 +127,16 @@ export function Screen() {
               <p className="soulmark-line">{creature.persona.quirk}</p>
             </div>
           ) : null}
+          {creature.manner ? (
+            <div className="manner">
+              <p className="soulmark-line">
+                these days: keeps the {creature.manner.haunt.replace('-', ' ')} ·{' '}
+                {creature.manner.gait}
+              </p>
+              <p className="soulmark-line">{creature.manner.ritual}</p>
+              <p className="soulmark-line">fixed on {creature.manner.obsession}</p>
+            </div>
+          ) : null}
         </div>
       );
     case 'feed':

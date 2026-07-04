@@ -121,6 +121,24 @@ export const Persona = z.object({
 });
 export type PersonaT = z.infer<typeof Persona>;
 
+/** Where in the Amarium a creature currently keeps (STORY.md §8¾). */
+export const HAUNTS = ['glass', 'warm-corner', 'moss', 'shelf', 'pool', 'door'] as const;
+/** How it currently moves through the glass. */
+export const GAITS = ['drift', 'patter', 'bounce', 'still', 'waltz'] as const;
+
+/**
+ * The Manner (STORY.md §8¾): the creature's current bearing in its little world —
+ * its haunt, a small ritual, an obsession, a gait. AI-directed, presentation-only:
+ * the device performs it; mechanics never read it. Validated at every boundary.
+ */
+export const Manner = z.object({
+  haunt: z.enum(HAUNTS),
+  ritual: z.string().min(1).max(80),
+  obsession: z.string().min(1).max(60),
+  gait: z.enum(GAITS),
+});
+export type MannerT = z.infer<typeof Manner>;
+
 // ── API response views ─────────────────────────────────────────────────────────
 export const CreatureView = z.object({
   id: z.string(),
@@ -134,6 +152,8 @@ export const CreatureView = z.object({
   lastSeenAt: z.number().nullable(),
   /** The Soulmark (STORY.md §8½) — who it is. Optional so older records stay valid. */
   persona: Persona.nullable().optional(),
+  /** The Manner (STORY.md §8¾) — how it currently keeps its little world. */
+  manner: Manner.nullable().optional(),
 });
 
 export type CreatureViewT = z.infer<typeof CreatureView>;

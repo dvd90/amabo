@@ -8,7 +8,7 @@
  */
 
 import type { CreatureState, GatherResult, SimEvent, Star } from '@amabo/engine';
-import type { EntitlementsT, PersonaT, UserPreferencesT } from '@amabo/shared';
+import type { EntitlementsT, MannerT, PersonaT, UserPreferencesT } from '@amabo/shared';
 
 export interface CreatureRecord {
   id: string;
@@ -22,6 +22,8 @@ export interface CreatureRecord {
   lastSeenAt: number | null;
   /** The Soulmark (STORY.md §8½) — set once at condensation; null on older records. */
   persona: PersonaT | null;
+  /** The Manner (STORY.md §8¾) — its current bearing; drifts with each dealt day. */
+  manner: MannerT | null;
   createdAt: number;
 }
 
@@ -234,6 +236,8 @@ export interface Repository {
 
   /** Set the Soulmark once, right after condensation (STORY.md §8½). */
   setPersona(id: string, persona: PersonaT): Promise<void>;
+  /** The Manner (STORY.md §8¾): presentation-only; overwritten as days are chosen. */
+  setManner(id: string, manner: MannerT): Promise<void>;
 
   // Lawful (L2)
   /** Record the Light's stated age band ('13-17' | '18+') — the gate reads it. */

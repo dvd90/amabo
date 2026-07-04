@@ -3993,3 +3993,10 @@ main,
   opacity: 0.75;
   line-height: 1.5;
 }
+
+/* ── The Manner (STORY.md §8¾): how it currently keeps its little world ─────────── */
+.manner {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dotted hsl(var(--amber) / 0.2);
+}
