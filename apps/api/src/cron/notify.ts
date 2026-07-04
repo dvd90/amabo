@@ -15,6 +15,7 @@ import { buildLlmClient } from '../llm.js';
 import { envLogger } from '../logger.js';
 import {
   decideNotification,
+  normalizeVapidSubject,
   type NotifyCandidate,
   type SocialCandidate,
 } from '../notify/decide.js';
@@ -30,7 +31,10 @@ async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   const pub = process.env.VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT ?? process.env.MAIL_FROM ?? 'mailto:amabo@example.com';
+  const subject = normalizeVapidSubject(
+    process.env.VAPID_SUBJECT ?? process.env.MAIL_FROM,
+    'mailto:amabo@example.com',
+  );
   if (!databaseUrl || !pub || !priv) {
     log.error('missing DATABASE_URL or VAPID keys — nothing to do');
     return;
