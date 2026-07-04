@@ -151,10 +151,12 @@ while you were away").
    set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (+ optional
    `VAPID_SUBJECT=mailto:you@example.com`) so devices can subscribe.
 2. Railway → your project → **Create → GitHub Repo** → `dvd90/amabo` again. In the
-   new service's **Settings** set just TWO fields — everything else (build, start
-   command, schedule) is read from the repo's config file:
-   - **Source → Root Directory**: `apps/api`
-   - **Config-as-code / Config Path**: `apps/api/railway.cron.json`
+   new service's **Settings**:
+   - **Source → Root Directory**: leave **EMPTY** (the repo root — that's where
+     pnpm is declared, and the config uses full paths)
+   - **Config-as-code / Config Path**: `railway.cron.json`
+   - leave Custom Build/Start Commands and the UI Cron Schedule **empty** — UI
+     values silently override the file.
 
    Then in its **Variables**: `DATABASE_URL` (reference the Postgres), the three
    VAPID vars, and your LLM key (`LLAMA_API_KEY`) so cron-written pages are
