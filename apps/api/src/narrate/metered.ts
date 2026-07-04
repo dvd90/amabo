@@ -27,6 +27,8 @@ export interface MeterDeps {
   allowanceFor: (userId: string) => Promise<number>;
   /** Model calls per rolling day across ALL Lights — the no-surprise-bill breaker. */
   globalCallsPerDay: number;
+  /** Which LLM is behind the port (grok | anthropic) — stamped into the ledger. */
+  provider?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -68,6 +70,7 @@ export function meteredNarrator(model: Narrator, fallback: Narrator, deps: Meter
             at: now,
             props: {
               mode,
+              provider: deps.provider ?? null,
               inputTokens: out.usage?.inputTokens ?? null,
               outputTokens: out.usage?.outputTokens ?? null,
             },

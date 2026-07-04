@@ -56,13 +56,14 @@ GROUP BY 1 ORDER BY 1 DESC;
 -- Attach: share of active users whose peeks were model-narrated that day.
 SELECT
   to_timestamp(at / 1000)::date AS day,
+  props->>'provider'                                        AS provider,
   count(DISTINCT user_id)                                   AS narrated_users,
   count(*)                                                  AS model_calls,
   sum((props->>'inputTokens')::bigint)                      AS input_tokens,
   sum((props->>'outputTokens')::bigint)                     AS output_tokens
 FROM telemetry
 WHERE name = 'narration'
-GROUP BY 1 ORDER BY 1 DESC;
+GROUP BY 1, 2 ORDER BY 1 DESC;
 
 -- ── Client errors (should trend to zero; details live in Sentry) ───────────────────
 SELECT to_timestamp(at / 1000)::date AS day, count(*) AS client_errors

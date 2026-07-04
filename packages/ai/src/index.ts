@@ -13,3 +13,4 @@ export * from './voice.js';
 export * from './narrate.js';
 export * from './symposium.js';
 export * from './client.js';
+export * from './grok.js';

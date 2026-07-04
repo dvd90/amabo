@@ -101,9 +101,10 @@ export function PrivacyPage() {
       </ul>
       <h2>The AI</h2>
       <p>
-        Your creature’s diary is written with the help of an AI model (Anthropic’s Claude). What we
-        send it: the creature’s name, its state, and its short memories. What we never send it: your
-        email or anything about your identity.
+        Your creature’s diary is written with the help of a large language model — currently xAI’s
+        Grok or Anthropic’s Claude, depending on our configuration. What we send it: the creature’s
+        name, its state, and its short memories. What we never send it: your email or anything about
+        your identity.
       </p>
       <h2>Cookies</h2>
       <p>

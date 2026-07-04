@@ -5,7 +5,7 @@
  * secrets are absent (local dev only). The AI narrator lands in M6.
  */
 
-import { makeAnthropicClient } from '@amabo/ai';
+import { makeAnthropicClient, makeGrokClient, type AnthropicLike } from '@amabo/ai';
 import { existsSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
@@ -35,19 +35,51 @@ function webDistDir(): string | undefined {
   return existsSync(guess) ? guess : undefined;
 }
 
-function buildNarrator(repo: Repository, monitor: Monitor): Narrator {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) {
-    console.warn('[amabo] ANTHROPIC_API_KEY not set — using local templated narrator');
+/**
+ * Which LLM speaks for the creatures (multi-LLM): Grok (xAI) when XAI_API_KEY is set
+ * — the cheap starting provider — else Claude when ANTHROPIC_API_KEY is set, else
+ * null (the local templated voice). NARRATOR_PROVIDER=anthropic|grok breaks a tie
+ * when both keys are present. One client serves narration AND the Symposium, and
+ * everything downstream (metering, ledger, fallbacks) is provider-agnostic.
+ */
+function buildLlmClient(): { client: AnthropicLike; provider: 'grok' | 'anthropic' } | null {
+  const xai = process.env.XAI_API_KEY;
+  const anthropic = process.env.ANTHROPIC_API_KEY;
+  const pick = process.env.NARRATOR_PROVIDER;
+  if (xai && pick !== 'anthropic') {
+    return {
+      provider: 'grok',
+      client: makeGrokClient({
+        apiKey: xai,
+        // Cheapest xAI text tier for routine peeks; a step up for milestones.
+        // Verify current ids/pricing at https://docs.x.ai — override via env.
+        peekModel: process.env.XAI_MODEL_PEEK ?? 'grok-4-1-fast-non-reasoning',
+        milestoneModel: process.env.XAI_MODEL_MILESTONE ?? 'grok-4-1-fast-reasoning',
+      }),
+    };
+  }
+  if (anthropic) return { provider: 'anthropic', client: makeAnthropicClient(anthropic) };
+  return null;
+}
+
+function buildNarrator(
+  llm: ReturnType<typeof buildLlmClient>,
+  repo: Repository,
+  monitor: Monitor,
+): Narrator {
+  if (!llm) {
+    console.warn('[amabo] no XAI_API_KEY or ANTHROPIC_API_KEY — using local templated narrator');
     return localNarrator;
   }
+  console.log(`[amabo] narration provider: ${llm.provider}`);
   // The soul, with a sensible bill (L3): allowance + breaker + ledger around the model.
   const free = Number(process.env.NARRATION_USER_ALLOWANCE ?? 10);
   const lantern = Number(process.env.NARRATION_LANTERN_ALLOWANCE ?? 100);
-  return meteredNarrator(aiNarrator(makeAnthropicClient(key)), localNarrator, {
+  return meteredNarrator(aiNarrator(llm.client), localNarrator, {
     repo,
     clock: systemClock,
     monitor,
+    provider: llm.provider,
     // The Keeper's Lantern buys a wider voice (L5); the gate reads the tier only.
     allowanceFor: async (userId) => {
       const user = await repo.getUserById(userId);
@@ -57,10 +89,9 @@ function buildNarrator(repo: Repository, monitor: Monitor): Narrator {
   });
 }
 
-/** The Symposium voice: AI when a key is set (with a local fallback), else local. */
-function buildSymposiumNarrator(): SymposiumNarrator {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (key) return aiSymposiumNarrator(makeAnthropicClient(key), localSymposiumNarrator);
+/** The Symposium voice: the same LLM client (with a local fallback), else local. */
+function buildSymposiumNarrator(llm: ReturnType<typeof buildLlmClient>): SymposiumNarrator {
+  if (llm) return aiSymposiumNarrator(llm.client, localSymposiumNarrator);
   return localSymposiumNarrator;
 }
 
@@ -139,6 +170,7 @@ if (process.env.NODE_ENV !== 'test') {
   const { mailer, real: realMailer } = buildMailer();
 
   const repo = buildRepo();
+  const llm = buildLlmClient();
   const monitor = process.env.SENTRY_DSN
     ? sentryMonitor(
         process.env.SENTRY_DSN,
@@ -163,9 +195,9 @@ if (process.env.NODE_ENV !== 'test') {
     repo,
     clock: systemClock,
     seed: randomSeed,
-    narrator: buildNarrator(repo, monitor),
+    narrator: buildNarrator(llm, repo, monitor),
     billing,
-    symposiumNarrator: buildSymposiumNarrator(),
+    symposiumNarrator: buildSymposiumNarrator(llm),
     authProvider: buildAuthProvider(),
     mailer,
     magicSecret: magicSecret(),
