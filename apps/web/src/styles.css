@@ -3994,6 +3994,20 @@ main,
   line-height: 1.5;
 }
 
+/* ── The Chronicle (STORY.md §8⅞): the shelf's book on the dashboard ────────────── */
+.chronicle-strained {
+  border-left: 2px solid hsl(var(--amber) / 0.35);
+  opacity: 0.92;
+}
+.chronicle-standings-title {
+  margin-top: 0.9rem;
+}
+.chronicle-standing {
+  margin: 0.3rem 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
 /* ── The Manner (STORY.md §8¾): how it currently keeps its little world ─────────── */
 .manner {
   margin-top: 0.4rem;

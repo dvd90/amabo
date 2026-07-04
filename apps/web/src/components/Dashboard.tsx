@@ -12,7 +12,7 @@ import { Farewell } from './Farewell.js';
 import { Introduce } from './Introduce.js';
 import { Settings } from './Settings.js';
 import { useGame } from '../store/useGame.js';
-import type { LetterView, NeedFlag, RosterItem } from '../api/client.js';
+import type { ChronicleView, LetterView, NeedFlag, RosterItem } from '../api/client.js';
 import { enableNotifications, type EnableResult } from '../push.js';
 
 const NOTIFY_NOTE: Record<EnableResult, string> = {
@@ -106,6 +106,7 @@ export function Dashboard() {
   const [introOpen, setIntroOpen] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [letters, setLetters] = useState<LetterView[] | null>(null);
+  const [chronicle, setChronicle] = useState<ChronicleView | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [farewell, setFarewell] = useState<RosterItem | null>(null);
 
@@ -152,6 +153,11 @@ export function Dashboard() {
           {active.length >= 2 ? (
             <button className="linkish" onClick={() => void client.letters().then(setLetters)}>
               ✉ Letters
+            </button>
+          ) : null}
+          {active.length >= 2 ? (
+            <button className="linkish" onClick={() => void client.chronicle().then(setChronicle)}>
+              📖 The Chronicle
             </button>
           ) : null}
           <button
@@ -276,6 +282,48 @@ export function Dashboard() {
       {introOpen ? <Introduce onClose={() => setIntroOpen(false)} onDone={setNote} /> : null}
       {farewell ? <Farewell creature={farewell} onClose={() => setFarewell(null)} /> : null}
       {settingsOpen ? <Settings onClose={() => setSettingsOpen(false)} /> : null}
+
+      {chronicle ? (
+        <div className="letters-modal" role="dialog" aria-label="The Chronicle of your shelf">
+          <div className="letters-sheet">
+            <button className="codex-close" onClick={() => setChronicle(null)} aria-label="Close">
+              ✕
+            </button>
+            <p className="codex-kicker">The Chronicle — what the shelf remembers</p>
+            {chronicle.entries.length === 0 ? (
+              <p className="letters-empty">
+                No pages yet. Leave two or more lights together a while — the glass will bring them
+                together, and the shelf will write it down.
+              </p>
+            ) : (
+              chronicle.entries.map((e, i) => (
+                <blockquote
+                  className={`letters-item chronicle-entry chronicle-${e.valence}`}
+                  key={`${e.at}-${i}`}
+                >
+                  <span className="letters-meta">
+                    {e.aName} · {e.bName} {e.valence === 'strained' ? '· a small friction' : ''}
+                  </span>
+                  {e.text}
+                </blockquote>
+              ))
+            )}
+            {chronicle.standings.length > 0 ? (
+              <>
+                <p className="codex-kicker chronicle-standings-title">How things stand</p>
+                {chronicle.standings.map((st, i) => (
+                  <p className="chronicle-standing" key={`${st.updatedAt}-${i}`}>
+                    <span className="letters-meta">
+                      {st.aName} &amp; {st.bName}
+                    </span>{' '}
+                    {st.line}
+                  </p>
+                ))}
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {letters ? (
         <div className="letters-modal" role="dialog" aria-label="Letters between your creatures">

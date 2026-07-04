@@ -22,6 +22,7 @@ import { nullMonitor, type Monitor } from './monitor.js';
 import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
 import { authRouter } from './routes/auth.js';
+import { chronicleRouter, type ChronicleDeps } from './routes/chronicle.js';
 import { creaturesRouter, type CreatureDeps } from './routes/creatures.js';
 import { pushRouter } from './routes/push.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
@@ -74,6 +75,8 @@ export interface AppDeps {
   }) => Promise<PersonaT>;
   /** Directs the Little World (STORY.md §8¾). Defaults to the seeded local direction. */
   direct?: CreatureDeps['direct'];
+  /** Writes the Chronicle (STORY.md §8⅞). Defaults to the seeded local book. */
+  chronicler?: ChronicleDeps['chronicler'];
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -94,6 +97,7 @@ const API_PREFIXES = [
   '/block',
   '/push',
   '/symposium',
+  '/chronicle',
 ];
 const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 
@@ -208,6 +212,14 @@ export function createApp(deps: AppDeps): Express {
       baseUrl: deps.baseUrl,
       webOrigin: deps.webOrigin,
       getOwner,
+    }),
+  );
+  app.use(
+    chronicleRouter({
+      repo: deps.repo,
+      clock: deps.clock,
+      getOwner,
+      chronicler: deps.chronicler,
     }),
   );
   app.use(pushRouter({ repo: deps.repo, getOwner }));

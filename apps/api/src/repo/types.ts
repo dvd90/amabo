@@ -69,6 +69,30 @@ export interface UserRecord {
   createdAt: number;
 }
 
+/** One line of the shelf's book (STORY.md §8⅞) — an encounter, voiced. */
+export interface ChronicleRecord {
+  id: string;
+  ownerId: string | null;
+  at: number;
+  aId: string;
+  bId: string;
+  valence: 'warm' | 'strained';
+  tag: string;
+  text: string;
+}
+
+/** How things stand between two creatures — one line, refreshed as they meet. */
+export interface StandingRecord {
+  id: string;
+  ownerId: string | null;
+  /** Unordered pair, stored a < b. */
+  a: string;
+  b: string;
+  valence: 'warm' | 'strained';
+  line: string;
+  updatedAt: number;
+}
+
 export interface SessionRecord {
   id: string;
   userId: string;
@@ -261,6 +285,25 @@ export interface Repository {
   getUserByStripeCustomer(customerId: string): Promise<UserRecord | null>;
   /** Turn the Keeper's Key (ops scripts and tests only — never exposed as a route). */
   setUnlocked(userId: string, unlocked: boolean): Promise<void>;
+
+  // The Chronicle (STORY.md §8⅞)
+  addChronicleEntries(rows: Omit<ChronicleRecord, 'id'>[]): Promise<void>;
+  /** The owner's book, most recent first. */
+  listChronicle(ownerId: string | null, limit: number): Promise<ChronicleRecord[]>;
+  /** When the book last gained a page (null if never) — the next roll starts here. */
+  lastChronicleAt(ownerId: string | null): Promise<number | null>;
+  /** Upsert the one-line standing for an unordered pair. */
+  upsertStanding(
+    ownerId: string | null,
+    a: string,
+    b: string,
+    valence: 'warm' | 'strained',
+    line: string,
+    at: number,
+  ): Promise<void>;
+  getStanding(ownerId: string | null, a: string, b: string): Promise<StandingRecord | null>;
+  /** All the owner's standings, most recently refreshed first. */
+  listStandings(ownerId: string | null, limit: number): Promise<StandingRecord[]>;
   /** True the FIRST time an event id is seen — webhook idempotency. */
   markStripeEventSeen(id: string, at: number): Promise<boolean>;
 

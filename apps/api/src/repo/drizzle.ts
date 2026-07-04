@@ -19,6 +19,7 @@ import {
   authIdentities,
   blocks,
   bonds,
+  chronicle,
   creatures,
   events as eventsTable,
   gatherings,
@@ -30,6 +31,7 @@ import {
   reports,
   sessions,
   shareLinks,
+  standings,
   stars,
   users,
   telemetry,
@@ -37,6 +39,7 @@ import {
 } from '../db/schema.js';
 import type {
   BondRecord,
+  ChronicleRecord,
   CreatureRecord,
   GatheringRecord,
   JournalEntry,
@@ -47,6 +50,7 @@ import type {
   RehomeRecord,
   Repository,
   SessionRecord,
+  StandingRecord,
   ShareKind,
   ShareLinkRecord,
   StarRecord,
@@ -623,6 +627,78 @@ export class DrizzleRepository implements Repository {
     await this.db.update(users).set({ unlocked }).where(eq(users.id, userId));
   }
 
+  async addChronicleEntries(rows: Omit<ChronicleRecord, 'id'>[]): Promise<void> {
+    if (rows.length === 0) return;
+    await this.db.insert(chronicle).values(rows);
+  }
+
+  async listChronicle(ownerId: string | null, limit: number): Promise<ChronicleRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(chronicle)
+      .where(ownerId === null ? isNull(chronicle.ownerId) : eq(chronicle.ownerId, ownerId))
+      .orderBy(desc(chronicle.at))
+      .limit(limit);
+    return rows.map((r) => ({ ...r, valence: r.valence as 'warm' | 'strained' }));
+  }
+
+  async lastChronicleAt(ownerId: string | null): Promise<number | null> {
+    const rows = await this.db
+      .select({ at: chronicle.at })
+      .from(chronicle)
+      .where(ownerId === null ? isNull(chronicle.ownerId) : eq(chronicle.ownerId, ownerId))
+      .orderBy(desc(chronicle.at))
+      .limit(1);
+    return rows[0]?.at ?? null;
+  }
+
+  async upsertStanding(
+    ownerId: string | null,
+    a: string,
+    b: string,
+    valence: 'warm' | 'strained',
+    line: string,
+    at: number,
+  ): Promise<void> {
+    const [lo, hi] = a < b ? [a, b] : [b, a];
+    const existing = await this.getStanding(ownerId, lo, hi);
+    if (existing) {
+      await this.db
+        .update(standings)
+        .set({ valence, line, updatedAt: at })
+        .where(eq(standings.id, existing.id));
+      return;
+    }
+    await this.db.insert(standings).values({ ownerId, a: lo, b: hi, valence, line, updatedAt: at });
+  }
+
+  async getStanding(ownerId: string | null, a: string, b: string): Promise<StandingRecord | null> {
+    const [lo, hi] = a < b ? [a, b] : [b, a];
+    const rows = await this.db
+      .select()
+      .from(standings)
+      .where(
+        and(
+          ownerId === null ? isNull(standings.ownerId) : eq(standings.ownerId, ownerId),
+          eq(standings.a, lo),
+          eq(standings.b, hi),
+        ),
+      )
+      .limit(1);
+    const r = rows[0];
+    return r ? { ...r, valence: r.valence as 'warm' | 'strained' } : null;
+  }
+
+  async listStandings(ownerId: string | null, limit: number): Promise<StandingRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(standings)
+      .where(ownerId === null ? isNull(standings.ownerId) : eq(standings.ownerId, ownerId))
+      .orderBy(desc(standings.updatedAt))
+      .limit(limit);
+    return rows.map((r) => ({ ...r, valence: r.valence as 'warm' | 'strained' }));
+  }
+
   async setAgeBand(userId: string, band: string): Promise<void> {
     await this.db.update(users).set({ ageBand: band }).where(eq(users.id, userId));
   }
@@ -633,6 +709,8 @@ export class DrizzleRepository implements Repository {
       await tx.delete(creatures).where(eq(creatures.ownerId, userId));
       await tx.delete(stars).where(eq(stars.ownerId, userId));
       await tx.delete(bonds).where(eq(bonds.ownerId, userId));
+      await tx.delete(chronicle).where(eq(chronicle.ownerId, userId));
+      await tx.delete(standings).where(eq(standings.ownerId, userId));
       await tx.delete(letters).where(eq(letters.ownerId, userId));
       await tx.delete(gatherings).where(eq(gatherings.ownerId, userId));
       await tx

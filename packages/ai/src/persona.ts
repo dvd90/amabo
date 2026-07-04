@@ -172,6 +172,37 @@ export interface GeneratedPersona {
   /** 'model' when the LLM's elaboration passed validation; 'local' otherwise. */
   source: 'model' | 'local';
   usage?: { inputTokens: number; outputTokens: number };
+  /** Why the seeded mark stood in (only when source is 'local') — for the ops log. */
+  reason?: string;
+}
+
+/**
+ * Soften a model's answer toward the schema before judging it: trim, truncate,
+ * first-word the temperament, cap the arrays. Open-weights models are sloppier
+ * than the schema; a mark that is merely too long is still a mark. This CLAMPS,
+ * it never invents — anything missing or wrongly-typed still fails validation.
+ */
+export function clampSoul(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : v);
+  const list = (v: unknown, maxItem: number, maxItems: number) =>
+    Array.isArray(v)
+      ? v
+          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+          .map((x) => x.trim().slice(0, maxItem))
+          .slice(0, maxItems)
+      : v;
+  return {
+    essence: str(r.essence, 160),
+    temperament:
+      typeof r.temperament === 'string'
+        ? (r.temperament.trim().toLowerCase().split(/\s+/)[0] ?? '').slice(0, 24)
+        : r.temperament,
+    loves: list(r.loves, 60, 3),
+    fears: list(r.fears, 60, 2),
+    quirk: str(r.quirk, 120),
+  };
 }
 
 /** Elaborate the seeded mark with the model; keep the seeded mark on ANY failure. */
@@ -195,14 +226,22 @@ export async function generatePersona(
       ],
     });
     const toolUse = res.content.find((c) => c.type === 'tool_use' && c.name === 'condense_soul');
-    const parsed = Persona.safeParse(toolUse?.input);
-    if (!parsed.success) return { persona: sketch, source: 'local' };
+    const parsed = Persona.safeParse(clampSoul(toolUse?.input));
+    if (!parsed.success) {
+      const reason = toolUse
+        ? `invalid soulmark: ${parsed.error.issues
+            .map((i) => `${i.path.join('.')} ${i.message}`)
+            .join('; ')
+            .slice(0, 200)}`
+        : 'model returned no condense_soul tool call';
+      return { persona: sketch, source: 'local', reason };
+    }
     const usage =
       res.usage?.input_tokens !== undefined && res.usage?.output_tokens !== undefined
         ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
         : undefined;
     return { persona: parsed.data, source: 'model', usage };
-  } catch {
-    return { persona: sketch, source: 'local' };
+  } catch (err) {
+    return { persona: sketch, source: 'local', reason: (err as Error).message?.slice(0, 240) };
   }
 }

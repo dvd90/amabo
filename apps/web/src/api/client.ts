@@ -157,6 +157,30 @@ export interface LetterView {
   at: number;
 }
 
+/** One page of the shelf's book (STORY.md §8⅞) — an encounter, voiced. */
+export interface ChronicleEntryView {
+  at: number;
+  text: string;
+  valence: 'warm' | 'strained';
+  tag: string;
+  aName: string;
+  bName: string;
+}
+
+/** How things stand between two creatures — one line, refreshed as they meet. */
+export interface StandingView {
+  aName: string;
+  bName: string;
+  valence: 'warm' | 'strained';
+  line: string;
+  updatedAt: number;
+}
+
+export interface ChronicleView {
+  entries: ChronicleEntryView[];
+  standings: StandingView[];
+}
+
 /** A minted share link. */
 export interface ShareLink {
   token: string;
@@ -231,6 +255,8 @@ export interface ApiClient {
   gather(creatureIds: string[], topic?: string, guestTokens?: string[]): Promise<GatheringView>;
   /** The pen-pal letters among your creatures, most recent first. */
   letters(): Promise<LetterView[]>;
+  /** The Chronicle (STORY.md §8⅞): reads (and quietly extends) the shelf's book. */
+  chronicle(): Promise<ChronicleView>;
   /** The friendship sky — every bond among your creatures. */
   sky(): Promise<SkyView>;
   /** Mint a scoped, expiring share link for a creature (incl. a 'gather' guest pass). */
@@ -355,6 +381,10 @@ export class HttpApiClient implements ApiClient {
       guestTokens,
     });
   }
+  async chronicle() {
+    return this.req<ChronicleView>('/chronicle');
+  }
+
   async letters() {
     const r = await this.req<{ letters: LetterView[] }>('/symposium/letters');
     return r.letters;
