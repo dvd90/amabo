@@ -139,6 +139,27 @@ It takes effect on the next request (no re-login needed). The global narration
 breaker (`NARRATION_DAILY_CAP`) still applies — that one protects the bill, not a
 feature.
 
+### The heartbeat cron (push + the Chronicle writing itself)
+
+One scheduled job makes the world act while everyone is away: it catches every
+subscribed Light's creatures up, **extends their Chronicle** (creatures meet, pages
+get written — gap-gated and breaker-shared, so it cannot run up the model bill),
+and sends web-push pings — urgent needs first, else fresh shelf news ("Vel & Mo met
+while you were away").
+
+1. Generate VAPID keys once: `npx web-push generate-vapid-keys`. On **amabo-api**
+   set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (+ optional
+   `VAPID_SUBJECT=mailto:you@example.com`) so devices can subscribe.
+2. Railway → your project → **Create → Empty service from this repo** (same repo,
+   same build). In its **Settings**:
+   - **Cron Schedule**: `*/30 * * * *`
+   - **Custom Start Command**: `node apps/api/dist/cron/notify.js`
+   - **Variables**: `DATABASE_URL` (reference the Postgres), the three VAPID vars,
+     and your LLM key (`LLAMA_API_KEY`) so cron-written pages are model-voiced.
+3. Each run logs `[notify] run complete pinged=N` and exits — it costs seconds of
+   compute per run. Without this service the world still works (lazy
+   simulate-on-read); you just lose pushes and unwatched Chronicle pages.
+
 ### Read the server log (where things fail, out loud)
 
 Railway → `amabo-api` → **Deployments** → click the **Active** deployment →

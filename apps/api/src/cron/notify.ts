@@ -1,5 +1,5 @@
 /**
- * cron/notify.ts — the notification scheduler (M-C). The app is lazy (no always-on
+ * cron/notify.ts — the world's heartbeat while nobody looks (M-C + M-M). The app is lazy (no always-on
  * worker), so a Railway cron runs this on an interval (~every 30 min): for each
  * subscribed Light it catches their creatures up to now, asks `decideNotification` what
  * (if anything) is worth a ping, and sends it via web-push. Dead endpoints (404/410)
@@ -11,13 +11,20 @@
 
 import webpush from 'web-push';
 import { makeDb } from '../db/client.js';
+import { buildLlmClient } from '../llm.js';
 import { envLogger } from '../logger.js';
-import { decideNotification, type NotifyCandidate } from '../notify/decide.js';
+import {
+  decideNotification,
+  type NotifyCandidate,
+  type SocialCandidate,
+} from '../notify/decide.js';
 import { DrizzleRepository } from '../repo/drizzle.js';
 import type { PushSubscriptionRecord } from '../repo/types.js';
 import { catchUp } from '../service/catchup.js';
+import { extendChronicle, makeChronicler } from '../service/chronicle.js';
 
-const log = envLogger().child('notify');
+const logger = envLogger();
+const log = logger.child('notify');
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -31,6 +38,15 @@ async function main(): Promise<void> {
   webpush.setVapidDetails(subject, pub, priv);
   const repo = new DrizzleRepository(makeDb(databaseUrl));
   const now = Date.now();
+  // The same voice and the same fences as the server: breaker-shared, ledgered.
+  const llm = buildLlmClient(logger);
+  const chronicler = makeChronicler(
+    llm,
+    repo,
+    logger,
+    () => Date.now(),
+    Number(process.env.NARRATION_DAILY_CAP ?? 2000),
+  );
 
   const byUser = new Map<string, PushSubscriptionRecord[]>();
   for (const s of await repo.listPushSubscriptions()) {
@@ -45,8 +61,29 @@ async function main(): Promise<void> {
       const { record } = await catchUp(repo, rec, now);
       cands.push({ name: record.name, state: record.state, lastSeenAt: record.lastSeenAt });
     }
+
+    // The shelf keeps writing while nobody looks (M-M) — then, if the freshest page
+    // is still unread, it becomes the social candidate for the ping.
+    let social: SocialCandidate | null = null;
+    try {
+      await extendChronicle(repo, chronicler, userId, now);
+      const seenAt = (await repo.getUserById(userId))?.chronicleSeenAt ?? 0;
+      const [latest] = await repo.listChronicle(userId, 1);
+      if (latest && latest.at > seenAt && latest.text) {
+        const nameOf = new Map(recs.map((r) => [r.id, r.name]));
+        social = {
+          aName: nameOf.get(latest.aId) ?? 'a passing light',
+          bName: nameOf.get(latest.bId) ?? 'a passing light',
+          valence: latest.valence,
+          text: latest.text,
+        };
+      }
+    } catch (err) {
+      log.error('chronicle extension failed for a shelf — pings continue without it', { err });
+    }
+
     for (const sub of userSubs) {
-      const msg = decideNotification(cands, now, sub.lastNotifiedAt);
+      const msg = decideNotification(cands, now, sub.lastNotifiedAt, undefined, social);
       if (!msg) continue;
       try {
         await webpush.sendNotification(

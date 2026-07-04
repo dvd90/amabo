@@ -50,3 +50,41 @@ describe('decideNotification (M-C)', () => {
     expect(decideNotification([ill], NOW, NOW - NOTIFY_COOLDOWN_MS - 1)).not.toBeNull();
   });
 });
+
+describe('social pushes (M-M) — the world writes while they sleep', () => {
+  const calm = (name: string): NotifyCandidate => ({
+    name,
+    state: { ...condenseMote(1, 0), stats: { ...condenseMote(1, 0).stats, security: 80 } },
+    lastSeenAt: 0,
+  });
+
+  it('with nothing urgent, a fresh Chronicle page becomes the ping — in the shelf\u2019s words', () => {
+    const msg = decideNotification([calm('Pip')], NOW, null, NOTIFY_COOLDOWN_MS, {
+      aName: 'Vel',
+      bName: 'Mo',
+      valence: 'strained',
+      text: 'Vel and Mo both wanted the same warm corner, and neither would say so.',
+    });
+    expect(msg?.title).toBe('Vel & Mo met while you were away');
+    expect(msg?.body).toContain('warm corner');
+  });
+
+  it('urgent needs still outrank the gossip', () => {
+    const ill: NotifyCandidate = {
+      name: 'Pip',
+      state: { ...condenseMote(1, 0), ill: true },
+      lastSeenAt: 0,
+    };
+    const msg = decideNotification([ill], NOW, null, NOTIFY_COOLDOWN_MS, {
+      aName: 'Vel',
+      bName: 'Mo',
+      valence: 'warm',
+      text: 'x',
+    });
+    expect(msg?.title).toMatch(/isn't feeling well/);
+  });
+
+  it('no social candidate, nothing urgent, nobody lonely → still silence', () => {
+    expect(decideNotification([calm('Pip')], NOW, null)).toBeNull();
+  });
+});
