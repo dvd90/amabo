@@ -17,6 +17,7 @@ import type { SameSite } from './auth/session.js';
 import { localPersona } from '@amabo/ai';
 import type { PersonaT } from '@amabo/shared';
 import type { BillingPort } from './billing/port.js';
+import { noopLogger, type Logger } from './logger.js';
 import { nullMonitor, type Monitor } from './monitor.js';
 import type { Narrator } from './narrate/port.js';
 import type { Repository } from './repo/types.js';
@@ -60,6 +61,8 @@ export interface AppDeps {
   version?: string;
   /** Error eyes (L1): captures 500s + client_error beats. Defaults to a no-op. */
   monitor?: Monitor;
+  /** The app's voice in the server log (logger.ts). Defaults to silence (tests). */
+  logger?: Logger;
   /** The till (L5). Absent = the game is simply free; billing routes answer 503. */
   billing?: BillingPort;
   /** Condenses a newborn's Soulmark (STORY.md §8½). Defaults to the seeded local one. */
@@ -94,6 +97,7 @@ const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.start
 
 export function createApp(deps: AppDeps): Express {
   const app = express();
+  const logger = deps.logger ?? noopLogger;
   // Behind Railway's TLS proxy, trust X-Forwarded-* so Secure cookies behave.
   if (deps.cookieSecure) app.set('trust proxy', 1);
   // Credentialed CORS only matters in the two-service deploy (a web origin is set).
@@ -106,6 +110,7 @@ export function createApp(deps: AppDeps): Express {
       clock: deps.clock,
       billing: deps.billing,
       webOrigin: deps.webOrigin ?? deps.baseUrl,
+      logger: logger.child('billing'),
     }),
   );
   app.use(express.json());
@@ -131,9 +136,17 @@ export function createApp(deps: AppDeps): Express {
   app.use(attachUser(deps.repo, deps.clock));
   // The funnel's ear (L1): public, rate-limited, allowlisted. After attachUser so a
   // signed-in beat carries its Light; before the auth gate so a visitor counts too.
-  app.use(telemetryRouter({ repo: deps.repo, clock: deps.clock, monitor }));
+  app.use(
+    telemetryRouter({
+      repo: deps.repo,
+      clock: deps.clock,
+      monitor,
+      logger: logger.child('telemetry'),
+    }),
+  );
   app.use(
     authRouter({
+      logger: logger.child('auth'),
       repo: deps.repo,
       authProvider: deps.authProvider,
       clock: deps.clock,
@@ -201,6 +214,7 @@ export function createApp(deps: AppDeps): Express {
       clock: deps.clock,
       billing: deps.billing,
       webOrigin: deps.webOrigin ?? deps.baseUrl,
+      logger: logger.child('billing'),
     }),
   );
   app.use(
@@ -213,6 +227,12 @@ export function createApp(deps: AppDeps): Express {
   );
 
   const onError: ErrorRequestHandler = (err, req, res, _next) => {
+    // Every unhandled route error lands here: one clear log line + one monitor event.
+    logger.child('http').error('unhandled request error', {
+      method: req.method,
+      path: req.path,
+      err,
+    });
     monitor.capture(err, { method: req.method, path: req.path });
     res.status(500).json({ error: 'internal error' });
   };

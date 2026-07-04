@@ -6,6 +6,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { noopLogger, type Logger } from './logger.js';
 
 export interface Monitor {
   capture(err: unknown, context?: Record<string, unknown>): void;
@@ -30,9 +31,14 @@ export function sentryMonitor(
   dsn: string,
   release = 'dev',
   fetchFn: typeof fetch = fetch,
+  logger: Logger = noopLogger,
 ): Monitor {
   const parsed = parseDsn(dsn);
-  if (!parsed) return nullMonitor;
+  if (!parsed) {
+    // Otherwise a typo'd DSN silently means "no error eyes at all".
+    logger.warn('SENTRY_DSN is malformed — error reporting is OFF');
+    return nullMonitor;
+  }
   const { endpoint, key } = parsed;
 
   return {
@@ -62,7 +68,10 @@ export function sentryMonitor(
             'x-sentry-auth': `Sentry sentry_version=7, sentry_client=amabo/1, sentry_key=${key}`,
           },
           body,
-        }).catch(() => {});
+        }).catch((sendErr: unknown) => {
+          // The monitor stays non-fatal, but a dead Sentry should not be a mystery.
+          logger.warn('sentry envelope send failed', { err: sendErr });
+        });
       } catch {
         /* the monitor never becomes the outage */
       }

@@ -1,13 +1,15 @@
 /**
  * narrate/ai.ts — adapt @amabo/ai's narrate() to the API's Narrator port. Used when
- * ANTHROPIC_API_KEY is set; otherwise the localNarrator (port.ts) is the default so
- * the app runs with zero AI.
+ * an LLM key is set; otherwise the localNarrator (port.ts) is the default so the app
+ * runs with zero AI. The fallback inside narrate() is silent by design (the device
+ * never sees an error) — the injected logger is how ops finds out it happened.
  */
 
 import { narrate, type AnthropicLike } from '@amabo/ai';
+import { noopLogger, type Logger } from '../logger.js';
 import type { Narrator } from './port.js';
 
-export function aiNarrator(client: AnthropicLike): Narrator {
+export function aiNarrator(client: AnthropicLike, logger: Logger = noopLogger): Narrator {
   return {
     async narrate(ctx, events, mode) {
       const out = await narrate(
@@ -26,6 +28,15 @@ export function aiNarrator(client: AnthropicLike): Narrator {
           memories: ctx.memories,
         },
         client,
+        {
+          onFallback: (reason, err) =>
+            logger.warn('model narration fell back to the local voice', {
+              reason,
+              mode,
+              creature: ctx.name,
+              err,
+            }),
+        },
       );
       return {
         journal: out.journal,

@@ -14,6 +14,7 @@
 import express, { Router, type Request, type Response } from 'express';
 import type { Clock } from '../clock.js';
 import type { BillingPort } from '../billing/port.js';
+import { noopLogger, type Logger } from '../logger.js';
 import type { Repository } from '../repo/types.js';
 
 export interface BillingDeps {
@@ -22,6 +23,8 @@ export interface BillingDeps {
   billing?: BillingPort;
   /** Where hosted pages return to (the web app). */
   webOrigin: string;
+  /** Money moves silently otherwise — the till says what it did and what it refused. */
+  logger?: Logger;
 }
 
 /** Authed till surfaces (mounted behind requireAuth + requireCsrf). */
@@ -65,6 +68,7 @@ export function billingRouter(deps: BillingDeps): Router {
 /** The webhook — PUBLIC, raw-bodied (the signature covers the exact bytes). */
 export function billingWebhookRouter(deps: BillingDeps): Router {
   const { repo, clock, billing } = deps;
+  const log = deps.logger ?? noopLogger;
   const router = Router();
 
   router.post(
@@ -80,7 +84,12 @@ export function billingWebhookRouter(deps: BillingDeps): Router {
             String(req.headers['stripe-signature'] ?? ''),
             clock(),
           );
-          if (!event) return res.status(400).json({ error: 'bad signature' });
+          if (!event) {
+            // Either Stripe's key rotated, the wrong STRIPE_WEBHOOK_SECRET is set, or
+            // someone is knocking who is not Stripe. Worth a line every time.
+            log.warn('stripe webhook rejected: bad signature');
+            return res.status(400).json({ error: 'bad signature' });
+          }
 
           // Idempotent: each event id lands exactly once, replays are acknowledged no-ops.
           if (!(await repo.markStripeEventSeen(event.id, clock()))) {
@@ -97,6 +106,12 @@ export function billingWebhookRouter(deps: BillingDeps): Router {
                 { tier: 'lantern', renewsAt: null },
                 customer || undefined,
               );
+              log.info('lantern lit (checkout completed)', { userId });
+            } else {
+              // A paid checkout we cannot attribute — this loses a customer's upgrade.
+              log.error('checkout completed WITHOUT client_reference_id — cannot grant lantern', {
+                eventId: event.id,
+              });
             }
           } else if (event.type === 'customer.subscription.updated') {
             const user = await repo.getUserByStripeCustomer(String(obj['customer'] ?? ''));
@@ -108,10 +123,18 @@ export function billingWebhookRouter(deps: BillingDeps): Router {
                 tier: lit ? 'lantern' : 'free',
                 renewsAt: lit && Number.isFinite(end) ? end * 1000 : null,
               });
+              log.info('subscription updated', { userId: user.id, status });
+            } else {
+              log.warn('subscription update for an unknown stripe customer', {
+                eventId: event.id,
+              });
             }
           } else if (event.type === 'customer.subscription.deleted') {
             const user = await repo.getUserByStripeCustomer(String(obj['customer'] ?? ''));
-            if (user) await repo.setEntitlements(user.id, { tier: 'free', renewsAt: null });
+            if (user) {
+              await repo.setEntitlements(user.id, { tier: 'free', renewsAt: null });
+              log.info('lantern out (subscription deleted)', { userId: user.id });
+            }
           }
           // Unknown event types are acknowledged so Stripe stops retrying them.
           return res.json({ received: true });

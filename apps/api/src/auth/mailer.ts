@@ -5,6 +5,8 @@
  * and ops still have a way through. The handlers depend only on the `Mailer` interface.
  */
 
+import { envLogger } from '../logger.js';
+
 export interface Mailer {
   sendMagicLink(to: string, link: string): Promise<void>;
 }
@@ -12,7 +14,10 @@ export interface Mailer {
 /** Fallback: log the link. A developer (or an admin reading prod logs) can follow it. */
 export const consoleMailer: Mailer = {
   async sendMagicLink(to, link) {
-    console.info(`[amabo] magic sign-in link for ${to}:\n         ${link}`);
+    envLogger().child('mail').info('magic sign-in link (no mail provider configured)', {
+      to,
+      link,
+    });
   },
 };
 

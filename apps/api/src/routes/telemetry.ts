@@ -8,6 +8,7 @@
 
 import { Router, type Request } from 'express';
 import type { Clock } from '../clock.js';
+import { noopLogger, type Logger } from '../logger.js';
 import type { Monitor } from '../monitor.js';
 import { byIp, rateLimit } from '../rateLimit.js';
 import type { Repository } from '../repo/types.js';
@@ -32,8 +33,10 @@ export function telemetryRouter(deps: {
   repo: Repository;
   clock: Clock;
   monitor: Monitor;
+  logger?: Logger;
 }): Router {
   const { repo, clock, monitor } = deps;
+  const log = deps.logger ?? noopLogger;
   const router = Router();
 
   const limiter = rateLimit({
@@ -64,6 +67,7 @@ export function telemetryRouter(deps: {
           }
           if (e.name === 'client_error') {
             const msg = String((props as { message?: unknown } | null)?.message ?? 'client error');
+            log.warn('client error beat', { message: msg, userId: req.user?.id ?? null });
             monitor.capture(new Error(`[client] ${msg}`), props ?? undefined);
           }
           rows.push({ name: e.name, anonId, userId: req.user?.id ?? null, at: clock(), props });

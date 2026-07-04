@@ -77,9 +77,32 @@ export function fallbackNarration(ctx: CreatureContext): NarrateOutput {
   };
 }
 
+/**
+ * Optional observation hooks. The device never sees an error (the fallback line
+ * covers it) — but ops should: `onFallback` fires with the reason whenever the model
+ * path was abandoned, so the API layer can log it. Hooks never affect the output and
+ * a throwing hook is swallowed.
+ */
+export interface NarrateHooks {
+  onFallback?: (reason: 'request-failed' | 'invalid-output', err?: unknown) => void;
+}
+
+function tell(
+  hooks: NarrateHooks | undefined,
+  reason: 'request-failed' | 'invalid-output',
+  err?: unknown,
+): void {
+  try {
+    hooks?.onFallback?.(reason, err);
+  } catch {
+    /* observation must never break the voice */
+  }
+}
+
 export async function narrate(
   input: NarrateInput,
   client: AnthropicLike,
+  hooks?: NarrateHooks,
 ): Promise<NarrateOutput & { usage?: TokenUsage }> {
   const { context, newEvents, mode } = input;
   const register = registerFor(context);
@@ -114,9 +137,11 @@ export async function narrate(
         ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
         : undefined;
     if (parsed.success) return { ...parsed.data, usage };
+    tell(hooks, 'invalid-output');
     return fallbackNarration(context);
-  } catch {
+  } catch (err) {
     // Never let the device see an error — degrade to the local line.
+    tell(hooks, 'request-failed', err);
     return fallbackNarration(context);
   }
 }

@@ -19,6 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { stripeBilling } from './billing/stripe.js';
+import { envLogger, type Logger } from './logger.js';
 import { nullMonitor, sentryMonitor, type Monitor } from './monitor.js';
 import { FakeAuthProvider, GoogleAuthProvider, type AuthProvider } from './auth/provider.js';
 import { consoleMailer, resendMailer, type Mailer } from './auth/mailer.js';
@@ -109,41 +110,59 @@ function buildNarrator(
   llm: ReturnType<typeof buildLlmClient>,
   repo: Repository,
   monitor: Monitor,
+  logger: Logger,
 ): Narrator {
+  const log = logger.child('narration');
   if (!llm) {
-    console.warn('[amabo] no XAI_API_KEY or ANTHROPIC_API_KEY — using local templated narrator');
+    log.warn(
+      'no LLM key set (LLAMA_API_KEY / XAI_API_KEY / ANTHROPIC_API_KEY) — using the local templated narrator',
+    );
     return localNarrator;
   }
-  console.log(`[amabo] narration provider: ${llm.provider}`);
+  log.info('narration provider chosen', { provider: llm.provider });
   // The soul, with a sensible bill (L3): allowance + breaker + ledger around the model.
   const free = Number(process.env.NARRATION_USER_ALLOWANCE ?? 10);
   const lantern = Number(process.env.NARRATION_LANTERN_ALLOWANCE ?? 100);
-  return meteredNarrator(aiNarrator(llm.client), localNarrator, {
-    repo,
-    clock: systemClock,
-    monitor,
-    provider: llm.provider,
-    // The Keeper's Lantern buys a wider voice (L5); the gate reads the tier only.
-    allowanceFor: async (userId) => {
-      const user = await repo.getUserById(userId);
-      return user?.entitlements.tier === 'lantern' ? lantern : free;
+  return meteredNarrator(
+    aiNarrator(llm.client, log.child('model', { provider: llm.provider })),
+    localNarrator,
+    {
+      repo,
+      clock: systemClock,
+      monitor,
+      provider: llm.provider,
+      logger: log.child('meter'),
+      // The Keeper's Lantern buys a wider voice (L5); the gate reads the tier only.
+      allowanceFor: async (userId) => {
+        const user = await repo.getUserById(userId);
+        return user?.entitlements.tier === 'lantern' ? lantern : free;
+      },
+      globalCallsPerDay: Number(process.env.NARRATION_DAILY_CAP ?? 2000),
     },
-    globalCallsPerDay: Number(process.env.NARRATION_DAILY_CAP ?? 2000),
-  });
+  );
 }
 
 /** The Symposium voice: the same LLM client (with a local fallback), else local. */
-function buildSymposiumNarrator(llm: ReturnType<typeof buildLlmClient>): SymposiumNarrator {
-  if (llm) return aiSymposiumNarrator(llm.client, localSymposiumNarrator);
+function buildSymposiumNarrator(
+  llm: ReturnType<typeof buildLlmClient>,
+  logger: Logger,
+): SymposiumNarrator {
+  if (llm)
+    return aiSymposiumNarrator(
+      llm.client,
+      localSymposiumNarrator,
+      logger.child('narration:symposium', { provider: llm.provider }),
+    );
   return localSymposiumNarrator;
 }
 
-function buildRepo(): Repository {
+function buildRepo(logger: Logger): Repository {
   const url = process.env.DATABASE_URL;
   if (!url) {
-    console.warn('[amabo] DATABASE_URL not set — using in-memory repository (data not persisted)');
+    logger.warn('DATABASE_URL not set — using in-memory repository (data not persisted)');
     return new InMemoryRepository();
   }
+  logger.info('repository: postgres (drizzle)');
   return new DrizzleRepository(makeDb(url));
 }
 
@@ -161,39 +180,41 @@ function googleConfigured(): boolean {
 }
 
 /** Email delivery for magic links. Real provider when configured, else log to console. */
-function buildMailer(): { mailer: Mailer; real: boolean } {
+function buildMailer(logger: Logger): { mailer: Mailer; real: boolean } {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM;
   if (key && from) {
-    console.log(`[amabo] magic-link email via Resend (from: ${from})`);
+    logger.info('magic-link email via Resend', { from });
     return { mailer: resendMailer(key, from), real: true };
   }
-  console.warn(
-    '[amabo] no email provider configured (set RESEND_API_KEY + MAIL_FROM) — magic-link emails will only be logged to the server console',
+  logger.warn(
+    'no email provider configured (set RESEND_API_KEY + MAIL_FROM) — magic-link emails will only be logged to the server console',
   );
   return { mailer: consoleMailer, real: false };
 }
 
 /** The secret that signs magic-link tokens. Stable across restarts only if AUTH_SECRET is set. */
-function magicSecret(): string {
+function magicSecret(logger: Logger): string {
   const s = process.env.AUTH_SECRET ?? process.env.SESSION_SECRET;
   if (s) return s;
-  console.warn(
-    '[amabo] AUTH_SECRET not set — magic-link tokens use a random per-boot secret (links break on restart). Set AUTH_SECRET in production.',
+  logger.warn(
+    'AUTH_SECRET not set — magic-link tokens use a random per-boot secret (links break on restart). Set AUTH_SECRET in production.',
   );
   return randomBytes(32).toString('hex');
 }
 
-function buildAuthProvider(): AuthProvider {
+function buildAuthProvider(logger: Logger): AuthProvider {
   const { id, secret } = googleCreds();
   if (id && secret) return new GoogleAuthProvider(id, secret);
-  console.warn(
-    '[amabo] Google creds not set (GOOGLE_CLIENT_ID/SECRET or GOOGLE_OAUTH_ID/SECRET) — using fake auth provider (local only)',
+  logger.warn(
+    'Google creds not set (GOOGLE_CLIENT_ID/SECRET or GOOGLE_OAUTH_ID/SECRET) — using fake auth provider (local only)',
   );
   return new FakeAuthProvider();
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  const logger = envLogger();
+  const boot = logger.child('boot');
   const webOrigin = process.env.WEB_ORIGIN;
   // Cross-site cookies (SameSite=None, used when WEB_ORIGIN is set) are REJECTED by
   // browsers unless also Secure — so force Secure in that case even if NODE_ENV wasn't
@@ -205,21 +226,37 @@ if (process.env.NODE_ENV !== 'test') {
   // console's "Authorized redirect URIs" — the cure for `redirect_uri_mismatch`.
   if (googleConfigured()) {
     const cb = process.env.GOOGLE_CALLBACK_URL ?? `${baseUrl}/auth/callback`;
-    console.log(
-      `[amabo] Google OAuth enabled. Register this EXACT redirect URI in the Google console:\n         ${cb}`,
-    );
+    boot.info('Google OAuth enabled — register this EXACT redirect URI in the Google console', {
+      redirectUri: cb,
+    });
   }
 
-  const { mailer, real: realMailer } = buildMailer();
+  const { mailer, real: realMailer } = buildMailer(boot);
 
-  const repo = buildRepo();
+  const repo = buildRepo(boot);
   const llm = buildLlmClient();
   const monitor = process.env.SENTRY_DSN
     ? sentryMonitor(
         process.env.SENTRY_DSN,
         process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION ?? 'dev',
+        fetch,
+        logger.child('monitor'),
       )
     : nullMonitor;
+  boot.info(
+    process.env.SENTRY_DSN ? 'error eyes on (Sentry)' : 'SENTRY_DSN not set — error reporting off',
+  );
+
+  // The last resort: crashes that escaped every handler still leave one clear line
+  // (and one monitor event) before the process dies or the promise evaporates.
+  process.on('uncaughtException', (err) => {
+    logger.child('process').error('uncaught exception', { err });
+    monitor.capture(err);
+  });
+  process.on('unhandledRejection', (reason) => {
+    logger.child('process').error('unhandled promise rejection', { err: reason });
+    monitor.capture(reason);
+  });
 
   // The till (L5): open only when all three Stripe vars are set; otherwise free.
   const billing =
@@ -232,11 +269,13 @@ if (process.env.NODE_ENV !== 'test') {
           webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
         })
       : undefined;
-  if (!billing) console.warn('[amabo] Stripe vars not set — the till is closed (free mode)');
+  if (!billing) boot.warn('Stripe vars not set — the till is closed (free mode)');
+  else boot.info('the till is open (Stripe configured)');
 
   // The Soulmark (STORY.md §8½): LLM-elaborated when a provider is awake (a birth is
   // a milestone), always falling back to the seeded local mark; model calls land in
   // the same cost ledger as narration.
+  const soulLog = logger.child('soulmark');
   const condenseSoul = async (input: {
     id: string;
     name: string;
@@ -245,6 +284,14 @@ if (process.env.NODE_ENV !== 'test') {
   }) => {
     if (!llm) return localPersona(input);
     const out = await generatePersona(input, llm.client);
+    if (out.source === 'local') {
+      // The model was asked and could not answer (error or invalid shape) — the
+      // seeded mark stood in. The birth still worked; ops should still know.
+      soulLog.warn('model soulmark failed — the seeded mark stands in', {
+        provider: llm.provider,
+        creature: input.name,
+      });
+    }
     if (out.source === 'model') {
       await repo.addTelemetry([
         {
@@ -268,13 +315,14 @@ if (process.env.NODE_ENV !== 'test') {
     repo,
     clock: systemClock,
     seed: randomSeed,
-    narrator: buildNarrator(llm, repo, monitor),
+    narrator: buildNarrator(llm, repo, monitor, logger),
     condenseSoul,
     billing,
-    symposiumNarrator: buildSymposiumNarrator(llm),
-    authProvider: buildAuthProvider(),
+    symposiumNarrator: buildSymposiumNarrator(llm, logger),
+    authProvider: buildAuthProvider(boot),
     mailer,
-    magicSecret: magicSecret(),
+    magicSecret: magicSecret(boot),
+    logger,
     // Echo the link in the response ONLY in local dev with no real mailer. Never in prod:
     // a public link-for-any-email would re-open the hole.
     magicDevEcho: process.env.NODE_ENV !== 'production' && !realMailer,
@@ -294,6 +342,9 @@ if (process.env.NODE_ENV !== 'test') {
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {
-    console.log(`amabo api listening on :${port}`);
+    boot.info('amabo api listening', {
+      port,
+      version: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION ?? 'dev',
+    });
   });
 }

@@ -52,6 +52,8 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `NARRATION_USER_ALLOWANCE` | optional   | model-narrated peeks per Light per rolling day (default 10); over it → local voice                        |
    | `NARRATION_DAILY_CAP`      | optional   | global model calls per rolling day (default 2000) — the no-surprise-bill breaker                          |
    | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                                |
+   | `LOG_LEVEL`                | optional   | `debug` \| `info` (default) \| `warn` \| `error` \| `silent` — how chatty the server log is               |
+   | `LOG_FORMAT`               | optional   | `json` for one-object-per-line structured logs; default is human-readable lines                           |
    | `STRIPE_SECRET_KEY`        | optional   | the till (L5). All three Stripe vars set → the Keeper's Lantern sells; any missing → free mode            |
    | `STRIPE_PRICE_LANTERN`     | optional   | the Lantern's subscription price id (`price_…`, ~$3.99/mo)                                                |
    | `STRIPE_WEBHOOK_SECRET`    | optional   | signing secret of a webhook endpoint pointed at `https://<api-url>/billing/webhook`                       |
@@ -119,6 +121,18 @@ If they differ, the API service is running a stale build — check Railway →
 carries its own stamp: **Settings → “build abc1234”** at the bottom of the sheet.
 If the web stamp lags after a deploy, it's the PWA cache — reload twice or
 reinstall the app. Locally both stamps read `dev`.
+
+### Read the server log (where things fail, out loud)
+
+Railway → `amabo-api` → **Deployments** → click the **Active** deployment →
+**Deploy Logs** (Build Logs is only the install/build phase). Every line is
+structured: `<timestamp> LEVEL [scope] message key=value…`. At boot you should see
+`[boot]`/`[narration]` lines naming the repository, the narration provider, Sentry,
+and the till; after boot the log stays quiet except **failures** — LLM fallbacks
+(`[narration:model]`), meter trips (`[narration:meter]`), auth failures (`[auth]`),
+Stripe webhook rejections (`[billing]`), client error beats (`[telemetry]`), and
+unhandled 500s (`[http]`, with stack). `LOG_LEVEL=debug` adds per-Light allowance
+refusals; `LOG_FORMAT=json` makes each line machine-parseable.
 
 ---
 
