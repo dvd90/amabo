@@ -98,3 +98,15 @@ export function decideNotification(
   }
   return null;
 }
+
+/**
+ * VAPID needs `mailto:<addr>` or an https URL; humans configure things like
+ * `Acme <onboarding@resend.dev>` (a MAIL_FROM display form). Normalize instead of
+ * crashing the heartbeat: extract the address if we can, else a safe default.
+ */
+export function normalizeVapidSubject(raw: string | undefined, fallback: string): string {
+  const v = (raw ?? '').trim();
+  if (/^(mailto:|https?:\/\/)/i.test(v)) return v;
+  const email = v.match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0];
+  return email ? `mailto:${email}` : fallback;
+}

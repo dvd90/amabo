@@ -1,6 +1,12 @@
 import { condenseMote, type CreatureState } from '@amabo/engine';
 import { describe, expect, it } from 'vitest';
-import { decideNotification, MISS_MS, NOTIFY_COOLDOWN_MS, type NotifyCandidate } from './decide.js';
+import {
+  decideNotification,
+  MISS_MS,
+  normalizeVapidSubject,
+  NOTIFY_COOLDOWN_MS,
+  type NotifyCandidate,
+} from './decide.js';
 
 function cand(
   over: Partial<CreatureState>,
@@ -86,5 +92,23 @@ describe('social pushes (M-M) — the world writes while they sleep', () => {
 
   it('no social candidate, nothing urgent, nobody lonely → still silence', () => {
     expect(decideNotification([calm('Pip')], NOW, null)).toBeNull();
+  });
+});
+
+describe('normalizeVapidSubject — a config quirk never kills the heartbeat', () => {
+  const FB = 'mailto:amabo@example.com';
+  it('keeps proper mailto:/https subjects as-is', () => {
+    expect(normalizeVapidSubject('mailto:me@x.com', FB)).toBe('mailto:me@x.com');
+    expect(normalizeVapidSubject('https://amabo.app', FB)).toBe('https://amabo.app');
+  });
+  it('extracts the address from a display form like "Acme <a@b.dev>"', () => {
+    expect(normalizeVapidSubject('Acme <onboarding@resend.dev>', FB)).toBe(
+      'mailto:onboarding@resend.dev',
+    );
+    expect(normalizeVapidSubject('me@x.com', FB)).toBe('mailto:me@x.com');
+  });
+  it('falls back safely when nothing usable is there', () => {
+    expect(normalizeVapidSubject(undefined, FB)).toBe(FB);
+    expect(normalizeVapidSubject('not an email', FB)).toBe(FB);
   });
 });
