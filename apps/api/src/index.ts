@@ -6,6 +6,8 @@
  */
 
 import {
+  generatePersona,
+  localPersona,
   makeAnthropicClient,
   makeGrokClient,
   makeOpenAiCompatClient,
@@ -228,11 +230,42 @@ if (process.env.NODE_ENV !== 'test') {
       : undefined;
   if (!billing) console.warn('[amabo] Stripe vars not set — the till is closed (free mode)');
 
+  // The Soulmark (STORY.md §8½): LLM-elaborated when a provider is awake (a birth is
+  // a milestone), always falling back to the seeded local mark; model calls land in
+  // the same cost ledger as narration.
+  const condenseSoul = async (input: {
+    id: string;
+    name: string;
+    seed: number;
+    ownerId: string | null;
+  }) => {
+    if (!llm) return localPersona(input);
+    const out = await generatePersona(input, llm.client);
+    if (out.source === 'model') {
+      await repo.addTelemetry([
+        {
+          name: 'narration',
+          anonId: null,
+          userId: input.ownerId,
+          at: systemClock(),
+          props: {
+            mode: 'persona',
+            provider: llm.provider,
+            inputTokens: out.usage?.inputTokens ?? null,
+            outputTokens: out.usage?.outputTokens ?? null,
+          },
+        },
+      ]);
+    }
+    return out.persona;
+  };
+
   const app = createApp({
     repo,
     clock: systemClock,
     seed: randomSeed,
     narrator: buildNarrator(llm, repo, monitor),
+    condenseSoul,
     billing,
     symposiumNarrator: buildSymposiumNarrator(llm),
     authProvider: buildAuthProvider(),

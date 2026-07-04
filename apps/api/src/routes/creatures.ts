@@ -22,6 +22,7 @@ import {
   InteractRequest,
   type CreatureViewT,
   SLOTS,
+  type PersonaT,
 } from '@amabo/shared';
 import { Router, type Request } from 'express';
 import type { Clock, SeedSource } from '../clock.js';
@@ -52,6 +53,13 @@ export interface CreatureDeps {
   narrator: Narrator;
   /** Resolves the owner for a request. v1 returns null; M5.5 returns the session user. */
   getOwner: (req: Request) => string | null;
+  /** Condense the Soulmark (STORY.md §8½) for a newborn — seeded, maybe LLM-voiced. */
+  condenseSoul: (input: {
+    id: string;
+    name: string;
+    seed: number;
+    ownerId: string | null;
+  }) => Promise<PersonaT>;
 }
 
 function toView(rec: CreatureRecord): CreatureViewT {
@@ -62,6 +70,7 @@ function toView(rec: CreatureRecord): CreatureViewT {
     graduatedAt: rec.graduatedAt,
     archivedAt: rec.archivedAt,
     lastSeenAt: rec.lastSeenAt,
+    persona: rec.persona,
     createdAt: rec.createdAt,
   });
 }
@@ -72,7 +81,7 @@ const asyncHandler =
     fn(req, res).catch(next);
 
 export function creaturesRouter(deps: CreatureDeps): Router {
-  const { repo, clock, seed, narrator, getOwner } = deps;
+  const { repo, clock, seed, narrator, getOwner, condenseSoul } = deps;
   const router = Router();
   const createLimiter = rateLimit({
     windowMs: CREATE_WINDOW_MS,
@@ -147,6 +156,15 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       // Condensing it is the first look-in, so the away-gap starts from now (not null).
       await repo.markSeen(rec.id, now);
       rec.lastSeenAt = now;
+      // The Soulmark (STORY.md §8½): set once, right here at condensation — seeded so
+      // no two are alike, elaborated by the narrator's model when one is awake.
+      rec.persona = await condenseSoul({
+        id: rec.id,
+        name: rec.name,
+        seed: rec.state.seed,
+        ownerId: getOwner(req),
+      });
+      await repo.setPersona(rec.id, rec.persona);
       await repo.addTelemetry([
         { name: 'creature_created', anonId: null, userId: getOwner(req), at: now, props: null },
       ]);
@@ -191,7 +209,13 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       // Only the top-N memories by salience are sent — keeps the prompt flat (M7).
       const memories = await repo.topMemories(record.id, MAX_MEMORIES);
       const narration = await narrator.narrate(
-        { name: record.name, state: record.state, memories, ownerId: getOwner(req) },
+        {
+          name: record.name,
+          state: record.state,
+          memories,
+          ownerId: getOwner(req),
+          persona: record.persona,
+        },
         events,
         mode,
       );
@@ -284,6 +308,14 @@ export function creaturesRouter(deps: CreatureDeps): Router {
       });
       await repo.markSeen(childRec.id, now);
       childRec.lastSeenAt = now;
+      // The other half condenses with its own soulmark — kin, never a copy.
+      childRec.persona = await condenseSoul({
+        id: childRec.id,
+        name: childRec.name,
+        seed: childRec.state.seed,
+        ownerId: owner,
+      });
+      await repo.setPersona(childRec.id, childRec.persona);
       return res.status(201).json({
         parent: { ...toView(updatedParent), needs: needs(updatedParent.state) },
         child: { ...toView(childRec), needs: needs(childRec.state) },

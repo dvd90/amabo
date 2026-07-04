@@ -27,6 +27,30 @@ describe('narrate (M6 contract)', () => {
     expect(out).toEqual({ journal: 'Soft gold day.', mood: 'content' });
   });
 
+  it('carries the soulmark into the prompt, as data (STORY.md §8½)', async () => {
+    const { client, create } = mockClient({ journal: 'x', mood: 'calm' });
+    await narrate(
+      {
+        context: {
+          ...amabo,
+          persona: {
+            essence: 'I am the warm side of the glass.',
+            temperament: 'watchful',
+            loves: ['rain on the glass'],
+            fears: ['long silences'],
+            quirk: 'asks the dark questions twice',
+          },
+        },
+        newEvents: [],
+        mode: 'peek',
+      },
+      client,
+    );
+    const body = create.mock.calls[0]![0] as { messages: { content: string }[] };
+    expect(body.messages[0]!.content).toContain('warm side of the glass');
+    expect(body.messages[0]!.content).toContain('asks the dark questions twice');
+  });
+
   it('routes peek to Haiku and milestone to Sonnet', async () => {
     const peek = mockClient({ journal: 'x', mood: 'calm' });
     await narrate({ context: amabo, newEvents: [], mode: 'peek' }, peek.client);

@@ -19,6 +19,7 @@ export function aiNarrator(client: AnthropicLike): Narrator {
             uncanny: ctx.state.uncanny,
             asleep: ctx.state.asleep,
             alive: ctx.state.alive,
+            persona: ctx.persona ?? undefined,
           },
           newEvents: events.map((e) => ({ kind: e.kind, tag: e.tag, salience: e.salience })),
           mode,

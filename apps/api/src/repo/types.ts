@@ -8,7 +8,7 @@
  */
 
 import type { CreatureState, GatherResult, SimEvent, Star } from '@amabo/engine';
-import type { EntitlementsT, UserPreferencesT } from '@amabo/shared';
+import type { EntitlementsT, PersonaT, UserPreferencesT } from '@amabo/shared';
 
 export interface CreatureRecord {
   id: string;
@@ -20,6 +20,8 @@ export interface CreatureRecord {
   archivedAt: number | null;
   /** When the Light last explicitly looked in (peek); null until the first visit. */
   lastSeenAt: number | null;
+  /** The Soulmark (STORY.md §8½) — set once at condensation; null on older records. */
+  persona: PersonaT | null;
   createdAt: number;
 }
 
@@ -229,6 +231,9 @@ export interface Repository {
   /** True if either Light has blocked the other (used to gate cross-owner gatherings). */
   blockedBetween(userA: string, userB: string): Promise<boolean>;
   addReport(reporterId: string, subject: string, reason: string | null, at: number): Promise<void>;
+
+  /** Set the Soulmark once, right after condensation (STORY.md §8½). */
+  setPersona(id: string, persona: PersonaT): Promise<void>;
 
   // Lawful (L2)
   /** Record the Light's stated age band ('13-17' | '18+') — the gate reads it. */

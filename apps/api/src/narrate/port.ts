@@ -6,6 +6,7 @@
  */
 
 import type { CreatureState, SimEvent } from '@amabo/engine';
+import type { PersonaT } from '@amabo/shared';
 
 export interface NarrateContext {
   name: string;
@@ -14,6 +15,8 @@ export interface NarrateContext {
   memories?: { text: string; salience: number }[];
   /** The Light being narrated for — the meter (L3) charges its allowance. */
   ownerId?: string | null;
+  /** The Soulmark (STORY.md §8½) — the narrator writes in THIS creature's grain. */
+  persona?: PersonaT | null;
 }
 
 export interface NarrateOutput {
