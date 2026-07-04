@@ -33,6 +33,28 @@ export async function catchUp(
     const { star } = graduate(state, rec.name, gradEvent.at);
     graduated = await repo.addStar({ ...star, creatureId: rec.id, ownerId: rec.ownerId });
     record = { ...record, graduatedAt: gradEvent.at };
+
+    // The deep weave (M-O): news of an ascension reaches the rest of the shelf —
+    // each sibling's next diary may glance up at the new star. Story, never stats.
+    const siblings = (await repo.listCreaturesByOwner(rec.ownerId)).filter(
+      (c) => c.id !== rec.id && c.state.alive && c.graduatedAt === null && c.archivedAt === null,
+    );
+    for (const sib of siblings) {
+      await repo.appendEvents(
+        sib.id,
+        [
+          {
+            at: gradEvent.at,
+            kind: 'echo',
+            tag: 'newStar',
+            statDeltas: {},
+            dispositionDelta: 0,
+            salience: 3,
+          },
+        ],
+        'sim',
+      );
+    }
   }
 
   await repo.saveCreature(record);

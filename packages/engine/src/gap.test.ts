@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { condenseMote, summarizeGap, type CreatureState, type SimEvent } from './index.js';
+import {
+  WEATHERS,
+  condenseMote,
+  memoryDayIn,
+  summarizeGap,
+  weatherFor,
+  type CreatureState,
+  type SimEvent,
+} from './index.js';
 
 const HOUR = 3_600_000;
 
@@ -93,5 +101,27 @@ describe('summarizeGap — the "while you were away" recap (M-A)', () => {
     const g = summarizeGap(s(), stats(s(), { ambra: 40, security: 51 }), [], HOUR);
     expect(g.deltas.ambra).toBe(-30); // 70 → 40
     expect(g.deltas.security).toBeUndefined(); // 50 → 51 is below the floor
+  });
+});
+
+describe('the deep weave (M-O) — pure calendar helpers', () => {
+  const WEEK = 7 * 24 * 3_600_000;
+
+  it('memoryDayIn finds a whole-week anniversary inside the gap, and only then', () => {
+    const born = 1_000_000;
+    expect(memoryDayIn(born, born + 6 * 24 * 3_600_000, born + 8 * 24 * 3_600_000)).toBe(1);
+    expect(memoryDayIn(born, born + WEEK + 1, born + WEEK + 3_600_000)).toBeNull();
+    expect(memoryDayIn(born, born + 3 * WEEK - 1, born + 3 * WEEK + 1)).toBe(3);
+    expect(memoryDayIn(born, born + WEEK, born + WEEK)).toBeNull();
+  });
+
+  it('weatherFor is shared, calendar-derived, and stable within a day', () => {
+    const now = Date.UTC(2026, 6, 4, 9, 0);
+    expect(weatherFor(now)).toBe(weatherFor(now + 3_600_000)); // same day, same sky
+    expect(WEATHERS).toContain(weatherFor(now));
+    const skies = new Set(
+      Array.from({ length: 30 }, (_, d) => weatherFor(now + d * 24 * 3_600_000)),
+    );
+    expect(skies.size).toBeGreaterThan(1);
   });
 });

@@ -83,3 +83,33 @@ export function summarizeGap(
     deltas,
   };
 }
+
+/**
+ * The deep weave (M-O) — small pure calendar helpers for the narration layer.
+ * Flavor, never fate: nothing here moves a stat.
+ */
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * The naming-day: if a whole-week anniversary of `bornAt` falls inside
+ * (since, now], return which week it is (1, 2, 3…); else null.
+ */
+export function memoryDayIn(bornAt: number, since: number, now: number): number | null {
+  if (now <= since || now <= bornAt) return null;
+  const firstWeekAfterSince = Math.floor((Math.max(since, bornAt) - bornAt) / WEEK_MS) + 1;
+  const at = bornAt + firstWeekAfterSince * WEEK_MS;
+  return at > since && at <= now ? firstWeekAfterSince : null;
+}
+
+/** The glass's weather — shared by a whole shelf, derived from the calendar day. */
+export const WEATHERS = ['clear', 'rain on the glass', 'long light', 'mistfall'] as const;
+export type Weather = (typeof WEATHERS)[number];
+
+export function weatherFor(now: number): Weather {
+  const day = Math.floor(now / (24 * 60 * 60 * 1000));
+  let h = (day >>> 0) ^ 0x9e3779b1;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = (h ^ (h >>> 13)) >>> 0;
+  return WEATHERS[h % WEATHERS.length]!;
+}
