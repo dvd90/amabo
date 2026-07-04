@@ -42,6 +42,7 @@ async function main(): Promise<void> {
   webpush.setVapidDetails(subject, pub, priv);
   const repo = new DrizzleRepository(makeDb(databaseUrl));
   const now = Date.now();
+  const startedAt = now;
   // The same voice and the same fences as the server: breaker-shared, ledgered.
   const llm = buildLlmClient(logger);
   const chronicler = makeChronicler(
@@ -52,12 +53,22 @@ async function main(): Promise<void> {
     Number(process.env.NARRATION_DAILY_CAP ?? 2000),
   );
 
+  const allSubs = await repo.listPushSubscriptions();
   const byUser = new Map<string, PushSubscriptionRecord[]>();
-  for (const s of await repo.listPushSubscriptions()) {
+  for (const s of allSubs) {
     (byUser.get(s.userId) ?? byUser.set(s.userId, []).get(s.userId)!).push(s);
+  }
+  log.info('run starting', {
+    users: byUser.size,
+    devices: allSubs.length,
+    voice: llm?.provider ?? 'local',
+  });
+  if (byUser.size === 0) {
+    log.info('no device has enabled notifications yet — nothing to do this tick');
   }
 
   let sent = 0;
+  let pagesWritten = 0;
   for (const [userId, userSubs] of byUser) {
     const recs = await repo.listCreaturesByOwner(userId);
     const cands: NotifyCandidate[] = [];
@@ -66,11 +77,15 @@ async function main(): Promise<void> {
       cands.push({ name: record.name, state: record.state, lastSeenAt: record.lastSeenAt });
     }
 
+    log.debug('shelf caught up', { userId, creatures: recs.length });
+
     // The shelf keeps writing while nobody looks (M-M) — then, if the freshest page
     // is still unread, it becomes the social candidate for the ping.
     let social: SocialCandidate | null = null;
     try {
-      await extendChronicle(repo, chronicler, userId, now);
+      const pages = await extendChronicle(repo, chronicler, userId, now);
+      pagesWritten += pages;
+      if (pages > 0) log.info('chronicle extended while nobody looked', { userId, pages });
       const seenAt = (await repo.getUserById(userId))?.chronicleSeenAt ?? 0;
       const [latest] = await repo.listChronicle(userId, 1);
       if (latest && latest.at > seenAt && latest.text) {
@@ -88,7 +103,14 @@ async function main(): Promise<void> {
 
     for (const sub of userSubs) {
       const msg = decideNotification(cands, now, sub.lastNotifiedAt, undefined, social);
-      if (!msg) continue;
+      if (!msg) {
+        log.debug('nothing worth a ping for this device', {
+          userId,
+          cooldownActive:
+            sub.lastNotifiedAt != null && now - sub.lastNotifiedAt < 6 * 60 * 60 * 1000,
+        });
+        continue;
+      }
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -96,6 +118,7 @@ async function main(): Promise<void> {
         );
         await repo.touchPushNotified(sub.id, now);
         sent += 1;
+        log.info('pinged', { userId, title: msg.title });
       } catch (err) {
         const code = (err as { statusCode?: number }).statusCode;
         if (code === 404 || code === 410) {
@@ -107,7 +130,13 @@ async function main(): Promise<void> {
       }
     }
   }
-  log.info('run complete', { pinged: sent });
+  log.info('run complete', {
+    users: byUser.size,
+    devices: allSubs.length,
+    pinged: sent,
+    pagesWritten,
+    ms: Date.now() - startedAt,
+  });
 }
 
 main()
