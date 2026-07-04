@@ -4023,6 +4023,10 @@ main,
   line-height: 1.4;
   margin-top: 0.15rem;
 }
+.kept-days {
+  opacity: 0.7;
+  font-weight: 400;
+}
 .chronicle-badge {
   color: hsl(var(--amber));
   font-weight: 600;

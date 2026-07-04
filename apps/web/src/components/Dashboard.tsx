@@ -176,6 +176,12 @@ export function Dashboard() {
   // shelf (ascended → their stars remain) or a quiet count (faded → Lethe).
   const active = creatures.filter((c) => c.state.alive && !c.graduatedAt && !c.archivedAt);
 
+  // Devotion, counted gently (never punished): days since the first light was kept.
+  const keptDays =
+    creatures.length > 0
+      ? Math.floor((Date.now() - Math.min(...creatures.map((c) => c.createdAt))) / 86_400_000)
+      : 0;
+
   // The living-world glance (M-L): what happened while the Light was away.
   useEffect(() => {
     if (creatures.length > 0)
@@ -216,7 +222,15 @@ export function Dashboard() {
     <div className="dashboard">
       <header className="dash-top">
         <div>
-          <p className="dash-kicker">Your Amarium</p>
+          <p className="dash-kicker">
+            Your Amarium
+            {keptDays >= 1 ? (
+              <span className="kept-days">
+                {' '}
+                · the light has been kept {keptDays} day{keptDays === 1 ? '' : 's'} ✦
+              </span>
+            ) : null}
+          </p>
           <h1 className="dash-title">The lights you tend</h1>
         </div>
         <span className="dash-actions">

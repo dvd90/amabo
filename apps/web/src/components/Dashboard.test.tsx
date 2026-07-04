@@ -42,6 +42,19 @@ function creature(
 }
 
 describe('<Dashboard> (the roster)', () => {
+  it('counts the kept days gently (the devotion line)', () => {
+    const c = creature('c1', 'Pip');
+    c.createdAt = Date.now() - 12 * 86_400_000;
+    useGame.setState({
+      creatures: [c],
+      client: {
+        pulse: vi.fn().mockResolvedValue({ chronicleNew: 0, latest: null, lives: [] }),
+      } as never,
+    });
+    render(<Dashboard />);
+    expect(screen.getByText(/kept 12 days/)).toBeTruthy();
+  });
+
   it('opens the museum of made things (M-N keepsakes)', async () => {
     const keepsakes = vi.fn().mockResolvedValue([
       {
