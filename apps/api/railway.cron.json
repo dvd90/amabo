@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "cd ../../ && pnpm install --frozen-lockfile && pnpm build"
+  },
+  "deploy": {
+    "cronSchedule": "*/30 * * * *",
+    "startCommand": "node dist/cron/notify.js",
+    "restartPolicyType": "NEVER"
+  }
+}
