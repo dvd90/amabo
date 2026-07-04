@@ -107,6 +107,47 @@ describe('the Grok adapter (multi-LLM) — one port, another voice', () => {
     expect(out.journal.length).toBeGreaterThan(0); // fallbackNarration, not a throw
     expect(out.mood.length).toBeGreaterThan(0);
   });
+
+  it("carries the provider's own words in the error — a 400 names its reason in the log", async () => {
+    const fetchFn = vi.fn(async (url: string) => {
+      if (String(url).endsWith('/models')) return { ok: false, status: 404 };
+      return {
+        ok: false,
+        status: 400,
+        text: async () => '{"error":"The model grok-cheap does not exist"}',
+      };
+    });
+    const client = makeGrokClient(CFG, fetchFn as unknown as typeof fetch);
+    await expect(
+      client.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] }),
+    ).rejects.toThrow(/400.*grok-cheap does not exist/);
+  });
+
+  it('says which model ids it resolved to, and how (onResolve)', async () => {
+    const onResolve = vi.fn();
+    const live = vi.fn(async (url: string) => {
+      if (String(url).endsWith('/models')) {
+        return { ok: true, json: async () => ({ data: [{ id: 'grok-5-fast-non-reasoning' }] }) };
+      }
+      return grokResponse({ journal: 'x', mood: 'calm' });
+    });
+    const a = makeGrokClient({ ...CFG, onResolve }, live as unknown as typeof fetch);
+    await a.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    expect(onResolve).toHaveBeenCalledWith(
+      expect.objectContaining({ peek: 'grok-5-fast-non-reasoning', via: 'live-list' }),
+    );
+
+    const dead = vi.fn(async (url: string) => {
+      if (String(url).endsWith('/models')) return { ok: false, status: 404 };
+      return grokResponse({ journal: 'x', mood: 'calm' });
+    });
+    const onResolve2 = vi.fn();
+    const b = makeGrokClient({ ...CFG, onResolve: onResolve2 }, dead as unknown as typeof fetch);
+    await b.messages.create({ model: MODEL_PEEK, max_tokens: 300, messages: [] });
+    expect(onResolve2).toHaveBeenCalledWith(
+      expect.objectContaining({ peek: 'grok-cheap', via: 'configured' }),
+    );
+  });
 });
 
 describe('model auto-resolution — a key alone is enough', () => {

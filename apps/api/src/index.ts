@@ -56,8 +56,12 @@ function webDistDir(): string | undefined {
  */
 type LlmChoice = { client: AnthropicLike; provider: 'llama' | 'grok' | 'anthropic' };
 
-function buildLlmClient(): LlmChoice | null {
+function buildLlmClient(logger: Logger): LlmChoice | null {
   const pick = process.env.NARRATOR_PROVIDER;
+  // Deploy truth for the voice: one log line names the ids narration will use and
+  // whether they came from the host's live /models list or straight from config.
+  const onResolve = (info: { peek: string; milestone: string; via: string }) =>
+    logger.child('narration').info('model ids resolved', info);
   const candidates: { provider: LlmChoice['provider']; make: () => AnthropicLike | null }[] = [
     {
       provider: 'llama',
@@ -74,6 +78,7 @@ function buildLlmClient(): LlmChoice | null {
           baseUrl: process.env.LLAMA_BASE_URL ?? 'https://api.groq.com/openai/v1',
           peekModel: model,
           milestoneModel: process.env.LLAMA_MODEL_MILESTONE ?? model,
+          onResolve,
           // Self-healing (like the Grok preset): if the host renamed the model,
           // resolve against its live /models list — a key alone stays enough.
           peekCandidates: [/llama-3\.3-70b/i, /llama-3\.3/i, /llama.*70b/i, /llama/i],
@@ -90,6 +95,7 @@ function buildLlmClient(): LlmChoice | null {
           apiKey: key,
           peekModel: process.env.XAI_MODEL_PEEK ?? 'grok-4-1-fast-non-reasoning',
           milestoneModel: process.env.XAI_MODEL_MILESTONE ?? 'grok-4-1-fast-reasoning',
+          onResolve,
         });
       },
     },
@@ -238,7 +244,7 @@ if (process.env.NODE_ENV !== 'test') {
   const { mailer, real: realMailer } = buildMailer(boot);
 
   const repo = buildRepo(boot);
-  const llm = buildLlmClient();
+  const llm = buildLlmClient(logger);
   const monitor = process.env.SENTRY_DSN
     ? sentryMonitor(
         process.env.SENTRY_DSN,

@@ -33,6 +33,13 @@ export interface OpenAiCompatConfig {
    */
   peekCandidates?: RegExp[];
   milestoneCandidates?: RegExp[];
+  /**
+   * Called once, after model resolution — so the composition root can log which ids
+   * narration will actually use and whether they came from the host's live list
+   * ('live-list') or straight from config ('configured', i.e. /models unavailable).
+   * A throwing hook is swallowed; observation never breaks the voice.
+   */
+  onResolve?: (info: { peek: string; milestone: string; via: 'live-list' | 'configured' }) => void;
 }
 
 /** Never narrate through a non-text model, whatever the candidates say. */
@@ -69,6 +76,17 @@ export function makeOpenAiCompatClient(
   // never fatally: a host without /models (or a failing call) keeps the configured
   // ids exactly as before.
   let resolved: Promise<{ peek: string; milestone: string }> | null = null;
+  const tellResolved = (
+    models: { peek: string; milestone: string },
+    via: 'live-list' | 'configured',
+  ) => {
+    try {
+      cfg.onResolve?.({ ...models, via });
+    } catch {
+      /* observation never breaks the voice */
+    }
+    return models;
+  };
   const resolveModels = () => {
     resolved ??= (async () => {
       try {
@@ -79,12 +97,15 @@ export function makeOpenAiCompatClient(
         const data = (await res.json()) as { data?: { id?: string }[] };
         const available = (data.data ?? []).map((m) => m.id).filter((id): id is string => !!id);
         if (available.length === 0) throw new Error('empty model list');
-        return {
-          peek: pickModel(cfg.peekModel, available, cfg.peekCandidates ?? []),
-          milestone: pickModel(cfg.milestoneModel, available, cfg.milestoneCandidates ?? []),
-        };
+        return tellResolved(
+          {
+            peek: pickModel(cfg.peekModel, available, cfg.peekCandidates ?? []),
+            milestone: pickModel(cfg.milestoneModel, available, cfg.milestoneCandidates ?? []),
+          },
+          'live-list',
+        );
       } catch {
-        return { peek: cfg.peekModel, milestone: cfg.milestoneModel };
+        return tellResolved({ peek: cfg.peekModel, milestone: cfg.milestoneModel }, 'configured');
       }
     })();
     return resolved;
@@ -130,7 +151,19 @@ export function makeOpenAiCompatClient(
             ...(toolChoice ? { tool_choice: toolChoice } : {}),
           }),
         });
-        if (!res.ok) throw new Error(`llm chat/completions → ${res.status}`);
+        if (!res.ok) {
+          // Keep the provider's own words — a bare status hides WHY (wrong model id,
+          // unsupported param…); the API layer logs this message via onFallback.
+          let detail = '';
+          try {
+            detail = (await (res as { text?: () => Promise<string> }).text?.()) ?? '';
+          } catch {
+            /* a body we cannot read is just a bare status */
+          }
+          throw new Error(
+            `llm chat/completions → ${res.status}${detail ? `: ${detail.slice(0, 240)}` : ''}`,
+          );
+        }
 
         const data = (await res.json()) as {
           choices?: {
