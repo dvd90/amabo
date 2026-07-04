@@ -98,6 +98,7 @@ const API_PREFIXES = [
   '/push',
   '/symposium',
   '/chronicle',
+  '/keepsakes',
 ];
 const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 

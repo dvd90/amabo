@@ -34,6 +34,8 @@ export interface Direction {
   /** One of the dealt option ids — guaranteed, whatever the model said. */
   choiceId: string;
   manner: MannerT;
+  /** The made thing's name, when the chosen day makes one (STORY.md §8¾ keepsakes). */
+  made?: string;
   source: 'model' | 'local';
   usage?: { inputTokens: number; outputTokens: number };
   /** Why the seeded direction stood in (only when source is 'local') — for the log. */
@@ -53,6 +55,37 @@ function clampManner(raw: unknown): unknown {
     obsession: str(r.obsession, 60),
     gait: word(r.gait),
   };
+}
+
+/** Chosen days that make something (mirrors the engine's DAYPATH_MAKERS). */
+const MAKER_TAGS = new Set(['builtSmallThing', 'tendedMoss', 'sangToGlass', 'sortedSmallThings']);
+
+/** Seeded keepsake names per motif — the keyless floor for made things. */
+const KEEPSAKE_NAMES: Record<string, string[]> = {
+  builtSmallThing: [
+    'a bent-light whistle',
+    'a pebble stack that agrees with itself',
+    'a little door for the smudge',
+    'a moss-button',
+  ],
+  tendedMoss: [
+    'the moss, standing proud',
+    'a moss crown, slightly crooked',
+    'one brave green inch',
+  ],
+  sangToGlass: ['a four-note song', 'a hum the glass kept', 'a lullaby for the latch'],
+  sortedSmallThings: [
+    'an order only it understands',
+    'three tidy invisible piles',
+    'a catalogue of warm places',
+  ],
+};
+
+/** Name the made thing for a motif — deterministic per creature. */
+export function nameKeepsake(tag: string, salt: number): string | null {
+  const pool = KEEPSAKE_NAMES[tag];
+  if (!pool) return null;
+  return pool[(salt >>> 0) % pool.length]!;
 }
 
 // ── The seeded floor: works keyless, deterministic per creature ─────────────────
@@ -98,14 +131,20 @@ function rng(seed: number): () => number {
 export function localDirection(input: DirectInput): Direction {
   const next = rng(hashOf(input));
   const pick = <T>(pool: readonly T[]): T => pool[Math.floor(next() * pool.length)]!;
+  const chosen = input.options.length > 0 ? pick(input.options) : null;
+  const made =
+    chosen && MAKER_TAGS.has(chosen.tag)
+      ? (nameKeepsake(chosen.tag, hashOf(input)) ?? undefined)
+      : undefined;
   return {
-    choiceId: input.options.length > 0 ? pick(input.options).id : '',
+    choiceId: chosen?.id ?? '',
     manner: {
       haunt: pick(HAUNTS),
       ritual: pick(RITUALS),
       obsession: pick(OBSESSIONS),
       gait: input.uncanny ? 'still' : pick(GAITS),
     },
+    ...(made ? { made } : {}),
     source: 'local',
   };
 }
@@ -119,6 +158,11 @@ const DIRECT_SCENE_TOOL = {
       choiceId: {
         type: 'string',
         description: 'EXACTLY one id from the dealt options. Anything else is discarded.',
+      },
+      made: {
+        type: 'string',
+        description:
+          'ONLY if the chosen day made something: name the small made thing, under 60 chars, in its own words.',
       },
       manner: {
         type: 'object',
@@ -173,7 +217,9 @@ export async function directLife(input: DirectInput, client: AnthropicLike): Pro
       ],
     });
     const toolUse = res.content.find((c) => c.type === 'tool_use' && c.name === 'direct_scene');
-    const raw = toolUse?.input as { choiceId?: unknown; manner?: unknown } | undefined;
+    const raw = toolUse?.input as
+      | { choiceId?: unknown; manner?: unknown; made?: unknown }
+      | undefined;
     const manner = DirectionAnswer.safeParse(clampManner(raw?.manner));
     const picked = input.options.find(
       (o) =>
@@ -199,7 +245,18 @@ export async function directLife(input: DirectInput, client: AnthropicLike): Pro
       res.usage?.input_tokens !== undefined && res.usage?.output_tokens !== undefined
         ? { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens }
         : undefined;
-    return { choiceId: picked.id, manner: manner.data, source: 'model', usage };
+    const made = MAKER_TAGS.has(picked.tag)
+      ? typeof raw?.made === 'string' && raw.made.trim()
+        ? raw.made.trim().slice(0, 60)
+        : (nameKeepsake(picked.tag, hashOf(input)) ?? undefined)
+      : undefined;
+    return {
+      choiceId: picked.id,
+      manner: manner.data,
+      ...(made ? { made } : {}),
+      source: 'model',
+      usage,
+    };
   } catch (err) {
     return { ...fallback, reason: (err as Error).message?.slice(0, 240) };
   }

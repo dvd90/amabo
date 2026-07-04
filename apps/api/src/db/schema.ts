@@ -312,6 +312,21 @@ export const standings = pgTable(
   (t) => [index('standings_pair_idx').on(t.ownerId, t.a, t.b)],
 );
 
+// Keepsakes (STORY.md §8¾): the museum of made things — a chosen day that made
+// something leaves it on the shelf, named in the creature's own words. Pure memory.
+export const keepsakes = pgTable(
+  'keepsakes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id'),
+    creatureId: uuid('creature_id').notNull(),
+    name: text('name').notNull(),
+    tag: text('tag').notNull(),
+    at: doublePrecision('at').notNull(),
+  },
+  (t) => [index('keepsakes_owner_idx').on(t.ownerId, t.at)],
+);
+
 // The funnel (LAUNCH_PLAN.md L1): named product beats in our own Postgres — no third
 // party. Doubles as the narration cost ledger in L3 (name = 'narration', props = usage).
 export const telemetry = pgTable(

@@ -52,6 +52,14 @@ export const DAYPATHS_YIM: readonly DaypathOption[] = [
   { id: 'tidied-the-dark', tag: 'tidiedDark', hint: 'tidied a corner of the dark' },
 ];
 
+/** Chosen days that MAKE something — a keepsake stays on the shelf (STORY.md §8¾). */
+export const DAYPATH_MAKERS = [
+  'builtSmallThing',
+  'tendedMoss',
+  'sangToGlass',
+  'sortedSmallThings',
+] as const;
+
 function tableFor(disposition: number): readonly DaypathOption[] {
   if (disposition < UNCANNY_THRESHOLD) return DAYPATHS_YIM;
   if (disposition >= AMABO_THRESHOLD) return DAYPATHS_AMABO;

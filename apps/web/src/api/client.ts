@@ -196,6 +196,15 @@ export interface PulseView {
   lives: { id: string; daypath: { tag: string; at: number } | null }[];
 }
 
+/** A made thing that stayed (STORY.md §8¾) — the museum of keepsakes. */
+export interface KeepsakeView {
+  id: string;
+  name: string;
+  tag: string;
+  at: number;
+  creatureName: string;
+}
+
 /** A minted share link. */
 export interface ShareLink {
   token: string;
@@ -274,6 +283,8 @@ export interface ApiClient {
   chronicle(): Promise<ChronicleView>;
   /** The living-world glance for the dashboard — never marks the book read. */
   pulse(): Promise<PulseView>;
+  /** The museum of made things, most recent first. */
+  keepsakes(): Promise<KeepsakeView[]>;
   /** The friendship sky — every bond among your creatures. */
   sky(): Promise<SkyView>;
   /** Mint a scoped, expiring share link for a creature (incl. a 'gather' guest pass). */
@@ -404,6 +415,11 @@ export class HttpApiClient implements ApiClient {
 
   async pulse() {
     return this.req<PulseView>('/chronicle/pulse');
+  }
+
+  async keepsakes() {
+    const r = await this.req<{ keepsakes: KeepsakeView[] }>('/keepsakes');
+    return r.keepsakes;
   }
 
   async letters() {
