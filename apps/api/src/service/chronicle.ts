@@ -32,19 +32,20 @@ export type Chronicler = (
 /**
  * Extend the book if enough dark has passed: roll encounters, voice them, persist
  * pages + standings + bond threads. Idempotent per gap — the next roll starts at
- * the last written page.
+ * the last written page. Returns how many pages were written (0 = the gap was
+ * short, the company too small, or chance kept them apart).
  */
 export async function extendChronicle(
   repo: Repository,
   chronicler: Chronicler,
   owner: string | null,
   now: number,
-): Promise<void> {
+): Promise<number> {
   const all = await repo.listCreaturesByOwner(owner);
   const active = all.filter(
     (c) => c.state.alive && c.graduatedAt === null && c.archivedAt === null,
   );
-  if (active.length < 2) return;
+  if (active.length < 2) return 0;
 
   const last = await repo.lastChronicleAt(owner);
   const since = last ?? now - LOOKBACK_CAP_MS;
@@ -57,7 +58,7 @@ export async function extendChronicle(
     elapsed,
     rng,
   );
-  if (outlines.length === 0) return;
+  if (outlines.length === 0) return 0;
 
   const encounters = await Promise.all(
     outlines.map(async (o) => {
@@ -99,6 +100,7 @@ export async function extendChronicle(
     outlines.map((o) => ({ a: o.aId, b: o.bId, strength: bondDeltaFor(o.valence) })),
     now,
   );
+  return outlines.length;
 }
 
 /**
