@@ -9,7 +9,8 @@ env vars below).
 Railway project "amabo"
 ├── Postgres            (managed plugin → injects DATABASE_URL)
 ├── amabo-api           (Root Directory: apps/api  →  apps/api/railway.json)
-└── amabo-web           (Root Directory: apps/web  →  apps/web/railway.json)
+├── amabo-web           (Root Directory: apps/web  →  apps/web/railway.json)
+└── amabo-sky           (optional, the Sky — Root Directory: apps/robinhood-web → apps/robinhood-web/railway.json)
 ```
 
 Each service has its own `railway.json` inside its app directory. Set **Root Directory**
@@ -278,8 +279,9 @@ API's voucher, and the Sky site. In order:
 3. **Device** (`amabo-web`) — `VITE_SKY_URL=https://www.theamarium.com` at build time.
    Without it the device shows no link to the Sky and refuses the `/inscribe` handoff.
 4. **The Sky** — a third Railway service from the same repo, **Root Directory
-   `apps/robinhood-web`** (Next 15; build `next build`, start `next start`), custom
-   domain `www.theamarium.com`, variables:
+   `apps/robinhood-web`** — Railpack picks up `apps/robinhood-web/railway.json`
+   (installs from the monorepo root, `next build`, `next start` on Railway's `PORT`),
+   custom domain `www.theamarium.com`, variables:
 
    | Variable                             | Purpose                                                                      |
    | ------------------------------------ | ---------------------------------------------------------------------------- |
