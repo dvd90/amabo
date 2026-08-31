@@ -30,7 +30,8 @@ frontend are the upstream project's own code, relocated to fit `amabo`'s layout
 (flattened out of a nested `contracts/` dir, `apps/web` renamed `apps/robinhood-web`,
 a few path constants adjusted accordingly — see git history for the exact diff).
 `packages/robinhood-contracts/CLAUDE.md` carries the ported conventions and golden
-rules; this file carries the lore mapping and monorepo-specific notes.
+rules; this file carries the lore mapping and monorepo-specific notes. **To actually
+deploy the stars and Lumen, follow `docs/SKY_RUNBOOK.md` step by step.**
 
 ## The concept
 

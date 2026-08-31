@@ -261,6 +261,10 @@ A care game lives on the ping. Push is off until you set it up:
 
 ## The Sky — `www.theamarium.com` (optional, ARCHITECTURE.md §13)
 
+> The full, exhaustive procedure — prerequisites, verifying the chain constants, a local
+> rehearsal, the contract deploy, Lumen, operations and troubleshooting — is
+> **`docs/SKY_RUNBOOK.md`**. This section is the short version.
+
 The chain layer is off until you turn it on, and it is three pieces: the contracts, the
 API's voucher, and the Sky site. In order:
 

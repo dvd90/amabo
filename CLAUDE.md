@@ -66,7 +66,7 @@ amabo/
   ERC-20 for keeping/naming/voting — **never Ambra, never emitted by play, never read
   by the game**. The core must build/run/test with these absent; nothing on chain
   gates gameplay or touches souring/illness/death. See `STORY.md` §7½,
-  `ARCHITECTURE.md` §13, `docs/ROBINHOOD_CHAIN.md`.
+  `ARCHITECTURE.md` §13, `docs/ROBINHOOD_CHAIN.md`; deploy via `docs/SKY_RUNBOOK.md`.
 - Self-tending (`packages/atelier`, "the Dreaming") is **optional, isolated, off by
   default** — a grown creature may *propose* improvements to itself and its world, but
   **a creature proposes; only a human disposes**: every wish is a human-reviewed
