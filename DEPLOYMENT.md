@@ -278,10 +278,20 @@ API's voucher, and the Sky site. In order:
    (see the table above). `/health` unaffected; the boot log says "the Sky is on".
 3. **Device** (`amabo-web`) — `VITE_SKY_URL=https://sky.theamarium.com` at build time.
    Without it the device shows no link to the Sky and refuses the `/inscribe` handoff.
-4. **The Sky** — a third Railway service from the same repo, **Root Directory
-   `apps/robinhood-web`** — Railpack picks up `apps/robinhood-web/railway.json`
-   (installs from the monorepo root, `next build`, `next start` on Railway's `PORT`),
-   custom domain `sky.theamarium.com`, variables:
+4. **The Sky** — a third Railway service from the same repo (**`amabo-sky`**, created
+   2026-08-31 with `railway add --service amabo-sky --repo dvd90/amabo`). Two ways to
+   make it build `apps/robinhood-web` from the monorepo:
+   - **Root Directory `apps/robinhood-web`** (dashboard → Settings → Source) — Railpack
+     then picks up `apps/robinhood-web/railway.json`; or
+   - **no Root Directory** and two variables that override Railpack from the repo root
+     (what is live today, set from the CLI):
+     `RAILPACK_BUILD_CMD=pnpm install --frozen-lockfile && pnpm --filter robinhood-web build`
+     and `RAILPACK_START_CMD=pnpm --filter robinhood-web start`.
+
+   Domains: `amabo-sky-production.up.railway.app` (generated) and the custom
+   `sky.theamarium.com` — at the DNS provider add **CNAME `sky` → `y3osjo95.up.railway.app`**
+   and the TXT record `railway domain status <id>` prints (`_railway-verify.sky`);
+   `railway domain list --service amabo-sky` shows when it verifies. Variables:
 
    | Variable                             | Purpose                                                                      |
    | ------------------------------------ | ---------------------------------------------------------------------------- |
@@ -292,6 +302,9 @@ API's voucher, and the Sky site. In order:
 
    The Sky never sees a game session: it reads `GET /sky/stars/:id` (public, CORS `*`)
    and otherwise talks only to the chain through the visitor's wallet.
+
+   Until PR #97 merges the service deploys from its branch; afterwards point it at main:
+   `railway service source connect --repo dvd90/amabo --branch main --service amabo-sky`.
 
 ## Notes
 
