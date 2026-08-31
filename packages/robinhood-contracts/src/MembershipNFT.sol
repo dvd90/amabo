@@ -47,6 +47,20 @@ contract MembershipNFT is ERC721Upgradeable, Ownable2StepUpgradeable {
         address registry_,
         address accountImpl_
     ) external initializer {
+        __MembershipNFT_init(name_, symbol_, owner_, treasury_, mintPrice_, maxSupply_, registry_, accountImpl_);
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function __MembershipNFT_init(
+        string memory name_,
+        string memory symbol_,
+        address owner_,
+        address treasury_,
+        uint256 mintPrice_,
+        uint256 maxSupply_,
+        address registry_,
+        address accountImpl_
+    ) internal onlyInitializing {
         _requireContract(registry_);
         _requireContract(accountImpl_);
         _requirePayable(treasury_);
@@ -61,15 +75,20 @@ contract MembershipNFT is ERC721Upgradeable, Ownable2StepUpgradeable {
     }
 
     /// @notice Mint the next token to the caller and deploy its TBA. Excess ETH is refunded.
-    function mint() external payable returns (uint256 tokenId, address tba) {
-        uint256 price = mintPrice;
-        if (msg.value < price) revert InsufficientPayment(msg.value, price);
+    function mint() external payable virtual returns (uint256 tokenId, address tba) {
         if (totalSupply >= maxSupply) revert MaxSupplyReached();
+        return _mintTo(msg.sender, mintPrice);
+    }
+
+    /// @dev Charges `price` from `msg.value` (refunding the rest), mints the next id to `to`, deploys
+    ///      its TBA. No supply check: callers decide what counts against `maxSupply`.
+    function _mintTo(address to, uint256 price) internal returns (uint256 tokenId, address tba) {
+        if (msg.value < price) revert InsufficientPayment(msg.value, price);
 
         tokenId = ++totalSupply;
-        _safeMint(msg.sender, tokenId);
+        _safeMint(to, tokenId);
         tba = registry.createAccount(accountImpl, TBA_SALT, block.chainid, address(this), tokenId);
-        emit Minted(tokenId, msg.sender, tba);
+        emit Minted(tokenId, to, tba);
 
         // Proceeds to treasury only. Do not route these into RevenueVault (rule 1).
         if (price > 0) _sendEth(treasury, price);
@@ -92,7 +111,7 @@ contract MembershipNFT is ERC721Upgradeable, Ownable2StepUpgradeable {
         emit MintPriceUpdated(mintPrice_);
     }
 
-    function _update(address to, uint256 tokenId, address auth) internal override returns (address from) {
+    function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address from) {
         heldSince[tokenId] = block.timestamp;
         return super._update(to, tokenId, auth);
     }

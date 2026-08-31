@@ -13,6 +13,9 @@ package.
 A Chassis-style protocol for on-chain projects on **Robinhood Chain (chain ID 4663)**:
 
 - **MembershipNFT** — ERC-721; each token mints an ERC-6551 token-bound account (TBA).
+- **StarNFT** — the Amabo Sky's stars on top of MembershipNFT (`docs/ROBINHOOD_CHAIN.md`,
+  `docs/ARCHITECTURE.md` §13): bought *unnamed* seats vs. earned *inscribed* stars struck with an
+  EIP-712 voucher from the game API; one soul, one star; soulbound except via `offerRehome`/`acceptRehome`.
 - **RevenueVault** — pro-rata distribution of *explicitly deposited* revenue to current holders.
 - **Factory** — EIP-1167 `cloneDeterministic` of NFT + Vault, wired and ownership-transferred in one tx.
 - **IWeightStrategy** — pluggable holder-weight function (levels, tenure, whatever). Game logic lives here, never in the vault.
@@ -44,6 +47,7 @@ A Chassis-style protocol for on-chain projects on **Robinhood Chain (chain ID 46
 ```
 src/
   MembershipNFT.sol
+  StarNFT.sol               # the Sky's stars: extends MembershipNFT — unnamed (bought) / inscribed (API-signed voucher), soulbound, rehome ceremony
   RevenueVault.sol
   Factory.sol
   Constants.sol            # chain 4663 constants, all VERIFY-tagged

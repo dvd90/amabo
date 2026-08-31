@@ -10,15 +10,15 @@
 > voucher is the only bridge). The core Amabo game builds, tests, and deploys
 > unaffected if these two packages were deleted outright.
 
-## What the Sky adds on top of the port (M10, not yet built)
+## What the Sky adds on top of the port
 
-| Piece | Today (ported) | The Sky (`ARCHITECTURE.md` §13) |
+| Piece | Status | Detail (`ARCHITECTURE.md` §13) |
 |---|---|---|
-| `MembershipNFT` | open mint at `mintPrice`, sequential ids | `StarNFT`: `kind ∈ {Unnamed, Inscribed}`; unnamed = open mint, generative glyph; inscribed = EIP-712 voucher from the API; `name()` flips an unnamed star once; soulbound unless rehomed |
-| `GameToken` | optional plain ERC-20 | **Lumen** — same contract, fixed supply, no tax/hooks; never emitted by play, never read by the game |
-| `RevenueVault` / `Factory` | built, tested | **stay unwired** at launch (no revenue share without counsel; no cloning needed) |
-| `apps/robinhood-web` | mint / holdings / distribute | landing + public star gallery + claim/name + holdings; distribute UI hidden |
-| `apps/api` | — | `POST /stars/:id/inscribe` → voucher, behind the `chain` flag, owner-scoped, ascended only |
+| `StarNFT` (`src/StarNFT.sol`) | **built** | extends `MembershipNFT`: `kind ∈ {Unnamed, Inscribed}`; unnamed = open `mint()` capped by `maxSupply` (`seatSupply`); inscribed = `inscribe(voucher, sig)` with an EIP-712 voucher from the API's `signer` (`tokenId == 0` strikes a new star at `inscribePrice`, `tokenId` set names an unnamed star you hold, free); one soul, one star (`starOf`); soulbound — a star moves only through `offerRehome` → `acceptRehome`; `tokenURI = baseURI + id`. 27 tests. Deployed by `Deploy.s.sol` as a plain clone (`deployments/<chain>.json` → `star`, `starImpl`); `DryRun.s.sol` buys a seat |
+| `GameToken` | ported | **Lumen** — same contract, fixed supply, no tax/hooks; never emitted by play, never read by the game |
+| `RevenueVault` / `Factory` | ported, **unwired** for the Sky | no revenue share without counsel; no cloning needed |
+| `apps/robinhood-web` | next | landing + public star gallery + claim/name + holdings; distribute UI hidden |
+| `apps/api` | next | `POST /stars/:id/inscribe` → voucher (`StarNFT.Inscription`, domain `{name, "1", 4663, star}`), behind the `chain` flag, owner-scoped, ascended only |
 
 ## Provenance
 
@@ -98,6 +98,9 @@ Still genuinely unknown, and every address in `src/Constants.sol` /
   holdings/claim view (`Holdings.tsx`), permissionless distribute button
   (`Distribute.tsx`), wired to wagmi/viem pinned to chain 4663. `tsc --noEmit` and
   `next lint` both clean.
+- **Phase 7 (done)** — `StarNFT` for the Sky (table above): 27 unit + fuzz tests on top of
+  the ported 56; `MembershipNFT` gained an internal `__MembershipNFT_init` and `_mintTo` so
+  the star contract could extend it without touching the vault or factory paths.
 - **Not started, not scoped**: graduation/exit vesting. No upstream code or plan
   covers it — would need its own spec before building.
 
