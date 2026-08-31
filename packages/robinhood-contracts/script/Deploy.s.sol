@@ -97,7 +97,7 @@ contract Deploy is Script {
                 vm.envOr("STAR_SIGNER", msg.sender),
                 vm.envOr("STAR_INSCRIBE_PRICE", uint256(0))
             );
-        StarNFT(star).setBaseURI(vm.envOr("STAR_BASE_URI", string("https://www.theamarium.com/sky/")));
+        StarNFT(star).setBaseURI(vm.envOr("STAR_BASE_URI", string("https://sky.theamarium.com/sky/")));
     }
 
     /// @dev Shared with the integration tests so they exercise the real deploy path.

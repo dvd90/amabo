@@ -5,7 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_API_BASE?: string;
   /** The commit this bundle was built from (injected in vite.config); "dev" locally. */
   readonly VITE_COMMIT?: string;
-  /** The Sky's origin (www.theamarium.com). Unset = no chain layer, no links to it. */
+  /** The Sky's origin (sky.theamarium.com). Unset = no chain layer, no links to it. */
   readonly VITE_SKY_URL?: string;
 }
 

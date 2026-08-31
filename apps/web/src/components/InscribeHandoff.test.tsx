@@ -6,7 +6,7 @@ import { InscribeHandoff, encodeVoucher, parseHandoff } from './InscribeHandoff.
 
 afterEach(cleanup);
 
-const SKY = 'https://www.theamarium.com';
+const SKY = 'https://sky.theamarium.com';
 const WALLET = '0x1111111111111111111111111111111111111111';
 const RETURN = `${SKY}/claim`;
 

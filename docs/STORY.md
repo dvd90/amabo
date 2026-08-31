@@ -240,7 +240,7 @@ own sky; inscription only makes the memory outlive the device.
 **The Sky.** Outside the glass there is a firmament where inscribed stars are hung for
 anyone to look up at — a public sky, apart from the device you tend. Anyone may walk
 the Sky and read the stars without owning anything; that is what they are for. (The
-device lives at `app.theamarium.com`; the Sky at `www.theamarium.com`.)
+device lives at `www.theamarium.com`; the Sky at `sky.theamarium.com`.)
 
 **Two kinds of star hang there.**
 
@@ -520,7 +520,7 @@ bolted on:
 - **Elysium** — the afterlife/graduation; ascension into light, becoming a star.
 - **Mnemosyne / Lethe** — remembered vs. forgotten.
 - **Inscription** *(optional)* — recording a graduated star on-chain as a permanent keepsake. Earned only.
-- **The Sky** *(optional)* — the public firmament outside the glass where inscribed stars hang (`www.theamarium.com`).
+- **The Sky** *(optional)* — the public firmament outside the glass where inscribed stars hang (`sky.theamarium.com`).
 - **Unnamed star** *(optional)* — a bought seat in the Sky, no soul yet; may later be named by an ascended creature. No effect in the glass.
 - **Lumen** *(optional)* — the Sky's coin: sponsoring inscriptions, naming constellations, voting on the Dreaming. Never Ambra.
 - **Rehoming** *(optional)* — gifting/passing a creature to another player's Amarium.

@@ -2,7 +2,7 @@
 
 > The exhaustive, in-order procedure for turning the chain layer on: the contracts
 > (`StarNFT` + Lumen), the API's voucher, the device's link, and the Sky site at
-> `www.theamarium.com`. Read `STORY.md` §7½ (what it *is*) and `ARCHITECTURE.md` §13
+> `sky.theamarium.com`. Read `STORY.md` §7½ (what it *is*) and `ARCHITECTURE.md` §13
 > (the guardrails) first. `ROBINHOOD_CHAIN.md` explains the ported protocol underneath;
 > `DEPLOYMENT.md` covers the game itself, which this runbook assumes is already live.
 
@@ -20,7 +20,7 @@ builds, runs and tests with every piece here absent.
 | Lumen | `src/GameToken.sol`, same deploy | a plain fixed-supply ERC-20: keeping, naming, voting on the Dreaming — never Ambra, never emitted by play | `LUMEN_SUPPLY` |
 | the voucher | `apps/api` — `POST /stars/:id/inscribe`, `GET /sky/stars/:id` | the API signs an EIP-712 voucher for a star a Light raised; serves a star's public record | `AMABO_FEATURE_CHAIN` + `STAR_SIGNER_KEY` + `STAR_CONTRACT` |
 | the link | `apps/web` (the device) | "inscribe it in the Sky ✦" on a star's plaque; the `/inscribe` handoff | `VITE_SKY_URL` |
-| the Sky | `apps/robinhood-web` at `www.theamarium.com` | landing, the firmament (`/sky`), a star's page, `/claim` | deployed or not |
+| the Sky | `apps/robinhood-web` at `sky.theamarium.com` | landing, the firmament (`/sky`), a star's page, `/claim` | deployed or not |
 
 Also in the deploy script, because it was ported with the protocol: the membership
 project (`MembershipNFT` + `RevenueVault` + `Factory` + `EqualWeightStrategy`). It is
@@ -28,8 +28,8 @@ project (`MembershipNFT` + `RevenueVault` + `Factory` + `EqualWeightStrategy`). 
 little gas and nothing else; leave it, or remove it from `Deploy.s.sol` if you prefer a
 smaller footprint.
 
-Two domains, one brand: the device stays at `app.theamarium.com`; the Sky is
-`www.theamarium.com`. No session ever crosses between them (§6 explains the two-hop
+Two domains, one brand: the device stays at `www.theamarium.com`; the Sky is
+`sky.theamarium.com`. No session ever crosses between them (§6 explains the two-hop
 inscription).
 
 ---
@@ -232,7 +232,7 @@ export STAR_SEAT_PRICE=10000000000000000       # wei per unnamed seat (0.01 ETH 
 export STAR_MAX_SEATS=1000                     # only seats are capped; inscriptions never are
 export STAR_INSCRIBE_PRICE=0                   # wei to strike an earned star; 0 = free
 export STAR_SIGNER=0x…                         # the API signer's ADDRESS (from `cast wallet new`)
-export STAR_BASE_URI=https://www.theamarium.com/sky/
+export STAR_BASE_URI=https://sky.theamarium.com/sky/
 # Lumen (omit or 0 to skip the coin):
 export LUMEN_NAME=Lumen LUMEN_SYMBOL=LUMEN
 export LUMEN_SUPPLY=1000000                    # whole tokens; 18 decimals are added
@@ -298,17 +298,17 @@ To turn it back off, unset `AMABO_FEATURE_CHAIN`: both routes vanish, nothing el
 
 ## 6. Give the device its link (the web app)
 
-On Railway → `amabo-web` → **Variables**: `VITE_SKY_URL=https://www.theamarium.com`
+On Railway → `amabo-web` → **Variables**: `VITE_SKY_URL=https://sky.theamarium.com`
 (build-time; no trailing slash). Redeploy. On an ascended star's plaque (device →
 sky screen → a star) the line now ends with **"inscribe it in the Sky ✦"**, and
-`app.theamarium.com/inscribe?…` accepts the handoff — only back to that origin.
+`www.theamarium.com/inscribe?…` accepts the handoff — only back to that origin.
 
 Without `VITE_SKY_URL` the device shows no link and refuses the handoff with
 "This Amarium has no Sky to inscribe into."
 
 ---
 
-## 7. Deploy the Sky (`www.theamarium.com`)
+## 7. Deploy the Sky (`sky.theamarium.com`)
 
 1. Railway → the same project → **New → GitHub repo** (the amabo repo again) → name it
    `amabo-sky`.
@@ -318,13 +318,13 @@ Without `VITE_SKY_URL` the device shows no link and refuses the handoff with
 
    | Variable | Value |
    |---|---|
-   | `NEXT_PUBLIC_API_BASE` | `https://app.theamarium.com` (single-origin deploy: the API serves the device) — or the API's own domain |
-   | `NEXT_PUBLIC_APP_URL` | `https://app.theamarium.com` |
+   | `NEXT_PUBLIC_API_BASE` | `https://www.theamarium.com` (single-origin deploy: the API serves the device) — or the API's own domain |
+   | `NEXT_PUBLIC_APP_URL` | `https://www.theamarium.com` |
    | `NEXT_PUBLIC_ROBINHOOD_RPC_URL` | the RPC from §2 |
    | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL` | the explorer from §2 |
 
-4. **Settings → Networking → Custom Domain:** `www.theamarium.com`; add the CNAME
-   Railway shows at your DNS provider. Do the same for `app.theamarium.com` on the
+4. **Settings → Networking → Custom Domain:** `sky.theamarium.com`; add the CNAME
+   Railway shows at your DNS provider. Do the same for `www.theamarium.com` on the
    device's service if not already done, and redirect the apex (`theamarium.com`) to
    `www` at the DNS/registrar level.
 5. Deploy. Check: `/` shows the star contract address and "Robinhood Chain 4663";
@@ -339,7 +339,7 @@ otherwise talks only to the chain through the visitor's own wallet.
 
 ### 8.1 Keep a seat (an unnamed star)
 
-1. `www.theamarium.com` → **Connect** (MetaMask / any injected wallet) → switch to
+1. `sky.theamarium.com` → **Connect** (MetaMask / any injected wallet) → switch to
    Robinhood Chain if prompted.
 2. **Keep a seat** → confirm the transaction (`mintPrice` ETH, excess refunded).
 3. It appears under **Your lights** as "unnamed seat #N" and on `/sky` in the count of
@@ -438,7 +438,7 @@ anyway). No star is affected.
 ```bash
 cast send $STAR "setMintPrice(uint256)"     <wei> --rpc-url robinhood --ledger   # seats
 cast send $STAR "setInscribePrice(uint256)" <wei> --rpc-url robinhood --ledger   # earned stars (0 = free)
-cast send $STAR "setBaseURI(string)"  "https://www.theamarium.com/sky/" --rpc-url robinhood --ledger
+cast send $STAR "setBaseURI(string)"  "https://sky.theamarium.com/sky/" --rpc-url robinhood --ledger
 cast send $STAR "setTreasury(address)" 0x… --rpc-url robinhood --ledger
 ```
 
@@ -503,7 +503,7 @@ under `[chain]`-free ordinary request logs; the Sky has no server state. Keep
 - [ ] §4 `forge script … --broadcast --verify`; `deployments/4663.json` committed; `cast call` checks pass
 - [ ] §5 `amabo-api`: `AMABO_FEATURE_CHAIN=1`, `STAR_SIGNER_KEY`, `STAR_CONTRACT`, `STAR_CHAIN_ID`, `STAR_NAME`; boot log says the Sky is on
 - [ ] §6 `amabo-web`: `VITE_SKY_URL`; the plaque link appears
-- [ ] §7 `amabo-sky`: root `apps/robinhood-web`, four `NEXT_PUBLIC_*` vars, `www.theamarium.com`
+- [ ] §7 `amabo-sky`: root `apps/robinhood-web`, four `NEXT_PUBLIC_*` vars, `sky.theamarium.com`
 - [ ] §8 first seat kept; first star inscribed end to end; first seat named
 - [ ] §9 Lumen deployed with the agreed supply/recipient; address published
 - [ ] §10.4 ownership moved to a multisig; §10.1 signer rotation rehearsed

@@ -1,9 +1,9 @@
 # Robinhood Chain — a membership protocol in Amabo's voice
 
 > Lives in `packages/robinhood-contracts` (Foundry contracts) and `apps/robinhood-web`
-> (Next 15 + wagmi/viem frontend). Together they are **the Sky** — `www.theamarium.com`,
+> (Next 15 + wagmi/viem frontend). Together they are **the Sky** — `sky.theamarium.com`,
 > the public firmament of `STORY.md` §7½ — while the game stays at
-> `app.theamarium.com`. The protocol was ported first as a standalone product; the
+> `www.theamarium.com`. The protocol was ported first as a standalone product; the
 > lore mapping below is now the spec. It follows the isolation law of
 > `ARCHITECTURE.md` §13: a leaf, never a dependency. `engine`/`ai`/`apps/api`/`apps/web`
 > never import from here, and this never imports from them (the API-signed inscription
@@ -17,7 +17,7 @@
 | `StarNFT` (`src/StarNFT.sol`) | **built** | extends `MembershipNFT`: `kind ∈ {Unnamed, Inscribed}`; unnamed = open `mint()` capped by `maxSupply` (`seatSupply`); inscribed = `inscribe(voucher, sig)` with an EIP-712 voucher from the API's `signer` (`tokenId == 0` strikes a new star at `inscribePrice`, `tokenId` set names an unnamed star you hold, free); one soul, one star (`starOf`); soulbound — a star moves only through `offerRehome` → `acceptRehome`; `tokenURI = baseURI + id`. 27 tests. Deployed by `Deploy.s.sol` as a plain clone (`deployments/<chain>.json` → `star`, `starImpl`); `DryRun.s.sol` buys a seat |
 | `GameToken` | ported | **Lumen** — same contract, fixed supply, no tax/hooks; never emitted by play, never read by the game |
 | `RevenueVault` / `Factory` | ported, **unwired** for the Sky | no revenue share without counsel; no cloning needed |
-| `apps/robinhood-web` | **built** | the Sky at `www.theamarium.com`: landing (`/`, lore + wallet + your lights + seats), the firmament (`/sky`, every inscribed star; seats counted), a star's page (`/sky/[tokenId]`, plaque + the glass it lives in + keeper), and `/claim` — inscribing in two hops: the Sky knows the wallet, the device knows the Light, so the Sky sends the Light to `app…/inscribe?star&to&seat&return`, the device asks its own API for the voucher and returns to `/claim#v=<base64url voucher>`, and the wallet strikes (or names) the star. `Holdings`/`Distribute` (vault UI) stay in the tree, unrendered |
+| `apps/robinhood-web` | **built** | the Sky at `sky.theamarium.com`: landing (`/`, lore + wallet + your lights + seats), the firmament (`/sky`, every inscribed star; seats counted), a star's page (`/sky/[tokenId]`, plaque + the glass it lives in + keeper), and `/claim` — inscribing in two hops: the Sky knows the wallet, the device knows the Light, so the Sky sends the Light to `app…/inscribe?star&to&seat&return`, the device asks its own API for the voucher and returns to `/claim#v=<base64url voucher>`, and the wallet strikes (or names) the star. `Holdings`/`Distribute` (vault UI) stay in the tree, unrendered |
 | `apps/api` | **built** | `POST /stars/:id/inscribe` (`src/routes/stars.ts`, `src/chain/star.ts`) → `{ voucher, signature, domain, signer, metadata }`; voucher = `StarNFT.Inscription` with `creatureId` = the creature uuid left-aligned in bytes32 (reversible) and `metadataHash` = keccak256 of the star's canonical public JSON; signed with viem (`STAR_SIGNER_KEY`) over domain `{STAR_NAME, "1", STAR_CHAIN_ID, STAR_CONTRACT}`; behind `AMABO_FEATURE_CHAIN`, owner-scoped, 15-minute deadline. A pinned digest vector is asserted by both suites |
 
 ## Provenance

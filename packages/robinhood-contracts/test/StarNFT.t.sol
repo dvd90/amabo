@@ -53,7 +53,7 @@ contract StarNFTTest is Test {
             signer,
             INSCRIBE_PRICE
         );
-        nft.setBaseURI("https://www.theamarium.com/sky/");
+        nft.setBaseURI("https://sky.theamarium.com/sky/");
         vm.deal(alice, 10 ether);
         vm.deal(bob, 10 ether);
     }
@@ -316,7 +316,7 @@ contract StarNFTTest is Test {
 
     function test_TokenURIPointsAtTheSky() public {
         uint256 id = _inscribe(alice, SOUL_A);
-        assertEq(nft.tokenURI(id), "https://www.theamarium.com/sky/1");
+        assertEq(nft.tokenURI(id), "https://sky.theamarium.com/sky/1");
     }
 
     function test_TokenURIRevertsForUnstruckStar() public {

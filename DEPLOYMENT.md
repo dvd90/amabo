@@ -260,7 +260,7 @@ A care game lives on the ping. Push is off until you set it up:
 4. In the app, tap **🔔 Notify me** on the dashboard, accept the browser prompt, and you're
    subscribed. (iOS requires the PWA to be **installed** to Home Screen first.)
 
-## The Sky — `www.theamarium.com` (optional, ARCHITECTURE.md §13)
+## The Sky — `sky.theamarium.com` (optional, ARCHITECTURE.md §13)
 
 > The full, exhaustive procedure — prerequisites, verifying the chain constants, a local
 > rehearsal, the contract deploy, Lumen, operations and troubleshooting — is
@@ -272,21 +272,21 @@ API's voucher, and the Sky site. In order:
 1. **Contracts** — `packages/robinhood-contracts`: `forge script script/Deploy.s.sol
 --rpc-url robinhood --broadcast` (env `STAR_SIGNER` = the address of the API's hot
    key; `STAR_SEAT_PRICE`, `STAR_MAX_SEATS`, `STAR_INSCRIBE_PRICE`, `STAR_BASE_URI` =
-   `https://www.theamarium.com/sky/`). Writes `deployments/4663.json` (`star`). Confirm
+   `https://sky.theamarium.com/sky/`). Writes `deployments/4663.json` (`star`). Confirm
    every `// VERIFY` address first.
 2. **API** (`amabo-api`) — `AMABO_FEATURE_CHAIN=1`, `STAR_SIGNER_KEY`, `STAR_CONTRACT`
    (see the table above). `/health` unaffected; the boot log says "the Sky is on".
-3. **Device** (`amabo-web`) — `VITE_SKY_URL=https://www.theamarium.com` at build time.
+3. **Device** (`amabo-web`) — `VITE_SKY_URL=https://sky.theamarium.com` at build time.
    Without it the device shows no link to the Sky and refuses the `/inscribe` handoff.
 4. **The Sky** — a third Railway service from the same repo, **Root Directory
    `apps/robinhood-web`** — Railpack picks up `apps/robinhood-web/railway.json`
    (installs from the monorepo root, `next build`, `next start` on Railway's `PORT`),
-   custom domain `www.theamarium.com`, variables:
+   custom domain `sky.theamarium.com`, variables:
 
    | Variable                             | Purpose                                                                      |
    | ------------------------------------ | ---------------------------------------------------------------------------- |
-   | `NEXT_PUBLIC_API_BASE`               | the API's public origin (single-origin deploy: `https://app.theamarium.com`) |
-   | `NEXT_PUBLIC_APP_URL`                | the device (`https://app.theamarium.com`) — where the glass vouches          |
+   | `NEXT_PUBLIC_API_BASE`               | the API's public origin (single-origin deploy: `https://www.theamarium.com`) |
+   | `NEXT_PUBLIC_APP_URL`                | the device (`https://www.theamarium.com`) — where the glass vouches          |
    | `NEXT_PUBLIC_ROBINHOOD_RPC_URL`      | Robinhood Chain RPC (VERIFY against official docs)                           |
    | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL` | Blockscout URL (VERIFY)                                                      |
 
@@ -297,6 +297,6 @@ API's voucher, and the Sky site. In order:
 
 - Lazy simulate-on-read needs **no always-on worker** — these two services + Postgres
   cover v1; notifications add a single periodic **cron** (above), still no worker.
-- The Sky (`packages/robinhood-contracts` + `apps/robinhood-web`, `www.theamarium.com`,
-  M10) deploys separately and is not part of this deploy; `app.theamarium.com` is the
+- The Sky (`packages/robinhood-contracts` + `apps/robinhood-web`, `sky.theamarium.com`,
+  M10) deploys separately and is not part of this deploy; `www.theamarium.com` is the
   web service above.

@@ -273,8 +273,8 @@ and free. The chain only ever records *remembrance* (inscribed stars), sells *se
 It cannot gate gameplay, and no entitlement, stat, or narration ever reads chain state.
 
 ### Two sites, one brand
-- `app.theamarium.com` — the device (`apps/web` + `apps/api`). Unchanged.
-- `www.theamarium.com` — the Sky (`apps/robinhood-web`, Next + wagmi/viem): landing,
+- `www.theamarium.com` — the device (`apps/web` + `apps/api`). Unchanged.
+- `sky.theamarium.com` — the Sky (`apps/robinhood-web`, Next + wagmi/viem): landing,
   public gallery of inscribed stars, claim/mint, wallet holdings.
 - **No session ever crosses between them.** Inscribing is two hops: the Sky knows the
   wallet, the device knows the Light. The Sky sends the Light to

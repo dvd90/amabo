@@ -45,12 +45,12 @@ export const LUMEN_ADDRESS = deployments.lumen as Address;
 export const IS_SKY_DEPLOYED =
   deployments.chainId === ROBINHOOD_CHAIN_ID && STAR_ADDRESS !== ZERO_ADDRESS;
 /** The game API's origin — the Sky reads public star records from it, nothing else. */
-export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? 'https://app.theamarium.com').replace(
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? 'https://www.theamarium.com').replace(
   /\/$/,
   '',
 );
 /** The device — where a Light signs in and the glass vouches for a star. */
-export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.theamarium.com').replace(
+export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.theamarium.com').replace(
   /\/$/,
   '',
 );

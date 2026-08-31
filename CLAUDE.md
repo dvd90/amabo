@@ -60,7 +60,7 @@ amabo/
   via the `record_life` tool; prompt caching on where the provider supports it.
 - New world facts go into `STORY.md` **first**, then code. Never invent lore inline.
 - Crypto — **the Sky** (`packages/robinhood-contracts` + `apps/robinhood-web`,
-  `www.theamarium.com`) — is **optional, isolated, off by default**: Robinhood Chain
+  `sky.theamarium.com`) — is **optional, isolated, off by default**: Robinhood Chain
   (EVM, 4663), non-custodial. Stars are ERC-721s (*inscribed* = earned via an
   API-signed voucher; *unnamed* = bought, zero in-glass effect); **Lumen** is a plain
   ERC-20 for keeping/naming/voting — **never Ambra, never emitted by play, never read
