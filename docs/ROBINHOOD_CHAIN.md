@@ -82,13 +82,18 @@ Resolved by the upstream boilerplate (no longer open questions):
   function — not an auto-tax or mint-fee sweep.
 - **Chain**: Robinhood Chain, chain ID **4663**.
 
-Still genuinely unknown, and every address in `src/Constants.sol` /
-`apps/robinhood-web/lib/robinhood.ts` is `// VERIFY`-tagged until confirmed:
-- The real RPC/explorer URLs and whether the ERC-6551 registry is actually deployed
-  at the assumed canonical address on 4663.
-- Tokenised-stock reward token addresses and the Uniswap router on 4663.
-- Whether "graduation" (a fully-vested member exiting) is ever in scope — not built;
-  no test or code path assumes it.
+Verified 2026-08-31 (docs.robinhood.com/chain/connecting + `cast` against the official
+RPCs — see `SKY_RUNBOOK.md` §2): mainnet chain ID **4663** (live since 2026-07-01), RPC
+`https://rpc.mainnet.chain.robinhood.com` (public, rate-limited; Alchemy/QuickNode/dRPC
+for production), explorer `https://robinhoodchain.blockscout.com`; testnet **46630**
+(faucet `faucet.testnet.chain.robinhood.com`). The canonical ERC-6551 registry is
+deployed on both networks; **Tokenbound AccountV3 is on mainnet only** — on testnet
+deploy `erc6551/examples/simple/ERC6551Account.sol` and pass `ERC6551_ACCOUNT_IMPL`.
+
+Still genuinely unknown: tokenised-stock reward token addresses and the Uniswap router
+on 4663 (only the unwired membership vault UI would use them), and whether "graduation"
+(a fully-vested member exiting) is ever in scope — not built; no test or code path
+assumes it.
 
 ## Milestones (all shipped, ported from the upstream `PLAN.md`)
 
