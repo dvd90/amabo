@@ -29,4 +29,9 @@ pnpm-debug.log*
 # vite
 apps/web/dist/
 
+# hardhat (packages/robinhood-contracts)
+artifacts/
+cache/
+typechain-types/
+
 .history/
