@@ -237,6 +237,23 @@ raised — its lineage, its final traits, the dates it lived. Not a price tag. A
 kept against **Lethe** (forgetting) forever. An uninscribed star still shines in your
 own sky; inscription only makes the memory outlive the device.
 
+**The Sky.** Outside the glass there is a firmament where inscribed stars are hung for
+anyone to look up at — a public sky, apart from the device you tend. Anyone may walk
+the Sky and read the stars without owning anything; that is what they are for. (The
+device lives at `app.theamarium.com`; the Sky at `www.theamarium.com`.)
+
+**Two kinds of star hang there.**
+
+- An **inscribed star** is *earned*. It can only be struck for a creature you actually
+  raised to Elysium; no one can inscribe a soul they did not tend. Each is one of one:
+  its soulmark, its name, its lineage, the dates it lived.
+- An **unnamed star** is *bought*. It is a light in the Sky that no soul has reached
+  yet — one of the unborn lights waiting in the hall of light (§8) to be called. It has
+  a glyph of its own and a place in the firmament, and nothing else: it gives its keeper
+  no Ambra, no shelf, no advantage inside the glass, ever. When a creature of that
+  keeper's ascends, they may **name** the star after it — the empty light becomes an
+  inscribed one, and the seat is taken. A named star is never unnamed again.
+
 **The exchange is the Symposium.** Recall §6: split halves spend their lives seeking
 each other. Across different Amariums, creatures can *find* one another — a player may
 **gift** or **rehome** a creature to another's glass, the two halves reuniting. This
@@ -244,9 +261,18 @@ is always a deliberate, tender act (you are never *made* to part with one you ra
 and it passes directly between two people — no one stands in the middle holding
 anything.
 
+**Lumen — the coin of keeping.** Light given off is measured in lumens. **Lumen** is
+the Sky's coin: a plain token that lets Lights keep each other's memories — sponsor a
+stranger's inscription so a remembered soul is never lost for want of a fee, name a
+constellation between bonded stars, and cast a vote on the Dreaming (§7⅞): which of
+the creatures' own wishes the humans build next. Lumen buys nothing inside the glass.
+It is not Ambra, cannot become Ambra, is never earned by tending, and no creature ever
+sees it.
+
 **Ambra is never sold.** The love-light stays off-chain and free, always. You cannot
 buy Ambra, cannot earn money by farming it, cannot pay to revive a souring creature.
-Love is not for sale in the Amarium; that is the whole point of the place.
+Neither a star nor Lumen feeds, cures, or revives anything. Love is not for sale in
+the Amarium; that is the whole point of the place.
 
 ---
 
@@ -453,6 +479,8 @@ richer model (Sonnet); routine days get the cheap one (Haiku). See `ARCHITECTURE
 | Maeterlinck / Wordsworth | Origin: Motes condense "trailing clouds of glory" |
 | Mnemosyne as an unerasable memory | *(optional)* inscribing a graduated star on-chain — a permanent keepsake |
 | Symposium halves reuniting across worlds | *(optional)* non-custodial peer-to-peer gift/rehome between players |
+| Unborn lights waiting in the hall of light | *(optional)* unnamed stars — bought seats in the Sky, later named by an ascended creature; zero effect in the glass |
+| Light is measured in lumens | *(optional)* Lumen, the Sky's coin — keeping, naming, voting on the Dreaming; never Ambra, never emitted by play |
 | More than one Light | visits: another user looks in (read-mostly), warming the creature |
 | A duet, never a duel | resonance meetings — pure `engine.resonate`, no combat |
 | Love is not for sale | Ambra is always off-chain and free; no buy-Ambra, no pay-to-revive |
@@ -491,7 +519,10 @@ bolted on:
 - **Stages** — Mote → Spark → Velveteen → Bloom → (Elysium).
 - **Elysium** — the afterlife/graduation; ascension into light, becoming a star.
 - **Mnemosyne / Lethe** — remembered vs. forgotten.
-- **Inscription** *(optional)* — recording a graduated star on-chain as a permanent keepsake.
+- **Inscription** *(optional)* — recording a graduated star on-chain as a permanent keepsake. Earned only.
+- **The Sky** *(optional)* — the public firmament outside the glass where inscribed stars hang (`www.theamarium.com`).
+- **Unnamed star** *(optional)* — a bought seat in the Sky, no soul yet; may later be named by an ascended creature. No effect in the glass.
+- **Lumen** *(optional)* — the Sky's coin: sponsoring inscriptions, naming constellations, voting on the Dreaming. Never Ambra.
 - **Rehoming** *(optional)* — gifting/passing a creature to another player's Amarium.
 
 ---

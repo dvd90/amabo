@@ -259,4 +259,6 @@ A care game lives on the ping. Push is off until you set it up:
 
 - Lazy simulate-on-read needs **no always-on worker** — these two services + Postgres
   cover v1; notifications add a single periodic **cron** (above), still no worker.
-- `packages/chain` (optional crypto, M10) is absent and not part of this deploy.
+- The Sky (`packages/robinhood-contracts` + `apps/robinhood-web`, `www.theamarium.com`,
+  M10) deploys separately and is not part of this deploy; `app.theamarium.com` is the
+  web service above.

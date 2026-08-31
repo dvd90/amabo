@@ -39,7 +39,7 @@ amabo/
 └── packages/
     ├── engine/               ← PURE deterministic simulation — no I/O ★ TDD core
     ├── ai/                   ← Anthropic narration layer (only LLM caller)
-    ├── chain/                ← OPTIONAL exchange (Solana). Off by default; core never depends on it.
+    ├── robinhood-contracts/  ← OPTIONAL the Sky's contracts (Robinhood Chain, EVM). Off by default; core never depends on it.
     └── shared/               ← zod schemas, shared types, lore constants
 ```
 
@@ -257,51 +257,80 @@ Idle $0 (lazy). A `peek` = one small cached-prompt Haiku call (fractions of a ce
 Milestones = rare Sonnet calls. Debounce `peek` (once per few real minutes); show the
 cached last journal between peeks.
 
-## 13. Optional: the Exchange (`packages/chain`)
+## 13. Optional: the Exchange — the Sky (`packages/robinhood-contracts` + `apps/robinhood-web`)
 
 > Implements `STORY.md` §7½. This whole layer is **optional, isolated, and OFF by
 > default behind a feature flag**. It mirrors the engine-purity rule: **the core game
-> must run, build, and pass all tests with `chain` absent.** Nothing in
-> `engine`/`ai`/`api`-core may import from `chain`. The app is fully playable, and
-> ships, with crypto disabled.
+> must run, build, and pass all tests with the chain packages absent.** Nothing in
+> `engine`/`ai`/`api`-core may import from them. The app is fully playable, and
+> ships, with crypto disabled. Ops detail and the ported protocol live in
+> `docs/ROBINHOOD_CHAIN.md`.
 
 ### Third law (alongside the two in §0)
 **3. The chain is a leaf, never a dependency.** Ambra and the care loop are off-chain
-and free. The chain only ever records *remembrance* (inscribed stars) and brokers
-*non-custodial* peer-to-peer transfers. It cannot gate gameplay.
+and free. The chain only ever records *remembrance* (inscribed stars), sells *seats*
+(unnamed stars), carries *Lumen*, and brokers *non-custodial* peer-to-peer transfers.
+It cannot gate gameplay, and no entitlement, stat, or narration ever reads chain state.
+
+### Two sites, one brand
+- `app.theamarium.com` — the device (`apps/web` + `apps/api`). Unchanged.
+- `www.theamarium.com` — the Sky (`apps/robinhood-web`, Next + wagmi/viem): landing,
+  public gallery of inscribed stars, claim/mint, wallet holdings.
 
 ### Currency & stack
-- **Chain: Solana.** Sub-cent fees, instant finality, the leading consumer-game +
-  payments chain in 2026, strong collectible tooling (Metaplex). *EVM alternative:*
-  **Base** (slightly higher fees, best fiat onramp + account abstraction, 100% TS).
-- **Value rail: USDC** (MiCA-compliant stablecoin) — only used if real value changes
-  hands. No project-issued fungible token at launch (issuance invites securities/MiCA
-  scope).
-- **Wallets: embedded / account-abstraction** (social-login smart wallets) so players
-  never see a seed phrase. **Non-custodial** — the app never holds user funds.
-- **Inscribed stars** = genuine one-of-one collectibles (Metaplex Core), **soulbound
-  by default**. Rehoming requires an explicit, deliberate transfer. Never mint stars
-  in large identical series (that can make them "fungible" → regulated).
+- **Chain: Robinhood Chain (chain ID 4663, EVM).** The protocol is already ported and
+  tested (`ROBINHOOD_CHAIN.md`); every external address stays `// VERIFY`-tagged until
+  confirmed against official docs and the explorer.
+- **Value rail: native ETH** for mint prices (the contracts refund excess). No
+  stablecoin plumbing at launch.
+- **Wallets: wagmi/viem now**, embedded / account-abstraction later so players never
+  see a seed phrase. **Non-custodial** — the app never holds user funds.
+- **Stars = `StarNFT`** (ERC-721 + an ERC-6551 token-bound account per star, "the
+  glass it lives in", holding the chronicle hash and letters). On-chain
+  `kind ∈ {Unnamed, Inscribed}`:
+  - *Inscribed* (earned): mint requires an **EIP-712 voucher signed by the API** —
+    owner-scoped, single-use, bound to `creatureId` + wallet + the star's metadata
+    hash. Only a graduated creature's owner can obtain one. Price is a tunable
+    (`inscribePrice`, may be 0; gas may be sponsored).
+  - *Unnamed* (bought): open mint at `unnamedPrice`, generative glyph seeded by
+    `tokenId` — never an identical series. **Naming** = presenting a voucher against an
+    unnamed star you hold; it flips to Inscribed once, irreversibly.
+  - **Soulbound by default**; transfer only through the explicit rehome ceremony
+    (double-confirmed, audited, same as off-chain rehoming).
+- **Lumen = `GameToken`** (plain ERC-20): fixed supply minted once, no tax, no hooks,
+  no vault wiring. Uses: sponsor another Light's inscription, name a constellation
+  between bonded stars, vote on the Dreaming's `WISHES` backlog. **Never emitted by
+  gameplay** (no play-to-earn) and **never read by the game**. Initial distribution is
+  decided with counsel before deploy, not in code.
 
 ### What the layer does (and refuses to do)
-- ✅ Inscribe a graduated star as a permanent keepsake (opt-in).
+- ✅ Inscribe a graduated star as a permanent keepsake (opt-in, earned only).
+- ✅ Sell unnamed stars; let a holder name one with an ascended creature.
+- ✅ Carry Lumen for keeping, naming, and voting.
 - ✅ Broker a non-custodial gift/rehome of a creature between two players.
 - ❌ No in-app order book, custody, or brokerage (these = CASP/money-transmitter scope).
-- ❌ No project token, no play-to-earn, no buying Ambra, no pay-to-revive.
-- ❌ No money mechanic tied to souring, illness, or death — ever.
+- ❌ No buying Ambra, no pay-to-revive, no shelf/narration/stat bought with a star or
+  with Lumen; no play-to-earn.
+- ❌ No revenue share to holders: `RevenueVault` stays unwired (golden rule 1 in the
+  contracts package) unless counsel clears it.
+- ❌ No money mechanic tied to souring, illness, or death — ever (`soul-guard.test.ts`
+  extends to chain code paths).
 
 ### Isolation shape
-`chain` exposes a small async port (`inscribeStar`, `initiateRehome`, `claimRehome`)
-that `apps/api` calls **only** when the feature flag is on and the user has opted in.
-A `NoopChain` implements the same port and is the default, so every test and the whole
-core run identically with crypto off.
+`apps/api` exposes one chain-facing route, `POST /stars/:id/inscribe`, that returns a
+signed voucher **only** when the `chain` feature flag is on, the caller owns the
+creature, and it has ascended. A `NoopChain` signer is the default, so every test and
+the whole core run identically with crypto off. `apps/web` shows at most a link to the
+Sky. The contracts and the Sky never import `engine`/`ai`/`api`; the voucher is the
+only bridge, and the API never touches a wallet or a private key beyond its signer.
 
 ### Compliance & safety gates (must hold before enabling)
 - Legal review for the operating jurisdictions (founder is in IL; EU users trigger
   **MiCA** extraterritorially — CASP grace period ends 1 Jul 2026; **CARF/DAC8** tax
-  reporting is live from Jan 2026). Not legal advice — get counsel.
-- **Age verification + geofencing** before any money feature is reachable; minors must
-  never reach a real-money path.
+  reporting is live from Jan 2026). **A fungible token (Lumen) and paid star sales
+  each need counsel before deploy**, not after. Not legal advice — get counsel.
+- **Age verification + geofencing** before any money feature (unnamed stars, Lumen,
+  paid inscription) is reachable; minors must never reach a real-money path.
 - KYC/AML posture defined with counsel if any custodial or fiat on/off-ramp is ever
   added (default design avoids this by staying non-custodial).
 

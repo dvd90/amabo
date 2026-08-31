@@ -1,12 +1,24 @@
 # Robinhood Chain — a membership protocol in Amabo's voice
 
 > Lives in `packages/robinhood-contracts` (Foundry contracts) and `apps/robinhood-web`
-> (Next 15 + wagmi/viem frontend). **This is a separate product from the Amabo game,
-> hosted in the same monorepo for tooling convenience only.** It follows the same
-> isolation law as `packages/chain` (`ARCHITECTURE.md` §13): a leaf, never a
-> dependency. `engine`/`ai`/`apps/api`/`apps/web` never import from here, and this
-> never imports from them. The core Amabo game builds, tests, and deploys unaffected
-> if these two packages were deleted outright.
+> (Next 15 + wagmi/viem frontend). Together they are **the Sky** — `www.theamarium.com`,
+> the public firmament of `STORY.md` §7½ — while the game stays at
+> `app.theamarium.com`. The protocol was ported first as a standalone product; the
+> lore mapping below is now the spec. It follows the isolation law of
+> `ARCHITECTURE.md` §13: a leaf, never a dependency. `engine`/`ai`/`apps/api`/`apps/web`
+> never import from here, and this never imports from them (the API-signed inscription
+> voucher is the only bridge). The core Amabo game builds, tests, and deploys
+> unaffected if these two packages were deleted outright.
+
+## What the Sky adds on top of the port (M10, not yet built)
+
+| Piece | Today (ported) | The Sky (`ARCHITECTURE.md` §13) |
+|---|---|---|
+| `MembershipNFT` | open mint at `mintPrice`, sequential ids | `StarNFT`: `kind ∈ {Unnamed, Inscribed}`; unnamed = open mint, generative glyph; inscribed = EIP-712 voucher from the API; `name()` flips an unnamed star once; soulbound unless rehomed |
+| `GameToken` | optional plain ERC-20 | **Lumen** — same contract, fixed supply, no tax/hooks; never emitted by play, never read by the game |
+| `RevenueVault` / `Factory` | built, tested | **stay unwired** at launch (no revenue share without counsel; no cloning needed) |
+| `apps/robinhood-web` | mint / holdings / distribute | landing + public star gallery + claim/name + holdings; distribute UI hidden |
+| `apps/api` | — | `POST /stars/:id/inscribe` → voucher, behind the `chain` flag, owner-scoped, ascended only |
 
 ## Provenance
 
