@@ -99,42 +99,45 @@ pnpm test                                     # the whole workspace
 
 ---
 
-## 2. Verify the chain facts (the `// VERIFY` tags)
+## 2. Verify the chain facts (done 2026-08-31 — re-check before you broadcast)
 
-Every external address in this repo is tagged `// VERIFY` until you confirm it against
-the **official Robinhood Chain documentation and its block explorer**. A wrong address
-is a silent-failure bug. Confirm, then edit both mirrors and drop the tags.
+Verified against the official docs (docs.robinhood.com/chain/connecting) and by
+querying the RPCs directly (`cast chain-id`, `cast code`):
 
-1. **Chain ID** — the code assumes **4663**. Confirm in the official docs / chainlist.
-   If it differs: `src/Constants.sol` (`CHAIN_ID`), `apps/robinhood-web/lib/robinhood.ts`
-   (`ROBINHOOD_CHAIN_ID`), `foundry.toml` (`[etherscan]` chain), `deployments/<id>.json`
-   filename, and the API's `STAR_CHAIN_ID`.
-2. **RPC URL and explorer** — from the official docs. They are only ever read from env:
+| Fact | Mainnet | Testnet |
+|---|---|---|
+| Chain ID | **4663** | **46630** |
+| RPC (public, rate-limited) | `https://rpc.mainnet.chain.robinhood.com` | `https://rpc.testnet.chain.robinhood.com/rpc` |
+| Production RPC | Alchemy `https://robinhood-mainnet.g.alchemy.com/v2/{KEY}` (also QuickNode, dRPC, …) | Alchemy `https://robinhood-testnet.g.alchemy.com/v2/{KEY}` |
+| Explorer | `https://robinhoodchain.blockscout.com` (API: `…/api`) | `https://explorer.testnet.chain.robinhood.com` |
+| ERC-6551 registry `0x…6551c19487814612e58FE06813775758` | ✅ deployed | ✅ deployed |
+| Tokenbound AccountV3 `0x41C8f39463A868d3A88af00cd0fe7102F30E44eC` | ✅ deployed | ❌ **absent** — deploy `erc6551/examples/simple/ERC6551Account.sol` and pass `ERC6551_ACCOUNT_IMPL` |
+| Faucet | — | `faucet.testnet.chain.robinhood.com` |
 
-   ```bash
-   export ROBINHOOD_RPC_URL=https://…              # forge (foundry.toml [rpc_endpoints])
-   export ROBINHOOD_BLOCKSCOUT_API_URL=https://…/api  # forge --verify
-   export BLOCKSCOUT_API_KEY=…                      # if the explorer wants one
-   ```
+Env for forge (`foundry.toml` reads these; never hardcoded):
 
-3. **ERC-6551 registry** — the canonical address `0x000000006551c19487814612e58FE06813775758`
-   is the same on every chain *where it has been deployed*. Check it is deployed on 4663:
+```bash
+export ROBINHOOD_RPC_URL=https://rpc.mainnet.chain.robinhood.com   # or your Alchemy URL
+export ROBINHOOD_BLOCKSCOUT_API_URL=https://robinhoodchain.blockscout.com/api
+export BLOCKSCOUT_API_KEY=anything                                  # Blockscout accepts any non-empty key
+```
 
-   ```bash
-   cast code 0x000000006551c19487814612e58FE06813775758 --rpc-url $ROBINHOOD_RPC_URL | head -c 20
-   # non-empty (0x6080…) = deployed. "0x" = NOT deployed → deploy the registry yourself
-   # (lib/reference/src/ERC6551Registry.sol, forge create) and pass ERC6551_REGISTRY=<addr>.
-   ```
+Re-verify in seconds any time (a chain reorg of *facts* is possible; a wrong address is
+a silent-failure bug):
 
-4. **ERC-6551 account implementation** — `0x41C8f39463A868d3A88af00cd0fe7102F30E44eC`
-   (Tokenbound AccountV3) is assumed. Same check with `cast code`; if absent, deploy
-   `lib/reference/src/examples/simple/ERC6551Account.sol` and pass
-   `ERC6551_ACCOUNT_IMPL=<addr>`.
-5. Tokenised-stock reward tokens and the Uniswap router are only used by the unwired
-   membership vault UI; leave them `address(0)` unless you turn that on.
+```bash
+cast chain-id --rpc-url $ROBINHOOD_RPC_URL                                   # 4663
+cast code 0x000000006551c19487814612e58FE06813775758 --rpc-url $ROBINHOOD_RPC_URL | head -c 10   # 0x6080…
+cast code 0x41C8f39463A868d3A88af00cd0fe7102F30E44eC --rpc-url $ROBINHOOD_RPC_URL | head -c 10   # 0x6080…
+```
 
-When done: remove the `// VERIFY` comments you confirmed, commit
-(`chore(chain): verify Robinhood Chain constants`).
+**Dress rehearsal on the real testnet (recommended before mainnet):** chain ID 46630 —
+get gas at the faucet, deploy your own `ERC6551Account`, then run §4 with
+`STAR_CHAIN_ID=46630`, the testnet RPC, and `ERC6551_ACCOUNT_IMPL=<yours>`; the API's
+`STAR_CHAIN_ID` and the Sky's `NEXT_PUBLIC_*` URLs must point at testnet too.
+Tokenised-stock reward tokens and the Uniswap router remain unknown (only the unwired
+membership vault UI would use them).
+
 
 ---
 

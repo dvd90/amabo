@@ -3,18 +3,20 @@ pragma solidity ^0.8.24;
 
 /// @title Constants
 /// @notice Single source of truth for Robinhood Chain (chain ID 4663) addresses.
-/// @dev Every value here is VERIFY-tagged: confirm against official Robinhood Chain docs and the
-///      block explorer before any real deploy, then drop the tag. Mirror of apps/web/lib/robinhood.ts.
+/// @dev Chain facts VERIFIED 2026-08-31 against docs.robinhood.com/chain/connecting and
+///      `cast` against the official RPCs (see docs/SKY_RUNBOOK.md §2). Remaining VERIFY
+///      tags are genuinely unknown. Mirror of apps/robinhood-web/lib/robinhood.ts.
 library Constants {
-    // VERIFY: Robinhood Chain chain ID (project notes; confirm in official docs / chainlist).
+    // Verified: mainnet chain ID 4663 (cast chain-id, official docs). Testnet is 46630.
     uint256 internal constant CHAIN_ID = 4663;
 
-    // VERIFY: canonical ERC-6551 registry (same address on every chain, https://eips.ethereum.org/EIPS/eip-6551).
-    //         Confirm it is actually deployed on 4663 via the explorer.
+    // Verified: canonical ERC-6551 registry, deployed on 4663 AND on testnet 46630
+    // (cast code non-empty on both, 2026-08-31).
     address internal constant ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
 
-    // VERIFY: ERC-6551 account implementation (Tokenbound AccountV3, https://docs.tokenbound.org).
-    //         Confirm deployment on 4663 or deploy `erc6551/examples/simple/ERC6551Account.sol` yourself.
+    // Verified: Tokenbound AccountV3, deployed on 4663 (cast code non-empty, 2026-08-31).
+    // NOT deployed on testnet 46630 — deploy erc6551/examples/simple/ERC6551Account.sol
+    // yourself there and pass ERC6551_ACCOUNT_IMPL to Deploy.s.sol.
     address internal constant ERC6551_ACCOUNT_IMPL = 0x41C8f39463A868d3A88af00cd0fe7102F30E44eC;
 
     // VERIFY: tokenised-stock reward tokens on 4663 — unknown, fill from official Robinhood Chain docs.

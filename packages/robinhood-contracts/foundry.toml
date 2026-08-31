@@ -23,8 +23,10 @@ runs = 2048
 runs = 256
 depth = 64
 
-# VERIFY: Robinhood Chain (4663) RPC + Blockscout URLs come from env, never hardcoded.
-# Set ROBINHOOD_RPC_URL / ROBINHOOD_BLOCKSCOUT_API_URL from official Robinhood Chain docs.
+# Robinhood Chain (4663) RPC + Blockscout URLs come from env, never hardcoded. Verified values
+# (docs.robinhood.com/chain/connecting, 2026-08-31): RPC https://rpc.mainnet.chain.robinhood.com
+# (public, rate-limited; Alchemy et al. for production), explorer https://robinhoodchain.blockscout.com
+# (API URL: https://robinhoodchain.blockscout.com/api). Testnet: 46630, https://rpc.testnet.chain.robinhood.com/rpc.
 [rpc_endpoints]
 robinhood = "${ROBINHOOD_RPC_URL}"
 
