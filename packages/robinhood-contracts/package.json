@@ -1,20 +1,9 @@
 {
-  "name": "@amabo/robinhood-contracts",
-  "version": "0.0.0",
+  "name": "robinhood-contracts",
   "private": true,
-  "description": "Robinhood Chain membership protocol — Membership NFTs, token-bound accounts, a revenue vault, a clone factory. Isolated leaf: never imported by, and never imports, the Amabo game packages. See docs/ROBINHOOD_CHAIN.md.",
-  "type": "commonjs",
+  "description": "Robinhood Chain membership protocol — MembershipNFT (ERC-721+ERC-6551 TBA), RevenueVault, Factory. Ported from dvd90/robinhood-app-boilerplate. Isolated leaf: never imported by, and never imports, the Amabo game packages. See docs/ROBINHOOD_CHAIN.md.",
   "scripts": {
-    "compile": "hardhat compile",
-    "build": "hardhat compile",
-    "test": "hardhat test"
-  },
-  "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@openzeppelin/contracts": "^5.1.0",
-    "chai": "^4.5.0",
-    "hardhat": "^2.22.15",
-    "solc": "0.8.27",
-    "typescript": "^5.7.2"
+    "verify": "export PATH=\"$HOME/.foundry/bin:$PATH\"; forge fmt --check && forge test",
+    "dryrun": "script/dryrun.sh"
   }
 }

@@ -29,9 +29,14 @@ pnpm-debug.log*
 # vite
 apps/web/dist/
 
-# hardhat (packages/robinhood-contracts)
-artifacts/
-cache/
-typechain-types/
+# foundry (packages/robinhood-contracts)
+packages/robinhood-contracts/out/
+packages/robinhood-contracts/cache/
+packages/robinhood-contracts/broadcast/*/31337/
+packages/robinhood-contracts/.env
+
+# next.js (apps/robinhood-web)
+apps/robinhood-web/.next/
+apps/robinhood-web/out/
 
 .history/
