@@ -12,3 +12,9 @@ docs/
 
 # Generated Drizzle migration artifacts — owned by drizzle-kit, not the formatter.
 apps/api/drizzle/
+
+# Foundry submodules carry their own .prettierrc (and a solidity plugin we don't install);
+# forge fmt owns the .sol files. Next's build output and the editor's local history: not ours.
+packages/robinhood-contracts/lib/
+apps/robinhood-web/.next/
+.history/

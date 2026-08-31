@@ -63,6 +63,41 @@ export const StarSchema = z.object({
   constellationPos: z.object({ x: z.number(), y: z.number() }),
 });
 
+// ── The Sky (ARCHITECTURE.md §13) — the inscription voucher ───────────────────
+export const EvmAddressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+export const Bytes32Schema = z.string().regex(/^0x[0-9a-fA-F]{64}$/);
+const TokenIdSchema = z.string().regex(/^\d+$/);
+
+/** POST /stars/:id/inscribe body: the wallet to bind, and optionally the seat to name. */
+export const InscribeStarRequest = z.object({
+  to: EvmAddressSchema,
+  /** "0" (default) strikes a new star; a seat's tokenId names that unnamed star instead. */
+  tokenId: TokenIdSchema.default('0'),
+});
+
+/** Mirror of `StarNFT.Inscription` — what the API signs and the contract recovers. */
+export const InscriptionVoucherSchema = z.object({
+  tokenId: TokenIdSchema,
+  to: EvmAddressSchema,
+  creatureId: Bytes32Schema,
+  metadataHash: Bytes32Schema,
+  deadline: z.number().int().nonnegative(),
+});
+
+export const InscribeStarResponse = z.object({
+  voucher: InscriptionVoucherSchema,
+  signature: z.string().regex(/^0x[0-9a-fA-F]+$/),
+  domain: z.object({
+    name: z.string(),
+    version: z.string(),
+    chainId: z.number().int(),
+    verifyingContract: EvmAddressSchema,
+  }),
+  signer: EvmAddressSchema,
+  /** The public record the hash commits to — the Sky renders and re-hashes it. */
+  metadata: StarSchema,
+});
+
 /** Care actions accepted by POST /creatures/:id/interact. */
 export const InteractActionSchema = z.enum(['feed', 'clean', 'play', 'comfort', 'sleep', 'wake']);
 

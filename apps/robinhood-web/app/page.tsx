@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
-import { Distribute } from "@/components/Distribute";
-import { Holdings } from "@/components/Holdings";
-import { Mint } from "@/components/Mint";
-import { IS_DEPLOYED, NFT_ADDRESS, ROBINHOOD_CHAIN_ID, VAULT_ADDRESS } from "@/lib/robinhood";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
+import { Distribute } from '@/components/Distribute';
+import { Holdings } from '@/components/Holdings';
+import { Mint } from '@/components/Mint';
+import { IS_DEPLOYED, NFT_ADDRESS, ROBINHOOD_CHAIN_ID, VAULT_ADDRESS } from '@/lib/robinhood';
 
 export default function Home() {
   const { address, chainId, isConnected } = useAccount();
@@ -17,13 +17,15 @@ export default function Home() {
     <main>
       <h1>Membership</h1>
       <p className="muted">
-        NFT <code>{NFT_ADDRESS}</code> · Vault <code>{VAULT_ADDRESS}</code> · chain {ROBINHOOD_CHAIN_ID}
+        NFT <code>{NFT_ADDRESS}</code> · Vault <code>{VAULT_ADDRESS}</code> · chain{' '}
+        {ROBINHOOD_CHAIN_ID}
       </p>
 
       {!IS_DEPLOYED && (
         <section>
-          Not deployed yet. Run <code>forge script script/Deploy.s.sol --rpc-url robinhood --broadcast</code> to
-          write <code>deployments/4663.json</code>.
+          Not deployed yet. Run{' '}
+          <code>forge script script/Deploy.s.sol --rpc-url robinhood --broadcast</code> to write{' '}
+          <code>deployments/4663.json</code>.
         </section>
       )}
 
@@ -32,12 +34,14 @@ export default function Home() {
           <>
             <span>
               Connected <code>{address}</code>
-            </span>{" "}
+            </span>{' '}
             <button onClick={() => disconnect()}>Disconnect</button>
             {wrongChain && (
               <>
-                {" "}
-                <button onClick={() => switchChain({ chainId: ROBINHOOD_CHAIN_ID })}>Switch to chain {ROBINHOOD_CHAIN_ID}</button>
+                {' '}
+                <button onClick={() => switchChain({ chainId: ROBINHOOD_CHAIN_ID })}>
+                  Switch to chain {ROBINHOOD_CHAIN_ID}
+                </button>
               </>
             )}
           </>

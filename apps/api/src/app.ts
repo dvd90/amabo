@@ -25,6 +25,8 @@ import { authRouter } from './routes/auth.js';
 import { chronicleRouter, type ChronicleDeps } from './routes/chronicle.js';
 import { creaturesRouter, type CreatureDeps } from './routes/creatures.js';
 import { pushRouter } from './routes/push.js';
+import { starsRouter } from './routes/stars.js';
+import type { StarSigner } from './chain/star.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
 import { demoRouter } from './routes/demo.js';
 import { symposiumRouter } from './routes/symposium.js';
@@ -77,6 +79,11 @@ export interface AppDeps {
   direct?: CreatureDeps['direct'];
   /** Writes the Chronicle (STORY.md §8⅞). Defaults to the seeded local book. */
   chronicler?: ChronicleDeps['chronicler'];
+  /**
+   * The Sky (ARCHITECTURE.md §13): signs inscription vouchers for stars a Light raised.
+   * Absent = the chain layer is off and POST /stars/:id/inscribe does not exist.
+   */
+  starSigner?: StarSigner;
 }
 
 /** URL prefixes owned by the API — everything else is a client (SPA) route. */
@@ -99,6 +106,7 @@ const API_PREFIXES = [
   '/symposium',
   '/chronicle',
   '/keepsakes',
+  '/stars',
 ];
 const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 
@@ -224,6 +232,7 @@ export function createApp(deps: AppDeps): Express {
     }),
   );
   app.use(pushRouter({ repo: deps.repo, getOwner }));
+  app.use(starsRouter({ repo: deps.repo, clock: deps.clock, getOwner, signer: deps.starSigner }));
   app.use(
     billingRouter({
       repo: deps.repo,

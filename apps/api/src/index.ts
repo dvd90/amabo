@@ -35,6 +35,9 @@ import { aiSymposiumNarrator } from './narrate/symposium-ai.js';
 import { DrizzleRepository } from './repo/drizzle.js';
 import { InMemoryRepository } from './repo/memory.js';
 import type { Repository } from './repo/types.js';
+import { resolveFeatures } from '@amabo/shared';
+import { isAddress, isHex } from 'viem';
+import { viemStarSigner, type StarSigner } from './chain/star.js';
 
 /** Auto-detect the built PWA for a single-origin deploy (set WEB_DIST to override). */
 function webDistDir(): string | undefined {
@@ -42,6 +45,38 @@ function webDistDir(): string | undefined {
   if (explicit) return existsSync(explicit) ? explicit : undefined;
   const guess = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '../../web/dist');
   return existsSync(guess) ? guess : undefined;
+}
+
+/**
+ * The Sky's signer (ARCHITECTURE.md §13). Two things must both be true for the chain
+ * layer to exist: AMABO_FEATURE_CHAIN on, and a signer key + star contract configured.
+ * Anything less and POST /stars/:id/inscribe simply is not there.
+ */
+function buildStarSigner(boot: ReturnType<typeof envLogger>): StarSigner | undefined {
+  if (!resolveFeatures(process.env).chain) {
+    boot.info('the Sky is off (AMABO_FEATURE_CHAIN unset) — no inscription vouchers');
+    return undefined;
+  }
+  const key = process.env.STAR_SIGNER_KEY;
+  const contract = process.env.STAR_CONTRACT;
+  if (!key || !isHex(key) || key.length !== 66 || !contract || !isAddress(contract)) {
+    boot.warn(
+      'AMABO_FEATURE_CHAIN is on but STAR_SIGNER_KEY (0x + 64 hex) / STAR_CONTRACT are missing or malformed — the Sky stays off',
+    );
+    return undefined;
+  }
+  const signer = viemStarSigner({
+    privateKey: key,
+    contract,
+    chainId: Number(process.env.STAR_CHAIN_ID ?? 4663),
+    name: process.env.STAR_NAME,
+  });
+  boot.info('the Sky is on — inscription vouchers will be signed', {
+    signer: signer.address,
+    contract,
+    chainId: signer.domain.chainId,
+  });
+  return signer;
 }
 
 function buildNarrator(
@@ -326,6 +361,8 @@ if (process.env.NODE_ENV !== 'test') {
     version: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.AMABO_VERSION,
     // Error eyes (L1): a no-op unless SENTRY_DSN is set.
     monitor,
+    // The Sky (ARCHITECTURE.md §13): absent unless the chain flag + signer are configured.
+    starSigner: buildStarSigner(boot),
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

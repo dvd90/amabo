@@ -54,6 +54,10 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                                |
    | `LOG_LEVEL`                | optional   | `debug` \| `info` (default) \| `warn` \| `error` \| `silent` — how chatty the server log is               |
    | `LOG_FORMAT`               | optional   | `json` for one-object-per-line structured logs; default is human-readable lines                           |
+   | `AMABO_FEATURE_CHAIN`      | optional   | `1` turns on the Sky (ARCHITECTURE.md §13): `POST /stars/:id/inscribe`. Off = the route does not exist    |
+   | `STAR_SIGNER_KEY`          | optional\* | dedicated hot key (0x + 64 hex) whose address is StarNFT's `signer`; never the deployer/treasury key      |
+   | `STAR_CONTRACT`            | optional\* | the StarNFT clone address (`star` in `packages/robinhood-contracts/deployments/4663.json`)                |
+   | `STAR_CHAIN_ID`            | optional   | default `4663` (Robinhood Chain). `STAR_NAME` (default `Star`) must equal the contract's name             |
    | `STRIPE_SECRET_KEY`        | optional   | the till (L5). All three Stripe vars set → the Keeper's Lantern sells; any missing → free mode            |
    | `STRIPE_PRICE_LANTERN`     | optional   | the Lantern's subscription price id (`price_…`, ~$3.99/mo)                                                |
    | `STRIPE_WEBHOOK_SECRET`    | optional   | signing secret of a webhook endpoint pointed at `https://<api-url>/billing/webhook`                       |

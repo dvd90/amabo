@@ -318,9 +318,11 @@ It cannot gate gameplay, and no entitlement, stat, or narration ever reads chain
 
 ### Isolation shape
 `apps/api` exposes one chain-facing route, `POST /stars/:id/inscribe`, that returns a
-signed voucher **only** when the `chain` feature flag is on, the caller owns the
-creature, and it has ascended. A `NoopChain` signer is the default, so every test and
-the whole core run identically with crypto off. `apps/web` shows at most a link to the
+signed voucher **only** when the `chain` feature flag is on *and* a signer is configured
+(`STAR_SIGNER_KEY`, `STAR_CONTRACT`), the caller owns the star, and the creature has
+ascended. With no signer the route is simply not mounted — the noop posture — so every
+test and the whole core run identically with crypto off. The API signs with a dedicated
+hot key (rotated on-chain via `setSigner`), never the deployer or treasury key. `apps/web` shows at most a link to the
 Sky. The contracts and the Sky never import `engine`/`ai`/`api`; the voucher is the
 only bridge, and the API never touches a wallet or a private key beyond its signer.
 

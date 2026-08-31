@@ -332,4 +332,27 @@ contract StarNFTTest is Test {
         assertEq(uint8(nft.kindOf(star)), uint8(StarNFT.Kind.Inscribed));
         assertEq(nft.starOf(soul), star);
     }
+
+    // ---- the wire: the API signs exactly what the contract recovers -----------------------
+
+    /// Pinned EIP-712 vector shared with apps/api/src/chain/star.test.ts (viem computes the same
+    /// digest for domain {Star, 1, 4663, 0x…057a}). If either side drifts, both tests go red.
+    function test_DigestMatchesTheApiVector() public {
+        address fixedStar = 0x000000000000000000000000000000000000057a;
+        vm.etch(fixedStar, address(new StarNFT()).code);
+        StarNFT(fixedStar)
+            .initialize(
+                "Star", "STAR", address(this), treasury, 0, 0, Constants.ERC6551_REGISTRY, accountImpl, signer, 0
+            );
+        StarNFT.Inscription memory v = StarNFT.Inscription({
+            tokenId: 0,
+            to: 0x1111111111111111111111111111111111111111,
+            creatureId: bytes32(uint256(0x2222222222222222222222222222222222222222222222222222222222222222)),
+            metadataHash: bytes32(uint256(0x3333333333333333333333333333333333333333333333333333333333333333)),
+            deadline: 1_700_000_000
+        });
+        assertEq(
+            StarNFT(fixedStar).hashInscription(v), 0x392ea2f2e495cc6f792ffff6ac4b235eddab16aeb5c51b6ac5db1391a17c2cf0
+        );
+    }
 }

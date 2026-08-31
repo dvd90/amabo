@@ -18,7 +18,7 @@
 | `GameToken` | ported | **Lumen** — same contract, fixed supply, no tax/hooks; never emitted by play, never read by the game |
 | `RevenueVault` / `Factory` | ported, **unwired** for the Sky | no revenue share without counsel; no cloning needed |
 | `apps/robinhood-web` | next | landing + public star gallery + claim/name + holdings; distribute UI hidden |
-| `apps/api` | next | `POST /stars/:id/inscribe` → voucher (`StarNFT.Inscription`, domain `{name, "1", 4663, star}`), behind the `chain` flag, owner-scoped, ascended only |
+| `apps/api` | **built** | `POST /stars/:id/inscribe` (`src/routes/stars.ts`, `src/chain/star.ts`) → `{ voucher, signature, domain, signer, metadata }`; voucher = `StarNFT.Inscription` with `creatureId` = the creature uuid left-aligned in bytes32 (reversible) and `metadataHash` = keccak256 of the star's canonical public JSON; signed with viem (`STAR_SIGNER_KEY`) over domain `{STAR_NAME, "1", STAR_CHAIN_ID, STAR_CONTRACT}`; behind `AMABO_FEATURE_CHAIN`, owner-scoped, 15-minute deadline. A pinned digest vector is asserted by both suites |
 
 ## Provenance
 
