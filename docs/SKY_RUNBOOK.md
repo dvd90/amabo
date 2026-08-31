@@ -312,8 +312,12 @@ Without `VITE_SKY_URL` the device shows no link and refuses the handoff with
 
 1. Railway → the same project → **New → GitHub repo** (the amabo repo again) → name it
    `amabo-sky`.
-2. **Settings → Source → Root Directory:** `apps/robinhood-web`. Railpack detects Next
-   (`next build` / `next start`).
+2. **Settings → Source → Root Directory:** `apps/robinhood-web` — Railpack picks up
+   `apps/robinhood-web/railway.json` (installs from the monorepo root, `next build`,
+   `next start` on Railway's `PORT`). *Without* a Root Directory (the CLI cannot set
+   one — this is how `amabo-sky` runs today), two variables give the same result:
+   `RAILPACK_BUILD_CMD=pnpm install --frozen-lockfile && pnpm --filter robinhood-web build`
+   and `RAILPACK_START_CMD=pnpm --filter robinhood-web start`.
 3. **Variables:**
 
    | Variable | Value |
