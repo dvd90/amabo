@@ -1,64 +1,68 @@
-'use client';
-
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
-import { Distribute } from '@/components/Distribute';
-import { Holdings } from '@/components/Holdings';
-import { Mint } from '@/components/Mint';
-import { IS_DEPLOYED, NFT_ADDRESS, ROBINHOOD_CHAIN_ID, VAULT_ADDRESS } from '@/lib/robinhood';
+import Link from 'next/link';
+import { MyStars } from '@/components/MyStars';
+import { Seats } from '@/components/Seats';
+import { Wallet } from '@/components/Wallet';
+import {
+  APP_URL,
+  IS_SKY_DEPLOYED,
+  LUMEN_ADDRESS,
+  ROBINHOOD_CHAIN_ID,
+  STAR_ADDRESS,
+  ZERO_ADDRESS,
+} from '@/lib/robinhood';
 
 export default function Home() {
-  const { address, chainId, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { switchChain } = useSwitchChain();
-  const wrongChain = isConnected && chainId !== ROBINHOOD_CHAIN_ID;
-
   return (
     <main>
-      <h1>Membership</h1>
-      <p className="muted">
-        NFT <code>{NFT_ADDRESS}</code> · Vault <code>{VAULT_ADDRESS}</code> · chain{' '}
-        {ROBINHOOD_CHAIN_ID}
+      <h1>The Sky</h1>
+      <p>
+        Inside a sealed glass world, the Amarium, a creature lives on its own clock and grows into
+        someone based on how it is treated. When it is loved fully enough it becomes too bright for
+        the glass and ascends — leaving a <strong>named star</strong> its Light can always find.
+        This is the firmament outside the glass, where those stars are hung for anyone to look up
+        at.
+      </p>
+      <p>
+        An <strong>inscribed star</strong> is <em>earned</em>: only the Light who raised a soul to
+        Elysium may strike it, one of one. An <strong>unnamed star</strong> is <em>bought</em>: a
+        seat in the Sky, waiting to be called — and nothing in the glass, ever. Ambra, the
+        love-light, is never sold. Neither a star nor a coin feeds, cures, or revives anything.
+      </p>
+      <p>
+        <Link href="/sky" className="button">
+          Look up ✦
+        </Link>{' '}
+        <a href={APP_URL} className="button">
+          Raise one yourself ↗
+        </a>
       </p>
 
-      {!IS_DEPLOYED && (
+      {!IS_SKY_DEPLOYED ? (
         <section>
-          Not deployed yet. Run{' '}
-          <code>forge script script/Deploy.s.sol --rpc-url robinhood --broadcast</code> to write{' '}
-          <code>deployments/4663.json</code>.
+          <p className="muted">
+            The Sky is not deployed yet. <code>forge script script/Deploy.s.sol</code> writes{' '}
+            <code>deployments/{ROBINHOOD_CHAIN_ID}.json</code>; its <code>star</code> address is the
+            firmament.
+          </p>
         </section>
-      )}
-
-      <section>
-        {isConnected ? (
-          <>
-            <span>
-              Connected <code>{address}</code>
-            </span>{' '}
-            <button onClick={() => disconnect()}>Disconnect</button>
-            {wrongChain && (
-              <>
-                {' '}
-                <button onClick={() => switchChain({ chainId: ROBINHOOD_CHAIN_ID })}>
-                  Switch to chain {ROBINHOOD_CHAIN_ID}
-                </button>
-              </>
-            )}
-          </>
-        ) : (
-          connectors.map((c) => (
-            <button key={c.uid} onClick={() => connect({ connector: c })}>
-              Connect {c.name}
-            </button>
-          ))
-        )}
-      </section>
-
-      {IS_DEPLOYED && (
+      ) : (
         <>
-          <Mint disabled={!isConnected || wrongChain} />
-          <Holdings owner={address} disabled={!isConnected || wrongChain} />
-          <Distribute disabled={!isConnected || wrongChain} />
+          <section>
+            <h2>Your wallet</h2>
+            <Wallet />
+            <p className="muted">
+              stars <code>{STAR_ADDRESS}</code>
+              {LUMEN_ADDRESS !== ZERO_ADDRESS && (
+                <>
+                  {' '}
+                  · Lumen <code>{LUMEN_ADDRESS}</code>
+                </>
+              )}{' '}
+              · Robinhood Chain {ROBINHOOD_CHAIN_ID}
+            </p>
+          </section>
+          <MyStars />
+          <Seats />
         </>
       )}
     </main>

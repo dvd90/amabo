@@ -36,3 +36,21 @@ export const REWARD_TOKENS = (process.env.NEXT_PUBLIC_REWARD_TOKENS ?? '')
   .split(',')
   .map((s) => s.trim())
   .filter((s): s is Address => /^0x[0-9a-fA-F]{40}$/.test(s));
+
+// ── The Sky (ARCHITECTURE.md §13) ──────────────────────────────────────────────
+// Written by Deploy.s.sol (`star`). Zero address = the Sky is not deployed yet.
+export const STAR_ADDRESS = deployments.star as Address;
+/** Lumen, the Sky's coin (STORY.md §7½) — plain ERC-20; zero = not deployed. */
+export const LUMEN_ADDRESS = deployments.lumen as Address;
+export const IS_SKY_DEPLOYED =
+  deployments.chainId === ROBINHOOD_CHAIN_ID && STAR_ADDRESS !== ZERO_ADDRESS;
+/** The game API's origin — the Sky reads public star records from it, nothing else. */
+export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? 'https://app.theamarium.com').replace(
+  /\/$/,
+  '',
+);
+/** The device — where a Light signs in and the glass vouches for a star. */
+export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.theamarium.com').replace(
+  /\/$/,
+  '',
+);

@@ -8,16 +8,55 @@
 
 import { Router, type Request } from 'express';
 import type { Address } from 'viem';
-import { InscribeStarRequest, InscribeStarResponse } from '@amabo/shared';
+import { InscribeStarRequest, InscribeStarResponse, SkyStarResponse } from '@amabo/shared';
 import type { Clock } from '../clock.js';
 import type { Repository } from '../repo/types.js';
 import {
   VOUCHER_TTL_SECONDS,
+  creatureIdOfSoul,
   hashStarMetadata,
   soulOf,
   starMetadata,
   type StarSigner,
 } from '../chain/star.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * GET /sky/stars/:id — the public record the Sky renders for a star, by creature id or
+ * by its on-chain soul (bytes32). Public fields only (StarSchema), never an owner.
+ * Mounted before the auth gate; absent, like the rest, while the Sky is off.
+ */
+export function publicStarsRouter(deps: { repo: Repository; signer?: StarSigner }): Router {
+  const router = Router();
+  if (!deps.signer) return router;
+
+  router.get('/sky/stars/:id', (req, res, next) => {
+    void (async () => {
+      try {
+        const raw = req.params.id!;
+        const creatureId = creatureIdOfSoul(raw) ?? raw;
+        if (!UUID.test(creatureId)) return res.status(404).json({ error: 'not found' });
+        const star = await deps.repo.getStarByCreature(creatureId);
+        if (!star) return res.status(404).json({ error: 'not found' });
+        const meta = starMetadata(star);
+        // Public, credential-free data: any origin (the Sky lives on www) may read it.
+        res.set('access-control-allow-origin', '*');
+        return res.json(
+          SkyStarResponse.parse({
+            star: meta,
+            soul: soulOf(star.creatureId),
+            metadataHash: hashStarMetadata(meta),
+          }),
+        );
+      } catch (err) {
+        next(err);
+      }
+    })();
+  });
+
+  return router;
+}
 
 export function starsRouter(deps: {
   repo: Repository;

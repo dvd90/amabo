@@ -25,7 +25,7 @@ import { authRouter } from './routes/auth.js';
 import { chronicleRouter, type ChronicleDeps } from './routes/chronicle.js';
 import { creaturesRouter, type CreatureDeps } from './routes/creatures.js';
 import { pushRouter } from './routes/push.js';
-import { starsRouter } from './routes/stars.js';
+import { publicStarsRouter, starsRouter } from './routes/stars.js';
 import type { StarSigner } from './chain/star.js';
 import { authedShareRouter, publicShareRouter } from './routes/share.js';
 import { demoRouter } from './routes/demo.js';
@@ -107,6 +107,7 @@ const API_PREFIXES = [
   '/chronicle',
   '/keepsakes',
   '/stars',
+  '/sky/stars',
 ];
 const isApiPath = (p: string) => API_PREFIXES.some((pre) => p === pre || p.startsWith(pre + '/'));
 
@@ -188,6 +189,9 @@ export function createApp(deps: AppDeps): Express {
 
   // The pre-signup birth moment: a logged-out visitor meets an ephemeral newborn Mote.
   app.use(demoRouter({ clock: deps.clock, seed: deps.seed }));
+
+  // The Sky's public read of a star (ARCHITECTURE.md §13) — absent while the chain is off.
+  app.use(publicStarsRouter({ repo: deps.repo, signer: deps.starSigner }));
 
   // Single-origin deploy: serve the built PWA + SPA fallback for non-API GETs, BEFORE
   // the auth gate (so visiting `/sky` etc. returns the app, not a 401).

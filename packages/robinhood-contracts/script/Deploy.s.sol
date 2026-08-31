@@ -10,6 +10,7 @@ import {Factory} from "../src/Factory.sol";
 import {MembershipNFT} from "../src/MembershipNFT.sol";
 import {RevenueVault} from "../src/RevenueVault.sol";
 import {StarNFT} from "../src/StarNFT.sol";
+import {GameToken} from "../src/GameToken.sol";
 import {EqualWeightStrategy} from "../src/strategies/EqualWeightStrategy.sol";
 
 /// @notice Deploys implementations + Factory + EqualWeightStrategy, then one project through the
@@ -19,7 +20,10 @@ import {EqualWeightStrategy} from "../src/strategies/EqualWeightStrategy.sol";
 /// Env (all optional): ERC6551_REGISTRY, ERC6551_ACCOUNT_IMPL (override Constants; VERIFY on 4663),
 /// PROJECT_NAME, PROJECT_SYMBOL, TREASURY (default: broadcaster), MINT_PRICE (wei), MAX_SUPPLY, SALT,
 /// STAR_NAME, STAR_SYMBOL, STAR_SEAT_PRICE (wei), STAR_MAX_SEATS, STAR_INSCRIBE_PRICE (wei),
-/// STAR_SIGNER (the API's voucher signer; default: broadcaster), STAR_BASE_URI.
+/// STAR_SIGNER (the API's voucher signer; default: broadcaster), STAR_BASE_URI,
+/// LUMEN_NAME, LUMEN_SYMBOL, LUMEN_SUPPLY (whole tokens, 18 decimals added here),
+/// LUMEN_RECIPIENT (who holds the whole fixed supply at birth; default: broadcaster).
+/// Set LUMEN_SUPPLY=0 to skip the coin entirely.
 ///
 ///   forge script script/Deploy.s.sol --rpc-url robinhood --broadcast --verify
 contract Deploy is Script {
@@ -53,10 +57,27 @@ contract Deploy is Script {
             })
         );
         (address starImpl, address star) = deployStar(registry, accountImpl);
+        address lumen = deployLumen();
         vm.stopBroadcast();
 
         _writeDeployment(registry, accountImpl, factory, strategy, nft, vault);
         _writeStar(starImpl, star);
+        vm.writeJson(vm.toString(lumen), _path(), ".lumen");
+    }
+
+    /// @dev Lumen (STORY.md §7½): a plain fixed-supply ERC-20, minted once to LUMEN_RECIPIENT.
+    ///      No tax, no hooks, no vault wiring, never emitted by play. Skipped when LUMEN_SUPPLY=0.
+    function deployLumen() public returns (address lumen) {
+        uint256 supply = vm.envOr("LUMEN_SUPPLY", uint256(0));
+        if (supply == 0) return address(0);
+        lumen = address(
+            new GameToken(
+                vm.envOr("LUMEN_NAME", string("Lumen")),
+                vm.envOr("LUMEN_SYMBOL", string("LUMEN")),
+                supply * 1e18,
+                vm.envOr("LUMEN_RECIPIENT", msg.sender)
+            )
+        );
     }
 
     /// @dev The Sky's stars: one clone, owned and signed by env-configured addresses.

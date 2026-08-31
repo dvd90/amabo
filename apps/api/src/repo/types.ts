@@ -239,6 +239,8 @@ export interface Repository {
   recordInteraction(creatureId: string, action: string, at: number): Promise<void>;
   addStar(input: Omit<StarRecord, 'id'>): Promise<StarRecord>;
   listStars(ownerId: string | null): Promise<StarRecord[]>;
+  /** The star a creature became, whoever raised it (the Sky's public read). */
+  getStarByCreature(creatureId: string): Promise<StarRecord | null>;
 
   // Memory distillation (M7)
   addMemories(

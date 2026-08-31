@@ -97,6 +97,15 @@ export const InscribeStarResponse = z.object({
   /** The public record the hash commits to — the Sky renders and re-hashes it. */
   metadata: StarSchema,
 });
+export type InscribeStarResponseT = z.infer<typeof InscribeStarResponse>;
+
+/** GET /sky/stars/:id — what the Sky renders for a star; public fields only, never an owner. */
+export const SkyStarResponse = z.object({
+  star: StarSchema,
+  soul: Bytes32Schema,
+  metadataHash: Bytes32Schema,
+});
+export type SkyStarResponseT = z.infer<typeof SkyStarResponse>;
 
 /** Care actions accepted by POST /creatures/:id/interact. */
 export const InteractActionSchema = z.enum(['feed', 'clean', 'play', 'comfort', 'sleep', 'wake']);

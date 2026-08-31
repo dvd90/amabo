@@ -5,6 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {MembershipNFT} from "../src/MembershipNFT.sol";
 import {RevenueVault} from "../src/RevenueVault.sol";
 import {StarNFT} from "../src/StarNFT.sol";
+import {GameToken} from "../src/GameToken.sol";
 import {MockRewardToken} from "../test/mocks/MockRewardToken.sol";
 
 /// @notice Local smoke test against a running node: mint → depositRevenue → distribute, then buy a seat.
@@ -34,5 +35,9 @@ contract DryRun is Script {
         console.log("tba reward balance", token.balanceOf(tba));
         console.log("vault carried dust", vault.distributable(address(token)));
         console.log("bought seat", seat, "unnamed", star.kindOf(seat) == StarNFT.Kind.Unnamed);
+        address lumen = vm.parseJsonAddress(json, ".lumen");
+        if (lumen != address(0)) {
+            console.log("lumen", GameToken(lumen).symbol(), "supply", GameToken(lumen).totalSupply() / 1e18);
+        }
     }
 }

@@ -12,12 +12,28 @@ import { elderLine, todayLine } from '../flavor.js';
 import { useGame } from '../store/useGame.js';
 import { ShareCardButton } from './ShareCardButton.js';
 
+/** The Sky's origin, when a deploy has one (ARCHITECTURE.md §13); otherwise no link at all. */
+const SKY_URL = import.meta.env.VITE_SKY_URL;
+
 /** A graduated soul's plaque: name + how long it shone (Mnemosyne). */
 function StarDetail({ star }: { star: StarView }) {
   const days = Math.max(1, Math.round((star.graduatedAt - star.bornAt) / 86_400_000));
   return (
     <p className="star-detail">
       ✦ {star.name} — shone {days} day{days === 1 ? '' : 's'}
+      {SKY_URL ? (
+        <>
+          {' '}
+          <a
+            className="sky-link"
+            href={`${SKY_URL}/claim?star=${encodeURIComponent(star.id)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            inscribe it in the Sky ✦
+          </a>
+        </>
+      ) : null}
     </p>
   );
 }

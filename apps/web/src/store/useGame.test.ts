@@ -110,6 +110,7 @@ function fakeClient(): ApiClient {
       .fn()
       .mockResolvedValue([{ at: 1, kind: 'fed', tag: null, text: null, salience: 2 }]),
     stars: vi.fn().mockResolvedValue([]),
+    inscribeStar: vi.fn(),
   };
 }
 

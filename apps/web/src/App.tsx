@@ -16,6 +16,7 @@ import { Welcome } from './components/Welcome.js';
 import { AgeGate } from './components/AgeGate.js';
 import { PrivacyPage, TermsPage } from './components/Legal.js';
 import { PublicLook } from './components/PublicLook.js';
+import { InscribeHandoff, parseHandoff } from './components/InscribeHandoff.js';
 import { useGame } from './store/useGame.js';
 
 /** A public share link (/look/:token) opens the read-only keepsake, no account needed. */
@@ -23,6 +24,12 @@ function getLookToken(): string | null {
   if (typeof window === 'undefined') return null;
   const m = window.location.pathname.match(/^\/look\/([^/?]+)/);
   return m ? m[1]! : null;
+}
+
+/** The Sky's handoff (/inscribe?star&to&seat&return) — the device vouches, then sends the Light back. */
+function getHandoff() {
+  if (typeof window === 'undefined' || window.location.pathname !== '/inscribe') return null;
+  return parseHandoff(window.location.search, import.meta.env.VITE_SKY_URL);
 }
 
 /** The public legal pages (/terms, /privacy) — readable signed out (L2). */
@@ -36,6 +43,7 @@ function getLegalPage(): 'terms' | 'privacy' | null {
 export function App() {
   const lookToken = getLookToken();
   const legal = getLegalPage();
+  const handoff = getHandoff();
   const authed = useGame((s) => s.authed);
   const ageBand = useGame((s) => s.ageBand);
   const checkSession = useGame((s) => s.checkSession);
@@ -61,6 +69,20 @@ export function App() {
     if (authed === null) return <main className="boot">Warming the glass…</main>;
     // Logged out: meet a newborn Mote first (the hook), then the sign-in form.
     if (!authed) return authView === 'login' ? <Login /> : <Welcome />;
+    // Signed in and sent here by the Sky: vouch for the star, then straight back.
+    if (handoff) {
+      return (
+        <main className="app">
+          {handoff.ok ? (
+            <InscribeHandoff params={handoff.params} />
+          ) : (
+            <section className="handoff">
+              <p>{handoff.error}</p>
+            </section>
+          )}
+        </main>
+      );
+    }
     // Inside the device for the open creature; the Glade for the Symposium; otherwise
     // the roster (or the first-run myth).
     if (route === 'device' && creature) return <main className="app">{<Device />}</main>;

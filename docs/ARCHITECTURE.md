@@ -276,6 +276,12 @@ It cannot gate gameplay, and no entitlement, stat, or narration ever reads chain
 - `app.theamarium.com` — the device (`apps/web` + `apps/api`). Unchanged.
 - `www.theamarium.com` — the Sky (`apps/robinhood-web`, Next + wagmi/viem): landing,
   public gallery of inscribed stars, claim/mint, wallet holdings.
+- **No session ever crosses between them.** Inscribing is two hops: the Sky knows the
+  wallet, the device knows the Light. The Sky sends the Light to
+  `app…/inscribe?star&to&seat&return`; the device asks its own API (same origin, cookie,
+  CSRF) for the voucher and bounces back to `www…/claim#v=<voucher>`; the wallet sends
+  the transaction. The device only ever redirects to `VITE_SKY_URL`; the Sky only ever
+  reads the API's public `GET /sky/stars/:id` (CORS `*`, no credentials).
 
 ### Currency & stack
 - **Chain: Robinhood Chain (chain ID 4663, EVM).** The protocol is already ported and

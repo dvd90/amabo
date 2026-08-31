@@ -259,6 +259,34 @@ A care game lives on the ping. Push is off until you set it up:
 4. In the app, tap **🔔 Notify me** on the dashboard, accept the browser prompt, and you're
    subscribed. (iOS requires the PWA to be **installed** to Home Screen first.)
 
+## The Sky — `www.theamarium.com` (optional, ARCHITECTURE.md §13)
+
+The chain layer is off until you turn it on, and it is three pieces: the contracts, the
+API's voucher, and the Sky site. In order:
+
+1. **Contracts** — `packages/robinhood-contracts`: `forge script script/Deploy.s.sol
+--rpc-url robinhood --broadcast` (env `STAR_SIGNER` = the address of the API's hot
+   key; `STAR_SEAT_PRICE`, `STAR_MAX_SEATS`, `STAR_INSCRIBE_PRICE`, `STAR_BASE_URI` =
+   `https://www.theamarium.com/sky/`). Writes `deployments/4663.json` (`star`). Confirm
+   every `// VERIFY` address first.
+2. **API** (`amabo-api`) — `AMABO_FEATURE_CHAIN=1`, `STAR_SIGNER_KEY`, `STAR_CONTRACT`
+   (see the table above). `/health` unaffected; the boot log says "the Sky is on".
+3. **Device** (`amabo-web`) — `VITE_SKY_URL=https://www.theamarium.com` at build time.
+   Without it the device shows no link to the Sky and refuses the `/inscribe` handoff.
+4. **The Sky** — a third Railway service from the same repo, **Root Directory
+   `apps/robinhood-web`** (Next 15; build `next build`, start `next start`), custom
+   domain `www.theamarium.com`, variables:
+
+   | Variable                             | Purpose                                                                      |
+   | ------------------------------------ | ---------------------------------------------------------------------------- |
+   | `NEXT_PUBLIC_API_BASE`               | the API's public origin (single-origin deploy: `https://app.theamarium.com`) |
+   | `NEXT_PUBLIC_APP_URL`                | the device (`https://app.theamarium.com`) — where the glass vouches          |
+   | `NEXT_PUBLIC_ROBINHOOD_RPC_URL`      | Robinhood Chain RPC (VERIFY against official docs)                           |
+   | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL` | Blockscout URL (VERIFY)                                                      |
+
+   The Sky never sees a game session: it reads `GET /sky/stars/:id` (public, CORS `*`)
+   and otherwise talks only to the chain through the visitor's wallet.
+
 ## Notes
 
 - Lazy simulate-on-read needs **no always-on worker** — these two services + Postgres

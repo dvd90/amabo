@@ -15,6 +15,7 @@ import { InMemoryRepository } from '../repo/memory.js';
 import {
   INSCRIPTION_TYPES,
   VOUCHER_TTL_SECONDS,
+  creatureIdOfSoul,
   hashStarMetadata,
   soulOf,
   starMetadata,
@@ -158,5 +159,50 @@ describe('POST /stars/:id/inscribe — the voucher', () => {
       .send({ to: WALLET, tokenId: '7' });
     expect(res.status).toBe(200);
     expect(res.body.voucher.tokenId).toBe('7');
+  });
+});
+
+describe('GET /sky/stars/:id — the public record the Sky renders', () => {
+  it('is unreachable while the Sky is off', async () => {
+    const { app, repo } = setup(false);
+    const star = await ascend(repo, 'someone');
+    // With no signer the route is not mounted: it answers exactly like a path that
+    // never existed (the auth gate speaks for the unknown), never 200.
+    const res = await request(app).get(`/sky/stars/${star.creatureId}`);
+    expect(res.status).toBe((await request(app).get('/no-such-route')).status);
+    expect(res.status).not.toBe(200);
+  });
+
+  it('serves the public record and its hash — no session, no owner', async () => {
+    const { app, repo } = setup();
+    const star = await ascend(repo, 'someone-private');
+    const res = await request(app).get(`/sky/stars/${star.creatureId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      star: starMetadata(star),
+      soul: soulOf(star.creatureId),
+      metadataHash: hashStarMetadata(starMetadata(star)),
+    });
+    expect(JSON.stringify(res.body)).not.toContain('someone-private');
+    // Public data, no credentials: the Sky (another origin) may read it from the browser.
+    expect(res.headers['access-control-allow-origin']).toBe('*');
+  });
+
+  it('accepts the on-chain soul (bytes32) as well as the creature id', async () => {
+    const { app, repo } = setup();
+    const star = await ascend(repo, 'u1');
+    const soul = soulOf(star.creatureId);
+    expect(creatureIdOfSoul(soul)).toBe(star.creatureId);
+    const res = await request(app).get(`/sky/stars/${soul}`);
+    expect(res.status).toBe(200);
+    expect(res.body.star.name).toBe('Pip');
+  });
+
+  it('is simply not found for an unknown or malformed id', async () => {
+    const { app } = setup();
+    expect((await request(app).get('/sky/stars/nope')).status).toBe(404);
+    expect((await request(app).get('/sky/stars/00000000-0000-4000-8000-000000000000')).status).toBe(
+      404,
+    );
   });
 });
