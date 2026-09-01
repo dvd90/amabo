@@ -59,9 +59,14 @@ amabo/
   Two tiers always: cheap for routine peeks, finer for milestones. Structured output
   via the `record_life` tool; prompt caching on where the provider supports it.
 - New world facts go into `STORY.md` **first**, then code. Never invent lore inline.
-- Crypto (`packages/chain`) is **optional, isolated, off by default** — Solana + USDC,
-  non-custodial, keepsakes only. The core must build/run/test with it absent; it never
-  gates gameplay and never touches souring/illness/death. See `ARCHITECTURE.md` §13.
+- Crypto — **the Sky** (`packages/robinhood-contracts` + `apps/robinhood-web`,
+  `sky.theamarium.com`) — is **optional, isolated, off by default**: Robinhood Chain
+  (EVM, 4663), non-custodial. Stars are ERC-721s (*inscribed* = earned via an
+  API-signed voucher; *unnamed* = bought, zero in-glass effect); **Lumen** is a plain
+  ERC-20 for keeping/naming/voting — **never Ambra, never emitted by play, never read
+  by the game**. The core must build/run/test with these absent; nothing on chain
+  gates gameplay or touches souring/illness/death. See `STORY.md` §7½,
+  `ARCHITECTURE.md` §13, `docs/ROBINHOOD_CHAIN.md`; deploy via `docs/SKY_RUNBOOK.md`.
 - Self-tending (`packages/atelier`, "the Dreaming") is **optional, isolated, off by
   default** — a grown creature may *propose* improvements to itself and its world, but
   **a creature proposes; only a human disposes**: every wish is a human-reviewed

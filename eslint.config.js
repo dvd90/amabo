@@ -5,7 +5,18 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/build/**', '**/coverage/**', '**/*.tsbuildinfo'],
+    ignores: [
+      '**/dist/**',
+      '**/build/**',
+      '**/coverage/**',
+      '**/*.tsbuildinfo',
+      // Foundry submodules (OpenZeppelin, forge-std, ERC-6551) and Next's generated files
+      // are not ours to lint; the editor's local history isn't code at all.
+      'packages/robinhood-contracts/lib/**',
+      'apps/robinhood-web/.next/**',
+      'apps/robinhood-web/next-env.d.ts',
+      '.history/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

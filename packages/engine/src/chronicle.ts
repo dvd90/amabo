@@ -102,12 +102,13 @@ export function rollEncounters(
   return out;
 }
 
+/** Roulette pick by weight. The last item takes whatever the roll leaves (float-safe). */
 function pickWeighted<T>(items: T[], rng: Rng, weightOf: (item: T) => number): T {
   const total = items.reduce((sum, it) => sum + weightOf(it), 0);
   let x = rng() * total;
-  for (const it of items) {
-    x -= weightOf(it);
-    if (x < 0) return it;
+  for (let i = 0; i < items.length - 1; i++) {
+    x -= weightOf(items[i]!);
+    if (x < 0) return items[i]!;
   }
   return items[items.length - 1]!;
 }

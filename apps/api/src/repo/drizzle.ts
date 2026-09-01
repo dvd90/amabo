@@ -230,6 +230,25 @@ export class DrizzleRepository implements Repository {
     };
   }
 
+  async getStarByCreature(creatureId: string): Promise<StarRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(stars)
+      .where(eq(stars.creatureId, creatureId))
+      .limit(1);
+    if (!row) return null;
+    return {
+      id: row.id,
+      creatureId: row.creatureId,
+      ownerId: row.ownerId,
+      name: row.name,
+      bornAt: row.bornAt,
+      graduatedAt: row.graduatedAt,
+      finalTraits: row.finalTraits,
+      constellationPos: row.constellationPos,
+    };
+  }
+
   async listStars(ownerId: string | null): Promise<StarRecord[]> {
     const rows = await this.db
       .select()

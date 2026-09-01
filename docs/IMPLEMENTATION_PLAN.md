@@ -129,16 +129,17 @@ creature and can be revoked; a rehome moves ownership only after both confirmati
 writes an audit row; a guest cannot mutate a host's creature; postcard renders without
 exposing private data.
 
-### M10 — *Optional* exchange layer (`packages/chain`) — **gated**
-Implements `STORY.md` §7½ / `ARCHITECTURE.md` §13: Solana + USDC, embedded
-non-custodial wallet, inscribe-a-star keepsakes (soulbound, one-of-one), non-custodial
-gift/rehome. Feature-flagged **off** by default.
+### M10 — *Optional* exchange layer — the Sky (`packages/robinhood-contracts` + `apps/robinhood-web`) — **gated**
+Implements `STORY.md` §7½ / `ARCHITECTURE.md` §13 on Robinhood Chain (4663):
+`StarNFT` (inscribed stars earned via an API-signed EIP-712 voucher; unnamed stars
+bought and later nameable; soulbound by default), Lumen (plain ERC-20, never Ambra,
+never emitted by play), non-custodial gift/rehome. Feature-flagged **off** by default.
 **Do not start until:** the core game (M0–M9) ships and is loved *without* crypto, AND
 legal review + age-gating/geofencing are in place.
 *Accept:* whole app builds, runs, and passes every test with the flag **off** and the
-package absent (`NoopChain`); with the flag on, inscribe + rehome work end-to-end on a
-testnet; no gameplay path depends on the chain; no money mechanic touches
-souring/illness/death.
+packages absent (`NoopChain`); with the flag on, inscribe + name + rehome work
+end-to-end on a testnet; no gameplay path, entitlement, or narration reads chain state;
+no code path emits Lumen from play; no money mechanic touches souring/illness/death.
 
 ## 4. Suggested order & dependencies
 

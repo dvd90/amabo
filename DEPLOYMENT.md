@@ -9,7 +9,8 @@ env vars below).
 Railway project "amabo"
 ├── Postgres            (managed plugin → injects DATABASE_URL)
 ├── amabo-api           (Root Directory: apps/api  →  apps/api/railway.json)
-└── amabo-web           (Root Directory: apps/web  →  apps/web/railway.json)
+├── amabo-web           (Root Directory: apps/web  →  apps/web/railway.json)
+└── amabo-sky           (optional, the Sky — Root Directory: apps/robinhood-web → apps/robinhood-web/railway.json)
 ```
 
 Each service has its own `railway.json` inside its app directory. Set **Root Directory**
@@ -54,6 +55,10 @@ Each service has its own `railway.json` inside its app directory. Set **Root Dir
    | `SENTRY_DSN`               | optional   | error monitoring (L1); omit → silent no-op                                                                |
    | `LOG_LEVEL`                | optional   | `debug` \| `info` (default) \| `warn` \| `error` \| `silent` — how chatty the server log is               |
    | `LOG_FORMAT`               | optional   | `json` for one-object-per-line structured logs; default is human-readable lines                           |
+   | `AMABO_FEATURE_CHAIN`      | optional   | `1` turns on the Sky (ARCHITECTURE.md §13): `POST /stars/:id/inscribe`. Off = the route does not exist    |
+   | `STAR_SIGNER_KEY`          | optional\* | dedicated hot key (0x + 64 hex) whose address is StarNFT's `signer`; never the deployer/treasury key      |
+   | `STAR_CONTRACT`            | optional\* | the StarNFT clone address (`star` in `packages/robinhood-contracts/deployments/4663.json`)                |
+   | `STAR_CHAIN_ID`            | optional   | default `4663` (Robinhood Chain). `STAR_NAME` (default `Star`) must equal the contract's name             |
    | `STRIPE_SECRET_KEY`        | optional   | the till (L5). All three Stripe vars set → the Keeper's Lantern sells; any missing → free mode            |
    | `STRIPE_PRICE_LANTERN`     | optional   | the Lantern's subscription price id (`price_…`, ~$3.99/mo)                                                |
    | `STRIPE_WEBHOOK_SECRET`    | optional   | signing secret of a webhook endpoint pointed at `https://<api-url>/billing/webhook`                       |
@@ -255,8 +260,56 @@ A care game lives on the ping. Push is off until you set it up:
 4. In the app, tap **🔔 Notify me** on the dashboard, accept the browser prompt, and you're
    subscribed. (iOS requires the PWA to be **installed** to Home Screen first.)
 
+## The Sky — `sky.theamarium.com` (optional, ARCHITECTURE.md §13)
+
+> The full, exhaustive procedure — prerequisites, verifying the chain constants, a local
+> rehearsal, the contract deploy, Lumen, operations and troubleshooting — is
+> **`docs/SKY_RUNBOOK.md`**. This section is the short version.
+
+The chain layer is off until you turn it on, and it is three pieces: the contracts, the
+API's voucher, and the Sky site. In order:
+
+1. **Contracts** — `packages/robinhood-contracts`: `forge script script/Deploy.s.sol
+--rpc-url robinhood --broadcast` (env `STAR_SIGNER` = the address of the API's hot
+   key; `STAR_SEAT_PRICE`, `STAR_MAX_SEATS`, `STAR_INSCRIBE_PRICE`, `STAR_BASE_URI` =
+   `https://sky.theamarium.com/sky/`). Writes `deployments/4663.json` (`star`). Confirm
+   every `// VERIFY` address first.
+2. **API** (`amabo-api`) — `AMABO_FEATURE_CHAIN=1`, `STAR_SIGNER_KEY`, `STAR_CONTRACT`
+   (see the table above). `/health` unaffected; the boot log says "the Sky is on".
+3. **Device** (`amabo-web`) — `VITE_SKY_URL=https://sky.theamarium.com` at build time.
+   Without it the device shows no link to the Sky and refuses the `/inscribe` handoff.
+4. **The Sky** — a third Railway service from the same repo (**`amabo-sky`**, created
+   2026-08-31 with `railway add --service amabo-sky --repo dvd90/amabo`). Two ways to
+   make it build `apps/robinhood-web` from the monorepo:
+   - **Root Directory `apps/robinhood-web`** (dashboard → Settings → Source) — Railpack
+     then picks up `apps/robinhood-web/railway.json`; or
+   - **no Root Directory** and two variables that override Railpack from the repo root
+     (what is live today, set from the CLI):
+     `RAILPACK_BUILD_CMD=pnpm install --frozen-lockfile && pnpm --filter robinhood-web build`
+     and `RAILPACK_START_CMD=pnpm --filter robinhood-web start`.
+
+   Domains: `amabo-sky-production.up.railway.app` (generated) and the custom
+   `sky.theamarium.com` — at the DNS provider add **CNAME `sky` → `y3osjo95.up.railway.app`**
+   and the TXT record `railway domain status <id>` prints (`_railway-verify.sky`);
+   `railway domain list --service amabo-sky` shows when it verifies. Variables:
+
+   | Variable                             | Purpose                                                                      |
+   | ------------------------------------ | ---------------------------------------------------------------------------- |
+   | `NEXT_PUBLIC_API_BASE`               | the API's public origin (single-origin deploy: `https://www.theamarium.com`) |
+   | `NEXT_PUBLIC_APP_URL`                | the device (`https://www.theamarium.com`) — where the glass vouches          |
+   | `NEXT_PUBLIC_ROBINHOOD_RPC_URL`      | Robinhood Chain RPC (VERIFY against official docs)                           |
+   | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL` | Blockscout URL (VERIFY)                                                      |
+
+   The Sky never sees a game session: it reads `GET /sky/stars/:id` (public, CORS `*`)
+   and otherwise talks only to the chain through the visitor's wallet.
+
+   Until PR #97 merges the service deploys from its branch; afterwards point it at main:
+   `railway service source connect --repo dvd90/amabo --branch main --service amabo-sky`.
+
 ## Notes
 
 - Lazy simulate-on-read needs **no always-on worker** — these two services + Postgres
   cover v1; notifications add a single periodic **cron** (above), still no worker.
-- `packages/chain` (optional crypto, M10) is absent and not part of this deploy.
+- The Sky (`packages/robinhood-contracts` + `apps/robinhood-web`, `sky.theamarium.com`,
+  M10) deploys separately and is not part of this deploy; `www.theamarium.com` is the
+  web service above.

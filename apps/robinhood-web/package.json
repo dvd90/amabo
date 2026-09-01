@@ -1,0 +1,27 @@
+{
+  "name": "robinhood-web",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "tsc": "tsc"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5",
+    "next": "^15",
+    "react": "^19",
+    "react-dom": "^19",
+    "viem": "^2",
+    "wagmi": "^2"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "typescript": "^5"
+  }
+}

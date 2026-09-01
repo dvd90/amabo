@@ -4,7 +4,7 @@
  * Defined behind an interface so the store can be tested with a fake.
  */
 
-import type { CreatureViewT } from '@amabo/shared';
+import type { CreatureViewT, InscribeStarResponseT } from '@amabo/shared';
 
 export type { CreatureViewT };
 
@@ -303,6 +303,11 @@ export interface ApiClient {
   subscribePush(subscription: unknown): Promise<void>;
   journal(id: string): Promise<JournalEntry[]>;
   stars(id: string): Promise<StarView[]>;
+  /** The Sky (ARCHITECTURE.md §13): a signed voucher to inscribe one of my stars. */
+  inscribeStar(
+    starId: string,
+    body: { to: string; tokenId?: string },
+  ): Promise<InscribeStarResponseT>;
 }
 
 function readCookie(name: string): string {
@@ -456,6 +461,9 @@ export class HttpApiClient implements ApiClient {
   }
   async journal(id: string) {
     return (await this.req<{ entries: JournalEntry[] }>(`/creatures/${id}/journal`)).entries;
+  }
+  async inscribeStar(starId: string, body: { to: string; tokenId?: string }) {
+    return this.req<InscribeStarResponseT>(`/stars/${starId}/inscribe`, 'POST', body);
   }
   async stars(id: string) {
     return (await this.req<{ stars: StarView[] }>(`/creatures/${id}/stars`)).stars;

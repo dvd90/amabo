@@ -142,6 +142,11 @@ export class InMemoryRepository implements Repository {
     return structuredClone(star);
   }
 
+  async getStarByCreature(creatureId: string): Promise<StarRecord | null> {
+    const star = this.stars.find((s) => s.creatureId === creatureId);
+    return star ? structuredClone(star) : null;
+  }
+
   async listStars(ownerId: string | null): Promise<StarRecord[]> {
     return this.stars.filter((s) => s.ownerId === ownerId).map((s) => structuredClone(s));
   }
