@@ -32,7 +32,8 @@ apps/web/dist/
 # foundry (packages/robinhood-contracts)
 packages/robinhood-contracts/out/
 packages/robinhood-contracts/cache/
-packages/robinhood-contracts/broadcast/*/31337/
+# forge broadcast logs are local artefacts; deployments/<chain>.json is the committed record
+packages/robinhood-contracts/broadcast/
 packages/robinhood-contracts/.env
 
 # next.js (apps/robinhood-web)

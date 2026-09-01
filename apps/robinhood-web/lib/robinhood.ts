@@ -5,8 +5,10 @@
 import { defineChain, type Address } from 'viem';
 import deployments from '../../../packages/robinhood-contracts/deployments/4663.json';
 
-// Verified: mainnet chain ID (testnet is 46630).
-export const ROBINHOOD_CHAIN_ID = 4663 as const;
+// Verified: mainnet chain ID 4663 (testnet is 46630). NEXT_PUBLIC_ROBINHOOD_CHAIN_ID overrides
+// for a testnet rehearsal (SKY_RUNBOOK.md §2) — together with the RPC/explorer URLs and the
+// NEXT_PUBLIC_STAR_ADDRESS / NEXT_PUBLIC_LUMEN_ADDRESS overrides below.
+export const ROBINHOOD_CHAIN_ID = Number(process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID ?? 4663);
 
 // Verified RPC/explorer (official docs). The public RPC is rate-limited — set
 // NEXT_PUBLIC_ROBINHOOD_RPC_URL to a provider URL (Alchemy et al.) for production traffic.
@@ -40,6 +42,7 @@ export const ERC6551_ACCOUNT_IMPL = '0x41C8f39463A868d3A88af00cd0fe7102F30E44eC'
 export const NFT_ADDRESS = deployments.nft as Address;
 export const VAULT_ADDRESS = deployments.vault as Address;
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
+const isAddress = (s: string | undefined): s is Address => !!s && /^0x[0-9a-fA-F]{40}$/.test(s);
 export const IS_DEPLOYED =
   deployments.chainId === ROBINHOOD_CHAIN_ID && NFT_ADDRESS !== ZERO_ADDRESS;
 
@@ -51,11 +54,18 @@ export const REWARD_TOKENS = (process.env.NEXT_PUBLIC_REWARD_TOKENS ?? '')
 
 // ── The Sky (ARCHITECTURE.md §13) ──────────────────────────────────────────────
 // Written by Deploy.s.sol (`star`). Zero address = the Sky is not deployed yet.
-export const STAR_ADDRESS = deployments.star as Address;
+// An env override wins (a testnet rehearsal deploys to deployments/46630.json, which this
+// build does not import); otherwise the committed mainnet deployment.
+const starEnv = process.env.NEXT_PUBLIC_STAR_ADDRESS;
+const lumenEnv = process.env.NEXT_PUBLIC_LUMEN_ADDRESS;
+export const STAR_ADDRESS: Address = isAddress(starEnv) ? starEnv : (deployments.star as Address);
 /** Lumen, the Sky's coin (STORY.md §7½) — plain ERC-20; zero = not deployed. */
-export const LUMEN_ADDRESS = deployments.lumen as Address;
+export const LUMEN_ADDRESS: Address = isAddress(lumenEnv)
+  ? lumenEnv
+  : (deployments.lumen as Address);
 export const IS_SKY_DEPLOYED =
-  deployments.chainId === ROBINHOOD_CHAIN_ID && STAR_ADDRESS !== ZERO_ADDRESS;
+  STAR_ADDRESS !== ZERO_ADDRESS &&
+  (isAddress(starEnv) || deployments.chainId === ROBINHOOD_CHAIN_ID);
 /** The game API's origin — the Sky reads public star records from it, nothing else. */
 export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? 'https://www.theamarium.com').replace(
   /\/$/,
