@@ -90,6 +90,12 @@ for production), explorer `https://robinhoodchain.blockscout.com`; testnet **466
 deployed on both networks; **Tokenbound AccountV3 is on mainnet only** — on testnet
 deploy `erc6551/examples/simple/ERC6551Account.sol` and pass `ERC6551_ACCOUNT_IMPL`.
 
+**Testnet deployment (2026-09-01, chain 46630)** — `deployments/46630.json`: star
+`0x5c319A0d7Bd47A3721BB9238f0C7259195f0C720`, Lumen `0x543B010F2114e041E27cc9C2E5a6bAcf05b61D90`,
+self-deployed ERC6551Account `0xB11798f218C97A2e8d20aE28904EABE17AD6A2e5`; all six contracts
+verified on `explorer.testnet.chain.robinhood.com`. Deployer/signer are local Foundry keystores
+(`amabo-testnet-deployer` / `amabo-testnet-signer`) — testnet only, never reuse on mainnet.
+
 Still genuinely unknown: tokenised-stock reward token addresses and the Uniswap router
 on 4663 (only the unwired membership vault UI would use them), and whether "graduation"
 (a fully-vested member exiting) is ever in scope — not built; no test or code path
