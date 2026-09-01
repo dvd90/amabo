@@ -34,14 +34,15 @@ export function publicStarsRouter(deps: { repo: Repository; signer?: StarSigner 
   router.get('/sky/stars/:id', (req, res, next) => {
     void (async () => {
       try {
+        // Public, credential-free data: any origin (the Sky lives on sky.) may read it —
+        // including the 404s, so the browser sees a clean "no record" instead of a CORS error.
+        res.set('access-control-allow-origin', '*');
         const raw = req.params.id!;
         const creatureId = creatureIdOfSoul(raw) ?? raw;
         if (!UUID.test(creatureId)) return res.status(404).json({ error: 'not found' });
         const star = await deps.repo.getStarByCreature(creatureId);
         if (!star) return res.status(404).json({ error: 'not found' });
         const meta = starMetadata(star);
-        // Public, credential-free data: any origin (the Sky lives on www) may read it.
-        res.set('access-control-allow-origin', '*');
         return res.json(
           SkyStarResponse.parse({
             star: meta,

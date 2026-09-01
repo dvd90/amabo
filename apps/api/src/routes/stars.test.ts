@@ -200,7 +200,9 @@ describe('GET /sky/stars/:id — the public record the Sky renders', () => {
 
   it('is simply not found for an unknown or malformed id', async () => {
     const { app } = setup();
-    expect((await request(app).get('/sky/stars/nope')).status).toBe(404);
+    const nope = await request(app).get('/sky/stars/nope');
+    expect(nope.status).toBe(404);
+    expect(nope.headers['access-control-allow-origin']).toBe('*'); // a clean 404 cross-origin too
     expect((await request(app).get('/sky/stars/00000000-0000-4000-8000-000000000000')).status).toBe(
       404,
     );
