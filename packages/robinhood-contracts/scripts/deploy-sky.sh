@@ -39,10 +39,15 @@ if [ "$(cast code "$IMPL" --rpc-url "$RPC")" = "0x" ]; then
 fi
 
 export ERC6551_REGISTRY="$REG" ERC6551_ACCOUNT_IMPL="$IMPL"
-# Verification is best-effort: Blockscout hiccups must not fail the deploy itself.
-forge script script/Deploy.s.sol --rpc-url "$RPC" "${SIGNER[@]}" --broadcast \
-  --verify --verifier blockscout --verifier-url "$VERIFIER" || \
-forge script script/Deploy.s.sol --rpc-url "$RPC" "${SIGNER[@]}" --broadcast --resume
+# Verification is best-effort (SKIP_VERIFY=1 turns it off, e.g. on a local anvil): a Blockscout
+# hiccup must not fail the deploy itself — the broadcast is resumed without verification.
+if [ -z "${SKIP_VERIFY:-}" ]; then
+  forge script script/Deploy.s.sol --rpc-url "$RPC" "${SIGNER[@]}" --broadcast \
+    --verify --verifier blockscout --verifier-url "$VERIFIER" || \
+  forge script script/Deploy.s.sol --rpc-url "$RPC" "${SIGNER[@]}" --broadcast --resume
+else
+  forge script script/Deploy.s.sol --rpc-url "$RPC" "${SIGNER[@]}" --broadcast
+fi
 
 echo; echo "deployments/$CHAIN.json:"; cat "deployments/$CHAIN.json"
 STAR=$(python3 -c "import json; print(json.load(open('deployments/$CHAIN.json'))['star'])")
