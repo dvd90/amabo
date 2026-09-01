@@ -293,12 +293,14 @@ API's voucher, and the Sky site. In order:
    and the TXT record `railway domain status <id>` prints (`_railway-verify.sky`);
    `railway domain list --service amabo-sky` shows when it verifies. Variables:
 
-   | Variable                             | Purpose                                                                      |
-   | ------------------------------------ | ---------------------------------------------------------------------------- |
-   | `NEXT_PUBLIC_API_BASE`               | the API's public origin (single-origin deploy: `https://www.theamarium.com`) |
-   | `NEXT_PUBLIC_APP_URL`                | the device (`https://www.theamarium.com`) — where the glass vouches          |
-   | `NEXT_PUBLIC_ROBINHOOD_RPC_URL`      | Robinhood Chain RPC (VERIFY against official docs)                           |
-   | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL` | Blockscout URL (VERIFY)                                                      |
+   | Variable                                                 | Purpose                                                                      |
+   | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+   | `NEXT_PUBLIC_API_BASE`                                   | the API's public origin (single-origin deploy: `https://www.theamarium.com`) |
+   | `NEXT_PUBLIC_APP_URL`                                    | the device (`https://www.theamarium.com`) — where the glass vouches          |
+   | `NEXT_PUBLIC_ROBINHOOD_RPC_URL`                          | Robinhood Chain RPC (VERIFY against official docs)                           |
+   | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL`                     | `https://robinhoodchain.blockscout.com` (verified)                           |
+   | `NEXT_PUBLIC_ROBINHOOD_CHAIN_ID`                         | default `4663`; `46630` for a testnet rehearsal                              |
+   | `NEXT_PUBLIC_STAR_ADDRESS` / `NEXT_PUBLIC_LUMEN_ADDRESS` | override `deployments/4663.json` (testnet rehearsal)                         |
 
    The Sky never sees a game session: it reads `GET /sky/stars/:id` (public, CORS `*`)
    and otherwise talks only to the chain through the visitor's wallet.

@@ -221,6 +221,20 @@ ETH) and import anvil account 0's key. Then walk §8 end to end against localhos
 
 ## 4. Deploy the contracts to Robinhood Chain
 
+**The one-command version** — `packages/robinhood-contracts/scripts/deploy-sky.sh` does
+everything below (chain-id check, 6551 registry check, deploys the reference
+`ERC6551Account` when the chain has no account implementation, `Deploy.s.sol` with
+verification, post-deploy `cast call`s), for either network:
+
+```bash
+cd packages/robinhood-contracts
+export STAR_SIGNER=0x… STAR_SEAT_PRICE=… STAR_MAX_SEATS=… STAR_INSCRIBE_PRICE=0 LUMEN_SUPPLY=… LUMEN_RECIPIENT=0x…
+scripts/deploy-sky.sh testnet --account amabo-testnet-deployer --password amabo-testnet   # dress rehearsal
+scripts/deploy-sky.sh mainnet --ledger                                                    # the real thing
+```
+
+The manual steps, for reference:
+
 With §2 confirmed and §3 rehearsed:
 
 ```bash
@@ -329,6 +343,8 @@ Without `VITE_SKY_URL` the device shows no link and refuses the handoff with
    | `NEXT_PUBLIC_APP_URL` | `https://www.theamarium.com` |
    | `NEXT_PUBLIC_ROBINHOOD_RPC_URL` | the RPC from §2 |
    | `NEXT_PUBLIC_ROBINHOOD_EXPLORER_URL` | the explorer from §2 |
+   | `NEXT_PUBLIC_ROBINHOOD_CHAIN_ID` | `4663` (default) or `46630` for the testnet rehearsal |
+   | `NEXT_PUBLIC_STAR_ADDRESS` / `NEXT_PUBLIC_LUMEN_ADDRESS` | testnet rehearsal only: the addresses from `deployments/46630.json` (the build imports `4663.json`) |
 
 4. **Settings → Networking → Custom Domain:** `sky.theamarium.com`; add the CNAME
    Railway shows at your DNS provider. Do the same for `www.theamarium.com` on the

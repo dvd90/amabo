@@ -4,6 +4,7 @@
   "description": "Robinhood Chain membership protocol — MembershipNFT (ERC-721+ERC-6551 TBA), RevenueVault, Factory. Ported from dvd90/robinhood-app-boilerplate. Isolated leaf: never imported by, and never imports, the Amabo game packages. See docs/ROBINHOOD_CHAIN.md.",
   "scripts": {
     "verify": "export PATH=\"$HOME/.foundry/bin:$PATH\"; forge fmt --check && forge test",
-    "dryrun": "script/dryrun.sh"
+    "dryrun": "script/dryrun.sh",
+    "deploy:sky": "scripts/deploy-sky.sh"
   }
 }
